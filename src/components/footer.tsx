@@ -1,0 +1,5 @@
+import { Facebook, Instagram, Send } from "lucide-react";
+import Link from "next/link";
+import { Container } from "./ui";
+
+export function Footer() { return <footer><Container className="footer-grid"><div><Link className="logo logo--footer" href="/"><span>elchi</span><b>market</b></Link><p>Hayot uchun yaxshi tanlovlar marketplace’i.</p><div className="socials"><a href="#" aria-label="Instagram"><Instagram/></a><a href="#" aria-label="Telegram"><Send/></a><a href="#" aria-label="Facebook"><Facebook/></a></div></div><div><b>Xaridorlar uchun</b><Link href="/cart">Savatcha</Link><Link href="/favorites">Sevimlilar</Link><Link href="/profile/orders">Buyurtmalar</Link></div><div><b>Kompaniya</b><Link href="/">Bosh sahifa</Link><Link href="/catalog">Katalog</Link><Link href="/profile">Shaxsiy kabinet</Link></div><div><b>Yordam kerakmi?</b><a href="tel:+998712000000">+998 71 200 00 00</a><a href="mailto:hello@elchi.uz">hello@elchi.uz</a></div></Container><Container><div className="copyright">© 2026 Elchi Market. Barcha huquqlar himoyalangan.<span>Maxfiylik · Foydalanish shartlari</span></div></Container></footer>; }

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title desc">
+  <title id="title">Elchi Market demo mahsuloti</title>
+  <desc id="desc">Mahalliy tezkor demo katalog rasmi</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4efe7"/><stop offset="1" stop-color="#d8e4df"/></linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#22272b"/><stop offset="1" stop-color="#586167"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="25" flood-opacity=".22"/></filter>
+  </defs>
+  <rect width="900" height="900" rx="54" fill="url(#bg)"/>
+  <circle cx="720" cy="160" r="170" fill="#fff" opacity=".38"/>
+  <circle cx="150" cy="740" r="220" fill="#d3b98f" opacity=".2"/>
+  <g filter="url(#shadow)">
+    <path d="M315 377c0-112 60-191 135-191s135 79 135 191" fill="none" stroke="#252a2e" stroke-width="42" stroke-linecap="round"/>
+    <rect x="246" y="350" width="148" height="294" rx="68" fill="url(#body)"/>
+    <rect x="506" y="350" width="148" height="294" rx="68" fill="url(#body)"/>
+    <rect x="278" y="389" width="78" height="216" rx="38" fill="#778188" opacity=".45"/>
+    <rect x="544" y="389" width="78" height="216" rx="38" fill="#778188" opacity=".45"/>
+  </g>
+  <text x="450" y="760" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#24282b">ELCHI SELECT</text>
+  <text x="450" y="803" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" letter-spacing="5" fill="#646b6f">DEMO CATALOG</text>
+</svg>
