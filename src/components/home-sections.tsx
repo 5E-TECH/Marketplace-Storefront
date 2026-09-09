@@ -2,7 +2,8 @@ import { ArrowRight, Headphones, RefreshCcw, ShieldCheck, Truck } from "lucide-r
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
-import type { Product } from "@/types/commerce";
+import { catalogHref } from "@/lib/catalog-query";
+import type { CatalogCategory, Product, ProductQuery, ProductSort } from "@/types/commerce";
 import { ProductGrid } from "./product-grid";
 import { Button, Container, SectionHeader } from "./ui";
 
@@ -17,13 +18,20 @@ export function Hero({ product }: { product?: Product }) {
   </section></Container>;
 }
 
-export function CategoryGrid({ products }: { products: Product[] }) {
-  const categories = [...new Map(products.filter((product) => product.categoryInfo).map((product) => [String(product.categoryInfo!.id), { ...product.categoryInfo!, image: product.image }])).values()].slice(0, 6);
+const categoryIds = (category: CatalogCategory): string[] => [String(category.id), ...category.children.flatMap(categoryIds)];
+
+export function CategoryGrid({ categories, products }: { categories: CatalogCategory[]; products: Product[] }) {
+  const cards = categories.slice(0, 6).map((category) => ({ category, product: products.find((product) => categoryIds(category).includes(String(product.categoryInfo?.id))) }));
   if (!categories.length) return null;
-  return <Container><section className="category-grid" aria-label="Kategoriyalar">{categories.map((category) => <Link href={`/?categoryId=${category.id}#products`} className="category-card" key={category.id}><Image src={category.image} alt="" width={88} height={88}/><span><b>{category.name}</b><small>Mahsulotlarni ko‘rish</small></span><ArrowRight size={18}/></Link>)}</section></Container>;
+  return <Container><section className="category-grid" aria-label="Kategoriyalar">{cards.map(({ category, product }) => <Link href={`/katalog/${category.slug}`} className="category-card" key={category.id}>{product ? <Image src={product.image} alt="" width={88} height={88}/> : <i className="category-card-icon" aria-hidden>{category.icon}</i>}<span><b>{category.name}</b><small>Mahsulotlarni ko‘rish</small></span><ArrowRight size={18}/></Link>)}</section></Container>;
 }
 
-export function Products({ products, search, apiError }: { products: Product[]; search?: string; apiError?: string }) { return <Container><section id="products" className="content-section"><SectionHeader title={search ? `“${search}” bo‘yicha natijalar` : "Trenddagi mahsulotlar"}/>{apiError && <div className="catalog-notice catalog-notice--error"><span>API OFFLINE</span><p>Real katalogni yuklab bo‘lmadi: {apiError}. Backend manzili va server ishlayotganini tekshiring.</p></div>}{products.length ? <ProductGrid key={products.map((product) => product.id).join(":")} products={products}/> : <div className="catalog-empty"><h3>{apiError ? "Real mahsulotlar yuklanmadi" : "Mahsulot topilmadi"}</h3><p>{apiError ? "Static mahsulot ko‘rsatilmaydi. Backend ishga tushganda katalog avtomatik chiqadi." : "Boshqa kalit so‘z bilan qidirib ko‘ring."}</p></div>}</section></Container>; }
+const sorts: { value: ProductSort; label: string }[] = [{ value: "createdAt:desc", label: "Yangi kelganlar" }, { value: "price:asc", label: "Arzondan qimmatga" }];
+
+export function Products({ products, total, query, basePath, title, apiError }: { products: Product[]; total: number; query: ProductQuery; basePath: string; title?: string; apiError?: string }) {
+  const heading = title ?? (query.search ? `“${query.search}” bo‘yicha natijalar` : "Sotuvdagi mahsulotlar");
+  return <Container><section id="products" className="content-section"><div className="catalog-heading"><div><h2>{heading}</h2><p>{total} ta mahsulot</p></div><nav className="sort-control" aria-label="Mahsulotlarni saralash">{sorts.map((sort) => <Link key={sort.value} href={catalogHref(basePath, query, { sort: sort.value, page: 1 })} aria-current={query.sort === sort.value ? "page" : undefined}>{sort.label}</Link>)}</nav></div>{apiError && <div className="catalog-notice catalog-notice--error"><span>ALOQA YO‘Q</span><p>Mahsulotlarni yuklab bo‘lmadi. Internet aloqasini tekshirib, qayta urinib ko‘ring.</p></div>}{products.length ? <ProductGrid key={products.map((product) => product.id).join(":")} products={products}/> : <div className="catalog-empty"><h3>{apiError ? "Mahsulotlar yuklanmadi" : "Mahsulot topilmadi"}</h3><p>{apiError ? "Backend qayta ishlaganda katalog shu yerda avtomatik ko‘rinadi." : "Bu kategoriya yoki filtr bo‘yicha hozircha mahsulot yo‘q."}</p>{(query.search || query.minPrice !== undefined || query.maxPrice !== undefined) && <Link className="button button--secondary" href={basePath}>Filtrlarni tozalash</Link>}</div>}</section></Container>;
+}
 
 const benefits = [{ icon: Truck, title: "Tez yetkazib berish", text: "O‘zbekiston bo‘ylab" }, { icon: ShieldCheck, title: "Xavfsiz to‘lov", text: "100% himoyalangan" }, { icon: RefreshCcw, title: "Oson qaytarish", text: "30 kun ichida" }, { icon: Headphones, title: "Doimiy yordam", text: "24/7 qo‘llab-quvvatlash" }];
 export function Benefits() { return <Container><div className="benefits">{benefits.map(({ icon: Icon, title, text }) => <div className="benefit" key={title}><span><Icon/></span><div><b>{title}</b><small>{text}</small></div></div>)}</div></Container>; }

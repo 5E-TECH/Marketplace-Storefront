@@ -34,6 +34,6 @@ export function ApiTestClient() {
       <p data-testid="browser-success">Backenddan {catalog.total} ta mahsulot. Javob kontrakt tekshiruvidan o‘tdi.</p>
       <ul>{catalog.items.map((product) => <li key={product.id}>{product.name} — {product.price} so‘m</li>)}</ul>
     </>}
-    <button className="button button--primary" disabled={loading} onClick={retry}>Qayta tekshirish</button>
+    <button className="button button--primary" data-testid="browser-retry" disabled={loading} onClick={retry}>Qayta tekshirish</button>
   </section>;
 }

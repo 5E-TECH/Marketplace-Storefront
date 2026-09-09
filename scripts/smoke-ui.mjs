@@ -6,7 +6,18 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 const base = process.env.UI_TEST_URL ?? "http://127.0.0.1:3001";
-const routes = ["/", "/catalog", "/cart", "/checkout", "/favorites", "/product/demo-headphones", "/profile", "/profile/orders", "/ui-kit"];
+const routes = ["/", "/?sort=price%3Aasc&page=2", "/katalog", "/katalog/audio?sort=price%3Aasc", "/cart", "/checkout", "/favorites", "/product/demo-headphones", "/profile", "/profile/orders", "/ui-kit"];
+const homeResponse = await fetch(base);
+const homeHtml = await homeResponse.text();
+assert.equal(homeResponse.status, 200);
+assert.match(homeHtml, /class="product-card"/, "Product cards must be present in the SSR HTML");
+assert.match(homeHtml, /href="\/katalog\//, "SSR categories must use shareable slug URLs");
+assert.match(homeHtml, /Keyingi sahifa/, "SSR catalog must expose pagination when more products exist");
+
+const emptyResponse = await fetch(`${base}/?search=__missing_product__`);
+const emptyHtml = await emptyResponse.text();
+assert.equal(emptyResponse.status, 200);
+assert.match(emptyHtml, /Mahsulot topilmadi/, "Empty search needs an understandable SSR message");
 const profile = await mkdtemp(join(tmpdir(), "elchi-ui-browser-"));
 const chrome = spawn(process.env.CHROME_PATH ?? "google-chrome", [
   "--headless=new",
@@ -89,6 +100,29 @@ try {
     assert.ok(result.headerVisible && result.footerVisible, `${route}: header and footer must be visible`);
   }
 
+  await send("Page.navigate", { url: `${base}/katalog/audio?sort=price%3Aasc` });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "category catalog");
+  const filterState = await evaluate(`({
+    path: location.pathname,
+    sort: new URLSearchParams(location.search).get("sort"),
+    activeSort: document.querySelector(".sort-control [aria-current=page]")?.textContent.trim(),
+    products: document.querySelectorAll(".product-card").length,
+    prices: [...document.querySelectorAll(".product-card .price strong")].map((element) => Number(element.textContent.replace(/\\D/g, ""))),
+  })`);
+  assert.deepEqual({ path: filterState.path, sort: filterState.sort, activeSort: filterState.activeSort }, { path: "/katalog/audio", sort: "price:asc", activeSort: "Arzondan qimmatga" });
+  assert.equal(filterState.products, 6, "Category URL must only contain matching demo products");
+  assert.deepEqual(filterState.prices, [...filterState.prices].sort((left, right) => left - right), "Price sorting must change the rendered product order");
+
+  await send("Page.navigate", { url: `${base}/?sort=price%3Aasc&page=2` });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "second catalog page");
+  const pageState = await evaluate(`({
+    page: new URLSearchParams(location.search).get("page"),
+    sort: new URLSearchParams(location.search).get("sort"),
+    pagination: document.querySelector(".catalog-pagination b")?.textContent.trim(),
+    activeSort: document.querySelector(".sort-control [aria-current=page]")?.textContent.trim(),
+  })`);
+  assert.deepEqual(pageState, { page: "2", sort: "price:asc", pagination: "2 / 2", activeSort: "Arzondan qimmatga" });
+
   await send("Page.navigate", { url: `${base}/ui-kit` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "UI kit content");
   const components = await evaluate(`(() => {
@@ -103,7 +137,7 @@ try {
     };
   })()`);
   assert.deepEqual(components, { image: true, name: true, price: true, shop: true, empty: true, error: true });
-  console.log(`PASS: ${routes.length} routes at 375px; header/footer, product card, empty/error states and horizontal overflow checked.`);
+  console.log(`PASS: SSR catalog, pagination and empty state; slug category and URL filters; ${routes.length} routes at 375px without horizontal overflow.`);
 } finally {
   socket?.close();
   chrome.kill();

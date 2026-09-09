@@ -15,6 +15,13 @@ const demoCatalog = [...mockProducts, ...mockProducts.map((product, index) => ({
   price: product.price + (index + 1) * 25_000,
   oldPrice: product.oldPrice ? product.oldPrice + (index + 1) * 25_000 : undefined,
   badge: index % 3 === 0 ? "Yangi" : product.badge,
+})), ...mockProducts.map((product, index) => ({
+  ...product,
+  id: `${product.id}-selection`,
+  name: `${product.name} ${index % 2 ? "Max" : "Select"}`,
+  price: product.price + (index + 1) * 40_000,
+  oldPrice: product.oldPrice ? product.oldPrice + (index + 1) * 40_000 : undefined,
+  badge: index % 2 === 0 ? "Yangi" : product.badge,
 }))];
 
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" ? value as Record<string, unknown> : {};
@@ -93,7 +100,10 @@ export const productService = {
         return matchesSearch && matchesCategory && matchesMin && matchesMax;
       });
       const [sortField, sortDirection] = query.sort?.split(":") ?? [];
-      if (sortField === "price") filtered.sort((a, b) => (a.price - b.price) * (sortDirection === "desc" ? -1 : 1));
+      const direction = sortDirection === "desc" ? -1 : 1;
+      if (sortField === "price") filtered.sort((a, b) => (a.price - b.price) * direction);
+      if (sortField === "name") filtered.sort((a, b) => a.name.localeCompare(b.name, "uz") * direction);
+      if (sortField === "createdAt") filtered.sort((a, b) => ((Date.parse(a.createdAt ?? "") || 0) - (Date.parse(b.createdAt ?? "") || 0)) * direction);
       const start = (page - 1) * limit;
       const data = filtered.slice(start, start + limit).map((product) => ({ ...product, images: [...new Set(product.images)] }));
       return { data, total: filtered.length, page, limit, totalPages: Math.ceil(filtered.length / limit), source: "mock" };

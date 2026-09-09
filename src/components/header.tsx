@@ -7,11 +7,11 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/providers/cart-provider";
 import { useFavorites } from "@/providers/favorites-provider";
 import { Container } from "./ui";
-import { featuredCategories, marketplaceCategories } from "@/data/categories";
+import type { CatalogCategory } from "@/types/commerce";
 
 const promos = ["Arzon narxlar kafolati", "Maktab bozori", "Yozgi kolleksiya"];
 
-export function Header() {
+export function Header({ categories }: { categories: CatalogCategory[] }) {
   const [open, setOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -40,7 +40,7 @@ export function Header() {
         <button className="icon-button bag" onClick={() => cart.setOpen(true)} aria-label="Savatcha"><ShoppingBag />{cart.quantity > 0 && <span>{cart.quantity > 99 ? "99+" : cart.quantity}</span>}</button>
       </div>
     </Container>
-    <div className="category-strip"><Container>{featuredCategories.map((category) => <Link href={`/?categoryId=${category.id}#products`} onClick={() => setCatalogOpen(false)} key={category.id}><span>{category.icon}</span>{category.name}</Link>)}<button type="button" className={catalogOpen ? "active" : ""} onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu">Yana <ChevronDown/></button></Container></div>
-    {catalogOpen && <><button className="catalog-backdrop" type="button" onClick={() => setCatalogOpen(false)} aria-label="Katalogni yopish"/><div className="catalog-mega" id="catalog-menu"><Container><div className="catalog-mega-head"><div><span>BARCHA TOIFALAR</span><h2>Mahsulotlar katalogi</h2></div><Link href="/catalog" onClick={() => setCatalogOpen(false)}>Barcha kategoriyalar →</Link></div><div className="catalog-mega-grid">{marketplaceCategories.map((category) => <section key={category.id}><Link className="catalog-category-title" href={`/?categoryId=${category.id}#products`} onClick={() => setCatalogOpen(false)}><i>{category.icon}</i><b>{category.name}</b></Link>{category.children.map((child) => <Link href={`/?search=${encodeURIComponent(child)}#products`} onClick={() => setCatalogOpen(false)} key={child}>{child}</Link>)}</section>)}</div></Container></div></>}
+    <div className="category-strip"><Container>{categories.slice(0, 6).map((category) => <Link href={`/katalog/${category.slug}`} onClick={() => setCatalogOpen(false)} key={category.id}><span>{category.icon}</span>{category.name}</Link>)}<button type="button" className={catalogOpen ? "active" : ""} onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu">Yana <ChevronDown/></button></Container></div>
+    {catalogOpen && <><button className="catalog-backdrop" type="button" onClick={() => setCatalogOpen(false)} aria-label="Katalogni yopish"/><div className="catalog-mega" id="catalog-menu"><Container><div className="catalog-mega-head"><div><span>BARCHA TOIFALAR</span><h2>Mahsulotlar katalogi</h2></div><Link href="/katalog" onClick={() => setCatalogOpen(false)}>Barcha kategoriyalar →</Link></div><div className="catalog-mega-grid">{categories.map((category) => <section key={category.id}><Link className="catalog-category-title" href={`/katalog/${category.slug}`} onClick={() => setCatalogOpen(false)}><i>{category.icon}</i><b>{category.name}</b></Link>{category.children.map((child) => <Link href={`/katalog/${child.slug}`} onClick={() => setCatalogOpen(false)} key={child.id}>{child.name}</Link>)}</section>)}</div></Container></div></>}
   </header>;
 }

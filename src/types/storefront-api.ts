@@ -6,6 +6,7 @@ export type StorefrontProductsResponse = components["schemas"]["StorefrontProduc
 export type StorefrontVariantDto = components["schemas"]["ProductVariantDto"];
 export type StorefrontShopDto = components["schemas"]["SellerShopDto"];
 export type StorefrontCategoryDto = components["schemas"]["StorefrontCategoryDto"];
+export type CategoryTreeDto = components["schemas"]["CategoryTreeDto"];
 export type ProductCreateInput = components["schemas"]["CreateProductDto"];
 export type ProductUpdateInput = components["schemas"]["UpdateProductDto"];
 export type ProductVariantInput = components["schemas"]["CreateProductVariantDto"];

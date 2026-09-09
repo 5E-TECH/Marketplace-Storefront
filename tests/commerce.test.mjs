@@ -84,3 +84,27 @@ test('product outages are not reported as missing products', async () => {
   status = 404;
   assert.equal(await productService.getById(1), null);
 });
+
+test('catalog query keeps shareable filters and only accepts backend sort values', () => {
+  const { catalogHref, parseCatalogQuery } = loadTypeScript('src/lib/catalog-query.ts');
+  assert.deepEqual(parseCatalogQuery({ search: '  iphone  ', sort: 'price:asc', page: '3', minPrice: '100' }, 'phones'), {
+    search: 'iphone', categoryId: 'phones', minPrice: 100, maxPrice: undefined, sort: 'price:asc', page: 3, limit: 20,
+  });
+  assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).sort, 'createdAt:desc');
+  assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).page, 1);
+  assert.equal(catalogHref('/katalog/telefonlar', { search: 'iphone 16', sort: 'price:asc', page: 3, limit: 20 }, { page: 2 }), '/katalog/telefonlar?search=iphone+16&sort=price%3Aasc&page=2#products');
+});
+
+test('category service uses backend slugs and finds nested categories', async () => {
+  const response = [{ id: '1', name: 'Elektronika', slug: 'elektronika', parentId: null, iconUrl: null, sortOrder: 0, isActive: true, children: [
+    { id: '7', name: 'Mobil telefonlar', slug: 'mobil-telefonlar', parentId: '1', iconUrl: null, sortOrder: 0, isActive: true, children: [] },
+  ] }];
+  const { categoryService, findCategoryBySlug } = loadTypeScript('src/services/category.service.ts', {
+    '@/config/env': { env: { apiUrl: 'https://example.test/api/v1', useMockData: false } },
+    '@/generated/api-validators': { validateCategoryTreeDto: () => true },
+    '@/lib/api': { apiRequest: async () => response },
+  });
+  const categories = await categoryService.list();
+  assert.equal(categories.source, 'api');
+  assert.equal(findCategoryBySlug(categories.data, 'mobil-telefonlar').id, '7');
+});

@@ -59,11 +59,11 @@ try {
   console.log('Browser:', await until(() => evaluate(success), 'browser catalog'));
   for (const product of catalog.items) assert.ok(await evaluate(`document.body.textContent.includes(${JSON.stringify(product.name)})`));
   await send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-  await evaluate("document.querySelector('button').click()");
+  await evaluate("document.querySelector('[data-testid=browser-retry]').click()");
   const error = await until(() => evaluate("document.querySelector('[data-testid=browser-error]')?.textContent"), 'offline error');
   assert.ok(error.includes('network'), error);
   await send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-  await evaluate("document.querySelector('button').click()");
+  await evaluate("document.querySelector('[data-testid=browser-retry]').click()");
   await until(() => evaluate(success), 'recovery after offline');
   assert.deepEqual(exceptions, []);
   console.log(`PASS: SSR, proxy and Chrome loaded ${catalog.items.length} real products; offline and recovery passed.`);

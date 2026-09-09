@@ -18,3 +18,5 @@ export const marketplaceCategories: MarketplaceCategory[] = [
 ];
 
 export const featuredCategories = marketplaceCategories.filter((category) => category.featured);
+
+export const categorySlug = (name: string) => name.toLocaleLowerCase("uz").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[‘’']/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");

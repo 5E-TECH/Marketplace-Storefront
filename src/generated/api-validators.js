@@ -808,8 +808,9 @@ validate12.errors = vErrors;
 return errors === 0;
 }
 
-export const validateProductDto = validate14;
-const schema17 = {"type":"object","properties":{"id":{"type":"string"},"shopId":{"type":"string"},"ownerUserId":{"type":"string"},"categoryId":{},"name":{"type":"string"},"slug":{"type":"string"},"description":{},"price":{"type":"number"},"oldPrice":{},"imageUrl":{},"images":{"type":"array","items":{"type":"string"}},"attributes":{},"hasVariants":{"type":"boolean"},"status":{"type":"string","enum":["DRAFT","ACTIVE","ARCHIVED","OUT_OF_STOCK"]},"isBlocked":{"type":"boolean"},"rating":{"type":"number"},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"}},"required":["id","shopId","ownerUserId","categoryId","name","slug","description","price","oldPrice","imageUrl","images","attributes","hasVariants","status","isBlocked","rating","createdAt","updatedAt"]};
+export const validateCategoryTreeDto = validate14;
+const schema17 = {"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"slug":{"type":"string"},"parentId":{"anyOf":[{"type":"string"},{"type":"null"}]},"iconUrl":{"anyOf":[{"type":"string"},{"type":"null"}]},"sortOrder":{"type":"number"},"isActive":{"type":"boolean"},"children":{"type":"array","items":{"$ref":"#/components/schemas/CategoryTreeDto"}}},"required":["id","name","slug","parentId","iconUrl","sortOrder","isActive","children"]};
+const wrapper0 = {validate: validate14};
 
 function validate14(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -817,7 +818,7 @@ let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
-if(((((((((((((((((((data.id === undefined) && (missing0 = "id")) || ((data.shopId === undefined) && (missing0 = "shopId"))) || ((data.ownerUserId === undefined) && (missing0 = "ownerUserId"))) || ((data.categoryId === undefined) && (missing0 = "categoryId"))) || ((data.name === undefined) && (missing0 = "name"))) || ((data.slug === undefined) && (missing0 = "slug"))) || ((data.description === undefined) && (missing0 = "description"))) || ((data.price === undefined) && (missing0 = "price"))) || ((data.oldPrice === undefined) && (missing0 = "oldPrice"))) || ((data.imageUrl === undefined) && (missing0 = "imageUrl"))) || ((data.images === undefined) && (missing0 = "images"))) || ((data.attributes === undefined) && (missing0 = "attributes"))) || ((data.hasVariants === undefined) && (missing0 = "hasVariants"))) || ((data.status === undefined) && (missing0 = "status"))) || ((data.isBlocked === undefined) && (missing0 = "isBlocked"))) || ((data.rating === undefined) && (missing0 = "rating"))) || ((data.createdAt === undefined) && (missing0 = "createdAt"))) || ((data.updatedAt === undefined) && (missing0 = "updatedAt"))){
+if(((((((((data.id === undefined) && (missing0 = "id")) || ((data.name === undefined) && (missing0 = "name"))) || ((data.slug === undefined) && (missing0 = "slug"))) || ((data.parentId === undefined) && (missing0 = "parentId"))) || ((data.iconUrl === undefined) && (missing0 = "iconUrl"))) || ((data.sortOrder === undefined) && (missing0 = "sortOrder"))) || ((data.isActive === undefined) && (missing0 = "isActive"))) || ((data.children === undefined) && (missing0 = "children"))){
 validate14.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
@@ -834,10 +835,255 @@ else {
 var valid0 = true;
 }
 if(valid0){
+if(data.name !== undefined){
+const _errs3 = errors;
+if(typeof data.name !== "string"){
+validate14.errors = [{instancePath:instancePath+"/name",schemaPath:"#/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs3 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.slug !== undefined){
+const _errs5 = errors;
+if(typeof data.slug !== "string"){
+validate14.errors = [{instancePath:instancePath+"/slug",schemaPath:"#/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs5 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.parentId !== undefined){
+let data3 = data.parentId;
+const _errs7 = errors;
+const _errs8 = errors;
+let valid1 = false;
+const _errs9 = errors;
+if(typeof data3 !== "string"){
+const err0 = {instancePath:instancePath+"/parentId",schemaPath:"#/properties/parentId/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+var _valid0 = _errs9 === errors;
+valid1 = valid1 || _valid0;
+if(!valid1){
+const _errs11 = errors;
+if(data3 !== null){
+const err1 = {instancePath:instancePath+"/parentId",schemaPath:"#/properties/parentId/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+var _valid0 = _errs11 === errors;
+valid1 = valid1 || _valid0;
+}
+if(!valid1){
+const err2 = {instancePath:instancePath+"/parentId",schemaPath:"#/properties/parentId/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+validate14.errors = vErrors;
+return false;
+}
+else {
+errors = _errs8;
+if(vErrors !== null){
+if(_errs8){
+vErrors.length = _errs8;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid0 = _errs7 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.iconUrl !== undefined){
+let data4 = data.iconUrl;
+const _errs13 = errors;
+const _errs14 = errors;
+let valid2 = false;
+const _errs15 = errors;
+if(typeof data4 !== "string"){
+const err3 = {instancePath:instancePath+"/iconUrl",schemaPath:"#/properties/iconUrl/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+var _valid1 = _errs15 === errors;
+valid2 = valid2 || _valid1;
+if(!valid2){
+const _errs17 = errors;
+if(data4 !== null){
+const err4 = {instancePath:instancePath+"/iconUrl",schemaPath:"#/properties/iconUrl/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+var _valid1 = _errs17 === errors;
+valid2 = valid2 || _valid1;
+}
+if(!valid2){
+const err5 = {instancePath:instancePath+"/iconUrl",schemaPath:"#/properties/iconUrl/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+validate14.errors = vErrors;
+return false;
+}
+else {
+errors = _errs14;
+if(vErrors !== null){
+if(_errs14){
+vErrors.length = _errs14;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid0 = _errs13 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.sortOrder !== undefined){
+const _errs19 = errors;
+if(!(typeof data.sortOrder == "number")){
+validate14.errors = [{instancePath:instancePath+"/sortOrder",schemaPath:"#/properties/sortOrder/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid0 = _errs19 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.isActive !== undefined){
+const _errs21 = errors;
+if(typeof data.isActive !== "boolean"){
+validate14.errors = [{instancePath:instancePath+"/isActive",schemaPath:"#/properties/isActive/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+return false;
+}
+var valid0 = _errs21 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.children !== undefined){
+let data7 = data.children;
+const _errs23 = errors;
+if(errors === _errs23){
+if(Array.isArray(data7)){
+var valid3 = true;
+const len0 = data7.length;
+for(let i0=0; i0<len0; i0++){
+const _errs25 = errors;
+if(!(wrapper0.validate(data7[i0], {instancePath:instancePath+"/children/" + i0,parentData:data7,parentDataProperty:i0,rootData}))){
+vErrors = vErrors === null ? wrapper0.validate.errors : vErrors.concat(wrapper0.validate.errors);
+errors = vErrors.length;
+}
+var valid3 = _errs25 === errors;
+if(!valid3){
+break;
+}
+}
+}
+else {
+validate14.errors = [{instancePath:instancePath+"/children",schemaPath:"#/properties/children/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+return false;
+}
+}
+var valid0 = _errs23 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+validate14.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate14.errors = vErrors;
+return errors === 0;
+}
+
+export const validateProductDto = validate15;
+const schema18 = {"type":"object","properties":{"id":{"type":"string"},"shopId":{"type":"string"},"ownerUserId":{"type":"string"},"categoryId":{},"name":{"type":"string"},"slug":{"type":"string"},"description":{},"price":{"type":"number"},"oldPrice":{},"imageUrl":{},"images":{"type":"array","items":{"type":"string"}},"attributes":{},"hasVariants":{"type":"boolean"},"status":{"type":"string","enum":["DRAFT","ACTIVE","ARCHIVED","OUT_OF_STOCK"]},"isBlocked":{"type":"boolean"},"rating":{"type":"number"},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"}},"required":["id","shopId","ownerUserId","categoryId","name","slug","description","price","oldPrice","imageUrl","images","attributes","hasVariants","status","isBlocked","rating","createdAt","updatedAt"]};
+
+function validate15(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if(((((((((((((((((((data.id === undefined) && (missing0 = "id")) || ((data.shopId === undefined) && (missing0 = "shopId"))) || ((data.ownerUserId === undefined) && (missing0 = "ownerUserId"))) || ((data.categoryId === undefined) && (missing0 = "categoryId"))) || ((data.name === undefined) && (missing0 = "name"))) || ((data.slug === undefined) && (missing0 = "slug"))) || ((data.description === undefined) && (missing0 = "description"))) || ((data.price === undefined) && (missing0 = "price"))) || ((data.oldPrice === undefined) && (missing0 = "oldPrice"))) || ((data.imageUrl === undefined) && (missing0 = "imageUrl"))) || ((data.images === undefined) && (missing0 = "images"))) || ((data.attributes === undefined) && (missing0 = "attributes"))) || ((data.hasVariants === undefined) && (missing0 = "hasVariants"))) || ((data.status === undefined) && (missing0 = "status"))) || ((data.isBlocked === undefined) && (missing0 = "isBlocked"))) || ((data.rating === undefined) && (missing0 = "rating"))) || ((data.createdAt === undefined) && (missing0 = "createdAt"))) || ((data.updatedAt === undefined) && (missing0 = "updatedAt"))){
+validate15.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.id !== undefined){
+const _errs1 = errors;
+if(typeof data.id !== "string"){
+validate15.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
 if(data.shopId !== undefined){
 const _errs3 = errors;
 if(typeof data.shopId !== "string"){
-validate14.errors = [{instancePath:instancePath+"/shopId",schemaPath:"#/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/shopId",schemaPath:"#/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs3 === errors;
@@ -849,7 +1095,7 @@ if(valid0){
 if(data.ownerUserId !== undefined){
 const _errs5 = errors;
 if(typeof data.ownerUserId !== "string"){
-validate14.errors = [{instancePath:instancePath+"/ownerUserId",schemaPath:"#/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/ownerUserId",schemaPath:"#/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs5 === errors;
@@ -861,7 +1107,7 @@ if(valid0){
 if(data.name !== undefined){
 const _errs7 = errors;
 if(typeof data.name !== "string"){
-validate14.errors = [{instancePath:instancePath+"/name",schemaPath:"#/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/name",schemaPath:"#/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs7 === errors;
@@ -873,7 +1119,7 @@ if(valid0){
 if(data.slug !== undefined){
 const _errs9 = errors;
 if(typeof data.slug !== "string"){
-validate14.errors = [{instancePath:instancePath+"/slug",schemaPath:"#/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/slug",schemaPath:"#/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs9 === errors;
@@ -885,7 +1131,7 @@ if(valid0){
 if(data.price !== undefined){
 const _errs11 = errors;
 if(!(typeof data.price == "number")){
-validate14.errors = [{instancePath:instancePath+"/price",schemaPath:"#/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate15.errors = [{instancePath:instancePath+"/price",schemaPath:"#/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs11 === errors;
@@ -904,7 +1150,7 @@ const len0 = data6.length;
 for(let i0=0; i0<len0; i0++){
 const _errs15 = errors;
 if(typeof data6[i0] !== "string"){
-validate14.errors = [{instancePath:instancePath+"/images/" + i0,schemaPath:"#/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/images/" + i0,schemaPath:"#/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid1 = _errs15 === errors;
@@ -914,7 +1160,7 @@ break;
 }
 }
 else {
-validate14.errors = [{instancePath:instancePath+"/images",schemaPath:"#/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate15.errors = [{instancePath:instancePath+"/images",schemaPath:"#/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -927,7 +1173,7 @@ if(valid0){
 if(data.hasVariants !== undefined){
 const _errs17 = errors;
 if(typeof data.hasVariants !== "boolean"){
-validate14.errors = [{instancePath:instancePath+"/hasVariants",schemaPath:"#/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate15.errors = [{instancePath:instancePath+"/hasVariants",schemaPath:"#/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid0 = _errs17 === errors;
@@ -940,11 +1186,11 @@ if(data.status !== undefined){
 let data9 = data.status;
 const _errs19 = errors;
 if(typeof data9 !== "string"){
-validate14.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 if(!((((data9 === "DRAFT") || (data9 === "ACTIVE")) || (data9 === "ARCHIVED")) || (data9 === "OUT_OF_STOCK"))){
-validate14.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema17.properties.status.enum},message:"must be equal to one of the allowed values"}];
+validate15.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema18.properties.status.enum},message:"must be equal to one of the allowed values"}];
 return false;
 }
 var valid0 = _errs19 === errors;
@@ -956,7 +1202,7 @@ if(valid0){
 if(data.isBlocked !== undefined){
 const _errs21 = errors;
 if(typeof data.isBlocked !== "boolean"){
-validate14.errors = [{instancePath:instancePath+"/isBlocked",schemaPath:"#/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate15.errors = [{instancePath:instancePath+"/isBlocked",schemaPath:"#/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid0 = _errs21 === errors;
@@ -968,7 +1214,7 @@ if(valid0){
 if(data.rating !== undefined){
 const _errs23 = errors;
 if(!(typeof data.rating == "number")){
-validate14.errors = [{instancePath:instancePath+"/rating",schemaPath:"#/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate15.errors = [{instancePath:instancePath+"/rating",schemaPath:"#/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs23 === errors;
@@ -982,7 +1228,7 @@ const _errs25 = errors;
 if(errors === _errs25){
 if(errors === _errs25){
 if(!(typeof data.createdAt === "string")){
-validate14.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -998,7 +1244,7 @@ const _errs27 = errors;
 if(errors === _errs27){
 if(errors === _errs27){
 if(!(typeof data.updatedAt === "string")){
-validate14.errors = [{instancePath:instancePath+"/updatedAt",schemaPath:"#/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate15.errors = [{instancePath:instancePath+"/updatedAt",schemaPath:"#/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1023,25 +1269,25 @@ var valid0 = true;
 }
 }
 else {
-validate14.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate15.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate14.errors = vErrors;
+validate15.errors = vErrors;
 return errors === 0;
 }
 
-export const validateMyProductsPageDto = validate15;
-const schema18 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/ProductDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
+export const validateMyProductsPageDto = validate16;
+const schema19 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/ProductDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
 
-function validate15(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate16(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
 if((((((data.items === undefined) && (missing0 = "items")) || ((data.total === undefined) && (missing0 = "total"))) || ((data.page === undefined) && (missing0 = "page"))) || ((data.limit === undefined) && (missing0 = "limit"))) || ((data.totalPages === undefined) && (missing0 = "totalPages"))){
-validate15.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+validate16.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
@@ -1060,14 +1306,14 @@ if(errors === _errs4){
 if(data1 && typeof data1 == "object" && !Array.isArray(data1)){
 let missing1;
 if(((((((((((((((((((data1.id === undefined) && (missing1 = "id")) || ((data1.shopId === undefined) && (missing1 = "shopId"))) || ((data1.ownerUserId === undefined) && (missing1 = "ownerUserId"))) || ((data1.categoryId === undefined) && (missing1 = "categoryId"))) || ((data1.name === undefined) && (missing1 = "name"))) || ((data1.slug === undefined) && (missing1 = "slug"))) || ((data1.description === undefined) && (missing1 = "description"))) || ((data1.price === undefined) && (missing1 = "price"))) || ((data1.oldPrice === undefined) && (missing1 = "oldPrice"))) || ((data1.imageUrl === undefined) && (missing1 = "imageUrl"))) || ((data1.images === undefined) && (missing1 = "images"))) || ((data1.attributes === undefined) && (missing1 = "attributes"))) || ((data1.hasVariants === undefined) && (missing1 = "hasVariants"))) || ((data1.status === undefined) && (missing1 = "status"))) || ((data1.isBlocked === undefined) && (missing1 = "isBlocked"))) || ((data1.rating === undefined) && (missing1 = "rating"))) || ((data1.createdAt === undefined) && (missing1 = "createdAt"))) || ((data1.updatedAt === undefined) && (missing1 = "updatedAt"))){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
 return false;
 }
 else {
 if(data1.id !== undefined){
 const _errs6 = errors;
 if(typeof data1.id !== "string"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/ProductDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/ProductDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs6 === errors;
@@ -1079,7 +1325,7 @@ if(valid3){
 if(data1.shopId !== undefined){
 const _errs8 = errors;
 if(typeof data1.shopId !== "string"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/ProductDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/ProductDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs8 === errors;
@@ -1091,7 +1337,7 @@ if(valid3){
 if(data1.ownerUserId !== undefined){
 const _errs10 = errors;
 if(typeof data1.ownerUserId !== "string"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/ownerUserId",schemaPath:"#/components/schemas/ProductDto/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/ownerUserId",schemaPath:"#/components/schemas/ProductDto/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs10 === errors;
@@ -1103,7 +1349,7 @@ if(valid3){
 if(data1.name !== undefined){
 const _errs12 = errors;
 if(typeof data1.name !== "string"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/name",schemaPath:"#/components/schemas/ProductDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/name",schemaPath:"#/components/schemas/ProductDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs12 === errors;
@@ -1115,7 +1361,7 @@ if(valid3){
 if(data1.slug !== undefined){
 const _errs14 = errors;
 if(typeof data1.slug !== "string"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/slug",schemaPath:"#/components/schemas/ProductDto/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/slug",schemaPath:"#/components/schemas/ProductDto/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs14 === errors;
@@ -1127,7 +1373,7 @@ if(valid3){
 if(data1.price !== undefined){
 const _errs16 = errors;
 if(!(typeof data1.price == "number")){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/price",schemaPath:"#/components/schemas/ProductDto/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/price",schemaPath:"#/components/schemas/ProductDto/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid3 = _errs16 === errors;
@@ -1146,7 +1392,7 @@ const len1 = data8.length;
 for(let i1=0; i1<len1; i1++){
 const _errs20 = errors;
 if(typeof data8[i1] !== "string"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/images/" + i1,schemaPath:"#/components/schemas/ProductDto/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/images/" + i1,schemaPath:"#/components/schemas/ProductDto/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid4 = _errs20 === errors;
@@ -1156,7 +1402,7 @@ break;
 }
 }
 else {
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/images",schemaPath:"#/components/schemas/ProductDto/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/images",schemaPath:"#/components/schemas/ProductDto/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1169,7 +1415,7 @@ if(valid3){
 if(data1.hasVariants !== undefined){
 const _errs22 = errors;
 if(typeof data1.hasVariants !== "boolean"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/hasVariants",schemaPath:"#/components/schemas/ProductDto/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/hasVariants",schemaPath:"#/components/schemas/ProductDto/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid3 = _errs22 === errors;
@@ -1182,11 +1428,11 @@ if(data1.status !== undefined){
 let data11 = data1.status;
 const _errs24 = errors;
 if(typeof data11 !== "string"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 if(!((((data11 === "DRAFT") || (data11 === "ACTIVE")) || (data11 === "ARCHIVED")) || (data11 === "OUT_OF_STOCK"))){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/enum",keyword:"enum",params:{allowedValues: schema17.properties.status.enum},message:"must be equal to one of the allowed values"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/enum",keyword:"enum",params:{allowedValues: schema18.properties.status.enum},message:"must be equal to one of the allowed values"}];
 return false;
 }
 var valid3 = _errs24 === errors;
@@ -1198,7 +1444,7 @@ if(valid3){
 if(data1.isBlocked !== undefined){
 const _errs26 = errors;
 if(typeof data1.isBlocked !== "boolean"){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/isBlocked",schemaPath:"#/components/schemas/ProductDto/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/isBlocked",schemaPath:"#/components/schemas/ProductDto/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid3 = _errs26 === errors;
@@ -1210,7 +1456,7 @@ if(valid3){
 if(data1.rating !== undefined){
 const _errs28 = errors;
 if(!(typeof data1.rating == "number")){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/rating",schemaPath:"#/components/schemas/ProductDto/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/rating",schemaPath:"#/components/schemas/ProductDto/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid3 = _errs28 === errors;
@@ -1224,7 +1470,7 @@ const _errs30 = errors;
 if(errors === _errs30){
 if(errors === _errs30){
 if(!(typeof data1.createdAt === "string")){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/createdAt",schemaPath:"#/components/schemas/ProductDto/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/createdAt",schemaPath:"#/components/schemas/ProductDto/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1240,7 +1486,7 @@ const _errs32 = errors;
 if(errors === _errs32){
 if(errors === _errs32){
 if(!(typeof data1.updatedAt === "string")){
-validate15.errors = [{instancePath:instancePath+"/items/" + i0+"/updatedAt",schemaPath:"#/components/schemas/ProductDto/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/updatedAt",schemaPath:"#/components/schemas/ProductDto/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1265,7 +1511,7 @@ var valid3 = true;
 }
 }
 else {
-validate15.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate16.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
@@ -1276,7 +1522,7 @@ break;
 }
 }
 else {
-validate15.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate16.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1289,7 +1535,7 @@ if(valid0){
 if(data.total !== undefined){
 const _errs34 = errors;
 if(!(typeof data.total == "number")){
-validate15.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate16.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs34 === errors;
@@ -1301,7 +1547,7 @@ if(valid0){
 if(data.page !== undefined){
 const _errs36 = errors;
 if(!(typeof data.page == "number")){
-validate15.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate16.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs36 === errors;
@@ -1313,7 +1559,7 @@ if(valid0){
 if(data.limit !== undefined){
 const _errs38 = errors;
 if(!(typeof data.limit == "number")){
-validate15.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate16.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs38 === errors;
@@ -1325,7 +1571,7 @@ if(valid0){
 if(data.totalPages !== undefined){
 const _errs40 = errors;
 if(!(typeof data.totalPages == "number")){
-validate15.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate16.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs40 === errors;
@@ -1333,80 +1579,6 @@ var valid0 = _errs40 === errors;
 else {
 var valid0 = true;
 }
-}
-}
-}
-}
-}
-}
-else {
-validate15.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
-return false;
-}
-}
-validate15.errors = vErrors;
-return errors === 0;
-}
-
-export const validateProductVariantDto = validate16;
-
-function validate16(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
-let vErrors = null;
-let errors = 0;
-if(errors === 0){
-if(data && typeof data == "object" && !Array.isArray(data)){
-let missing0;
-if(((((((((((data.id === undefined) && (missing0 = "id")) || ((data.productId === undefined) && (missing0 = "productId"))) || ((data.sku === undefined) && (missing0 = "sku"))) || ((data.name === undefined) && (missing0 = "name"))) || ((data.attributes === undefined) && (missing0 = "attributes"))) || ((data.price === undefined) && (missing0 = "price"))) || ((data.oldPrice === undefined) && (missing0 = "oldPrice"))) || ((data.barcode === undefined) && (missing0 = "barcode"))) || ((data.imageUrl === undefined) && (missing0 = "imageUrl"))) || ((data.isActive === undefined) && (missing0 = "isActive"))){
-validate16.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
-return false;
-}
-else {
-if(data.id !== undefined){
-const _errs1 = errors;
-if(typeof data.id !== "string"){
-validate16.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid0 = _errs1 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.productId !== undefined){
-const _errs3 = errors;
-if(typeof data.productId !== "string"){
-validate16.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid0 = _errs3 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.sku !== undefined){
-const _errs5 = errors;
-if(typeof data.sku !== "string"){
-validate16.errors = [{instancePath:instancePath+"/sku",schemaPath:"#/properties/sku/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid0 = _errs5 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.isActive !== undefined){
-const _errs7 = errors;
-if(typeof data.isActive !== "boolean"){
-validate16.errors = [{instancePath:instancePath+"/isActive",schemaPath:"#/properties/isActive/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
-return false;
-}
-var valid0 = _errs7 === errors;
-}
-else {
-var valid0 = true;
 }
 }
 }
@@ -1422,9 +1594,7 @@ validate16.errors = vErrors;
 return errors === 0;
 }
 
-export const validateCartDto = validate17;
-const schema21 = {"type":"object","properties":{"id":{},"customerId":{},"sessionId":{},"items":{"type":"array","items":{"$ref":"#/components/schemas/CartItemDto"}},"totalAmount":{"type":"number"},"totalQuantity":{"type":"number"}},"required":["id","customerId","sessionId","items","totalAmount","totalQuantity"]};
-const schema22 = {"type":"object","properties":{"id":{"type":"string"},"productId":{"type":"string"},"variantId":{"type":"string"},"shopId":{"type":"string"},"quantity":{"type":"number"},"unitPriceSnapshot":{"type":"number"},"lineTotal":{"type":"number"}},"required":["id","productId","variantId","shopId","quantity","unitPriceSnapshot","lineTotal"]};
+export const validateProductVariantDto = validate17;
 
 function validate17(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -1432,8 +1602,84 @@ let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
-if(((((((data.id === undefined) && (missing0 = "id")) || ((data.customerId === undefined) && (missing0 = "customerId"))) || ((data.sessionId === undefined) && (missing0 = "sessionId"))) || ((data.items === undefined) && (missing0 = "items"))) || ((data.totalAmount === undefined) && (missing0 = "totalAmount"))) || ((data.totalQuantity === undefined) && (missing0 = "totalQuantity"))){
+if(((((((((((data.id === undefined) && (missing0 = "id")) || ((data.productId === undefined) && (missing0 = "productId"))) || ((data.sku === undefined) && (missing0 = "sku"))) || ((data.name === undefined) && (missing0 = "name"))) || ((data.attributes === undefined) && (missing0 = "attributes"))) || ((data.price === undefined) && (missing0 = "price"))) || ((data.oldPrice === undefined) && (missing0 = "oldPrice"))) || ((data.barcode === undefined) && (missing0 = "barcode"))) || ((data.imageUrl === undefined) && (missing0 = "imageUrl"))) || ((data.isActive === undefined) && (missing0 = "isActive"))){
 validate17.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.id !== undefined){
+const _errs1 = errors;
+if(typeof data.id !== "string"){
+validate17.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.productId !== undefined){
+const _errs3 = errors;
+if(typeof data.productId !== "string"){
+validate17.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs3 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.sku !== undefined){
+const _errs5 = errors;
+if(typeof data.sku !== "string"){
+validate17.errors = [{instancePath:instancePath+"/sku",schemaPath:"#/properties/sku/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs5 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.isActive !== undefined){
+const _errs7 = errors;
+if(typeof data.isActive !== "boolean"){
+validate17.errors = [{instancePath:instancePath+"/isActive",schemaPath:"#/properties/isActive/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+return false;
+}
+var valid0 = _errs7 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+}
+}
+else {
+validate17.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate17.errors = vErrors;
+return errors === 0;
+}
+
+export const validateCartDto = validate18;
+const schema22 = {"type":"object","properties":{"id":{},"customerId":{},"sessionId":{},"items":{"type":"array","items":{"$ref":"#/components/schemas/CartItemDto"}},"totalAmount":{"type":"number"},"totalQuantity":{"type":"number"}},"required":["id","customerId","sessionId","items","totalAmount","totalQuantity"]};
+const schema23 = {"type":"object","properties":{"id":{"type":"string"},"productId":{"type":"string"},"variantId":{"type":"string"},"shopId":{"type":"string"},"quantity":{"type":"number"},"unitPriceSnapshot":{"type":"number"},"lineTotal":{"type":"number"}},"required":["id","productId","variantId","shopId","quantity","unitPriceSnapshot","lineTotal"]};
+
+function validate18(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if(((((((data.id === undefined) && (missing0 = "id")) || ((data.customerId === undefined) && (missing0 = "customerId"))) || ((data.sessionId === undefined) && (missing0 = "sessionId"))) || ((data.items === undefined) && (missing0 = "items"))) || ((data.totalAmount === undefined) && (missing0 = "totalAmount"))) || ((data.totalQuantity === undefined) && (missing0 = "totalQuantity"))){
+validate18.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
@@ -1452,14 +1698,14 @@ if(errors === _errs4){
 if(data1 && typeof data1 == "object" && !Array.isArray(data1)){
 let missing1;
 if((((((((data1.id === undefined) && (missing1 = "id")) || ((data1.productId === undefined) && (missing1 = "productId"))) || ((data1.variantId === undefined) && (missing1 = "variantId"))) || ((data1.shopId === undefined) && (missing1 = "shopId"))) || ((data1.quantity === undefined) && (missing1 = "quantity"))) || ((data1.unitPriceSnapshot === undefined) && (missing1 = "unitPriceSnapshot"))) || ((data1.lineTotal === undefined) && (missing1 = "lineTotal"))){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
 return false;
 }
 else {
 if(data1.id !== undefined){
 const _errs6 = errors;
 if(typeof data1.id !== "string"){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/CartItemDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/CartItemDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs6 === errors;
@@ -1471,7 +1717,7 @@ if(valid3){
 if(data1.productId !== undefined){
 const _errs8 = errors;
 if(typeof data1.productId !== "string"){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0+"/productId",schemaPath:"#/components/schemas/CartItemDto/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/productId",schemaPath:"#/components/schemas/CartItemDto/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs8 === errors;
@@ -1483,7 +1729,7 @@ if(valid3){
 if(data1.variantId !== undefined){
 const _errs10 = errors;
 if(typeof data1.variantId !== "string"){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0+"/variantId",schemaPath:"#/components/schemas/CartItemDto/properties/variantId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/variantId",schemaPath:"#/components/schemas/CartItemDto/properties/variantId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs10 === errors;
@@ -1495,7 +1741,7 @@ if(valid3){
 if(data1.shopId !== undefined){
 const _errs12 = errors;
 if(typeof data1.shopId !== "string"){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/CartItemDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/CartItemDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs12 === errors;
@@ -1507,7 +1753,7 @@ if(valid3){
 if(data1.quantity !== undefined){
 const _errs14 = errors;
 if(!(typeof data1.quantity == "number")){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/CartItemDto/properties/quantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/CartItemDto/properties/quantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid3 = _errs14 === errors;
@@ -1519,7 +1765,7 @@ if(valid3){
 if(data1.unitPriceSnapshot !== undefined){
 const _errs16 = errors;
 if(!(typeof data1.unitPriceSnapshot == "number")){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPriceSnapshot",schemaPath:"#/components/schemas/CartItemDto/properties/unitPriceSnapshot/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPriceSnapshot",schemaPath:"#/components/schemas/CartItemDto/properties/unitPriceSnapshot/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid3 = _errs16 === errors;
@@ -1531,7 +1777,7 @@ if(valid3){
 if(data1.lineTotal !== undefined){
 const _errs18 = errors;
 if(!(typeof data1.lineTotal == "number")){
-validate17.errors = [{instancePath:instancePath+"/items/" + i0+"/lineTotal",schemaPath:"#/components/schemas/CartItemDto/properties/lineTotal/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/lineTotal",schemaPath:"#/components/schemas/CartItemDto/properties/lineTotal/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid3 = _errs18 === errors;
@@ -1548,7 +1794,7 @@ var valid3 = true;
 }
 }
 else {
-validate17.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
@@ -1559,7 +1805,7 @@ break;
 }
 }
 else {
-validate17.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate18.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1572,7 +1818,7 @@ if(valid0){
 if(data.totalAmount !== undefined){
 const _errs20 = errors;
 if(!(typeof data.totalAmount == "number")){
-validate17.errors = [{instancePath:instancePath+"/totalAmount",schemaPath:"#/properties/totalAmount/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate18.errors = [{instancePath:instancePath+"/totalAmount",schemaPath:"#/properties/totalAmount/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs20 === errors;
@@ -1584,7 +1830,7 @@ if(valid0){
 if(data.totalQuantity !== undefined){
 const _errs22 = errors;
 if(!(typeof data.totalQuantity == "number")){
-validate17.errors = [{instancePath:instancePath+"/totalQuantity",schemaPath:"#/properties/totalQuantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate18.errors = [{instancePath:instancePath+"/totalQuantity",schemaPath:"#/properties/totalQuantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs22 === errors;
@@ -1597,33 +1843,33 @@ var valid0 = true;
 }
 }
 else {
-validate17.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate18.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate17.errors = vErrors;
+validate18.errors = vErrors;
 return errors === 0;
 }
 
-export const validateFavoritesPageDto = validate18;
-const schema23 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/FavoriteDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
-const schema24 = {"type":"object","properties":{"id":{"type":"string"},"userId":{},"sessionId":{},"productId":{"type":"string"},"product":{"$ref":"#/components/schemas/StorefrontProductDto"},"createdAt":{"format":"date-time","type":"string"}},"required":["id","userId","sessionId","productId","product","createdAt"]};
+export const validateFavoritesPageDto = validate19;
+const schema24 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/FavoriteDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
+const schema25 = {"type":"object","properties":{"id":{"type":"string"},"userId":{},"sessionId":{},"productId":{"type":"string"},"product":{"$ref":"#/components/schemas/StorefrontProductDto"},"createdAt":{"format":"date-time","type":"string"}},"required":["id","userId","sessionId","productId","product","createdAt"]};
 
-function validate19(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
 if(((((((data.id === undefined) && (missing0 = "id")) || ((data.userId === undefined) && (missing0 = "userId"))) || ((data.sessionId === undefined) && (missing0 = "sessionId"))) || ((data.productId === undefined) && (missing0 = "productId"))) || ((data.product === undefined) && (missing0 = "product"))) || ((data.createdAt === undefined) && (missing0 = "createdAt"))){
-validate19.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+validate20.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
 if(data.id !== undefined){
 const _errs1 = errors;
 if(typeof data.id !== "string"){
-validate19.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate20.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs1 === errors;
@@ -1635,7 +1881,7 @@ if(valid0){
 if(data.productId !== undefined){
 const _errs3 = errors;
 if(typeof data.productId !== "string"){
-validate19.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate20.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs3 === errors;
@@ -1661,7 +1907,7 @@ const _errs6 = errors;
 if(errors === _errs6){
 if(errors === _errs6){
 if(!(typeof data.createdAt === "string")){
-validate19.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate20.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1677,23 +1923,23 @@ var valid0 = true;
 }
 }
 else {
-validate19.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate20.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate19.errors = vErrors;
+validate20.errors = vErrors;
 return errors === 0;
 }
 
 
-function validate18(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate19(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
 if((((((data.items === undefined) && (missing0 = "items")) || ((data.total === undefined) && (missing0 = "total"))) || ((data.page === undefined) && (missing0 = "page"))) || ((data.limit === undefined) && (missing0 = "limit"))) || ((data.totalPages === undefined) && (missing0 = "totalPages"))){
-validate18.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+validate19.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
@@ -1706,8 +1952,8 @@ var valid1 = true;
 const len0 = data0.length;
 for(let i0=0; i0<len0; i0++){
 const _errs3 = errors;
-if(!(validate19(data0[i0], {instancePath:instancePath+"/items/" + i0,parentData:data0,parentDataProperty:i0,rootData}))){
-vErrors = vErrors === null ? validate19.errors : vErrors.concat(validate19.errors);
+if(!(validate20(data0[i0], {instancePath:instancePath+"/items/" + i0,parentData:data0,parentDataProperty:i0,rootData}))){
+vErrors = vErrors === null ? validate20.errors : vErrors.concat(validate20.errors);
 errors = vErrors.length;
 }
 var valid1 = _errs3 === errors;
@@ -1717,7 +1963,7 @@ break;
 }
 }
 else {
-validate18.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate19.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1730,7 +1976,7 @@ if(valid0){
 if(data.total !== undefined){
 const _errs4 = errors;
 if(!(typeof data.total == "number")){
-validate18.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate19.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs4 === errors;
@@ -1742,7 +1988,7 @@ if(valid0){
 if(data.page !== undefined){
 const _errs6 = errors;
 if(!(typeof data.page == "number")){
-validate18.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate19.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs6 === errors;
@@ -1754,7 +2000,7 @@ if(valid0){
 if(data.limit !== undefined){
 const _errs8 = errors;
 if(!(typeof data.limit == "number")){
-validate18.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate19.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs8 === errors;
@@ -1766,7 +2012,7 @@ if(valid0){
 if(data.totalPages !== undefined){
 const _errs10 = errors;
 if(!(typeof data.totalPages == "number")){
-validate18.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate19.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs10 === errors;
@@ -1781,10 +2027,10 @@ var valid0 = true;
 }
 }
 else {
-validate18.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate19.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate18.errors = vErrors;
+validate19.errors = vErrors;
 return errors === 0;
 }
