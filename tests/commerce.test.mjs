@@ -12,7 +12,7 @@ test('null prices fall back to a valid sale price; zero stays zero', () => {
 
 test('cart totals use the selected variant price and normalize invalid quantities', async () => {
   const { cartService, cartTotals } = loadTypeScript('src/services/cart.service.ts', {
-    '@/lib/browser-api-client': { browserApiRequest: async () => ({ items: [
+    '@/lib/api': { apiRequest: async () => ({ items: [
       { id: 'a', product, variant: { id: 'v', price: '250' }, quantity: 2 },
       { id: 'b', product, unitPrice: 0, quantity: Infinity },
     ] }) },
@@ -26,7 +26,7 @@ test('cart totals use the selected variant price and normalize invalid quantitie
 test('invalid cart quantities never reach the backend', async () => {
   let requests = 0;
   const { cartService } = loadTypeScript('src/services/cart.service.ts', {
-    '@/lib/browser-api-client': { browserApiRequest: async () => { requests++; } },
+    '@/lib/api': { apiRequest: async () => { requests++; } },
   });
   for (const quantity of [0, -1, 1.5, Infinity, NaN]) {
     await assert.rejects(cartService.add({ product, variantId: 'v', quantity }));
@@ -38,10 +38,10 @@ test('invalid cart quantities never reach the backend', async () => {
 test('clearing an order snapshot does not refetch and delete newly added items', async () => {
   const calls = [];
   const { cartService } = loadTypeScript('src/services/cart.service.ts', {
-    '@/lib/browser-api-client': { browserApiRequest: async (...args) => { calls.push(args); } },
+    '@/lib/api': { apiRequest: async (...args) => { calls.push(args); } },
   });
   await cartService.clear({ items: [{ id: 'original' }] });
-  assert.deepEqual(calls, [['/api/cart/items/original', { method: 'DELETE' }]]);
+  assert.deepEqual(calls, [['/cart/items/original', { method: 'DELETE' }]]);
 });
 
 test('a saved order remains successful if cart cleanup fails', async (t) => {
@@ -69,8 +69,8 @@ test('API client preserves Headers authorization when sending JSON', async (t) =
     assert.equal(init.body, '{"name":"test"}');
     return Response.json({ ok: true });
   });
-  const { apiClient } = loadTypeScript('src/lib/api-client.ts', { '@/config/env': { env: { apiUrl: 'https://example.test/api/v1', apiTimeoutMs: 1000 } } });
-  assert.deepEqual(await apiClient('/products', { method: 'POST', body: { name: 'test' }, headers: new Headers({ Authorization: 'Bearer test' }) }), { ok: true });
+  const { apiRequest } = loadTypeScript('src/lib/api.ts', { '@/config/env': { env: { apiUrl: 'https://example.test/api/v1', apiTimeoutMs: 1000 } } });
+  assert.deepEqual(await apiRequest('/products', { method: 'POST', body: { name: 'test' }, headers: new Headers({ Authorization: 'Bearer test' }) }), { ok: true });
 });
 
 test('product outages are not reported as missing products', async () => {
@@ -78,7 +78,7 @@ test('product outages are not reported as missing products', async () => {
   let status = 503;
   const { productService } = loadTypeScript('src/services/product.service.ts', {
     '@/config/env': { env: { apiUrl: 'https://example.test', useMockData: false } },
-    '@/lib/api-client': { ApiError, apiClient: async () => { throw new ApiError(status); } },
+    '@/lib/api': { ApiError, apiRequest: async () => { throw new ApiError(status); } },
   });
   await assert.rejects(productService.getById(1), { status: 503 });
   status = 404;

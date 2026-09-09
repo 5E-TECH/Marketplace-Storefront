@@ -1,66 +1,14 @@
-import type { ID } from "./commerce";
+import type { components } from "@/generated/api-types";
 
-export type StorefrontMediaDto = { url?: string; src?: string; path?: string; imageUrl?: string; fileUrl?: string };
-export type StorefrontShopDto = { id: ID; name: string; slug: string; logoUrl?: string; status?: string };
-export type StorefrontCategoryDto = { id: ID; name: string; slug?: string };
-export type StorefrontVariantDto = {
-  id: ID;
-  name?: string;
-  sku?: string;
-  price?: number | string;
-  oldPrice?: number | string;
-  stock?: number;
-  color?: string;
-  size?: string;
-  imageUrl?: string;
-  images?: Array<string | StorefrontMediaDto>;
-  attributes?: Record<string, string | number | boolean>;
-};
-
-export type StorefrontProductDto = {
-  id: ID;
-  name: string;
-  description?: string;
-  shortDescription?: string;
-  price?: number | string;
-  oldPrice?: number | string;
-  salePrice?: number | string;
-  status?: string;
-  imageUrl?: string;
-  images?: Array<string | StorefrontMediaDto>;
-  media?: Array<string | StorefrontMediaDto>;
-  colors?: Array<string | { hex?: string; value?: string }>;
-  rating?: number;
-  averageRating?: number;
-  reviewsCount?: number;
-  category?: StorefrontCategoryDto;
-  shop?: StorefrontShopDto;
-  variants?: StorefrontVariantDto[];
-  createdAt?: string;
-  updatedAt?: string;
-  [key: string]: unknown;
-};
-
-export type StorefrontProductsResponse = { items: StorefrontProductDto[]; total: number; page: number; limit: number; totalPages: number };
-export type StorefrontProductsEnvelope = StorefrontProductsResponse | { data: StorefrontProductsResponse };
-export type StorefrontProductEnvelope = StorefrontProductDto | { data: StorefrontProductDto };
-
-export type ProductVariantInput = {
-  name?: string;
-  sku?: string;
-  price: number;
-  oldPrice?: number;
-  stock?: number;
-  color?: string;
-  size?: string;
-  imageUrl?: string;
-  images?: Array<string | StorefrontMediaDto>;
-  attributes?: Record<string, string | number | boolean>;
-};
-
-export type ProductVariantUpdateInput = Partial<ProductVariantInput>;
-export type StorefrontVariantEnvelope = StorefrontVariantDto | { data: StorefrontVariantDto };
-export type StorefrontVariantsEnvelope = StorefrontVariantDto[] | { data: StorefrontVariantDto[] } | { items: StorefrontVariantDto[] } | { data: { items: StorefrontVariantDto[] } };
-
-export type ProductCreateInput = Omit<StorefrontProductDto, "id" | "createdAt" | "updatedAt">;
-export type ProductUpdateInput = Partial<ProductCreateInput>;
+// Backend DTOs come only from the checked-in OpenAPI snapshot.
+export type StorefrontProductDto = components["schemas"]["StorefrontProductDto"];
+export type StorefrontProductsResponse = components["schemas"]["StorefrontProductsPageDto"];
+export type StorefrontVariantDto = components["schemas"]["ProductVariantDto"];
+export type StorefrontShopDto = components["schemas"]["SellerShopDto"];
+export type StorefrontCategoryDto = components["schemas"]["StorefrontCategoryDto"];
+export type ProductCreateInput = components["schemas"]["CreateProductDto"];
+export type ProductUpdateInput = components["schemas"]["UpdateProductDto"];
+export type ProductVariantInput = components["schemas"]["CreateProductVariantDto"];
+export type ProductVariantUpdateInput = components["schemas"]["UpdateProductVariantDto"];
+export type ProductManagementDto = components["schemas"]["ProductDto"];
+export type MyProductsResponse = components["schemas"]["MyProductsPageDto"];

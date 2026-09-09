@@ -20,7 +20,7 @@ export function loadTypeScript(entry, mocks = {}, cache = new Map()) {
     if (Object.hasOwn(mocks, specifier)) return mocks[specifier];
     if (specifier.startsWith('@/') || specifier.startsWith('.')) {
       const target = specifier.startsWith('@/') ? path.join(root, 'src', specifier.slice(2)) : path.resolve(path.dirname(filename), specifier);
-      return loadTypeScript(`${target}.ts`, mocks, cache);
+      return loadTypeScript((fs.existsSync(`${target}.ts`) ? `${target}.ts` : `${target}.js`), mocks, cache);
     }
     return require(specifier);
   };

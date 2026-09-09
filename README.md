@@ -45,3 +45,33 @@ Obuna formasi, ijtimoiy tarmoq havolalari, manzillar boshqaruvi va marketingdagi
 `.gitignore` maxfiy `.env` fayllari, dependency’lar va build natijalarini chiqarib tashlaydi. Faqat `.env.example` commit qilinadi. `.github/workflows/ci.yml` har bir push va pull request uchun tekshiruvlarni bajaradi.
 
 Repository manzili va GitHub yozish huquqi kerak. Mavjud repository bilan ishlaganda avval uning tarixini olish va mos branchda birlashtirish lozim; mavjud tarixni force push bilan almashtirmang.
+
+## Yagona API qatlami
+
+Barcha backend so‘rovlari `src/lib/api.ts` ichidagi `apiRequest` orqali o‘tadi. Sahifa va service’larda to‘g‘ridan-to‘g‘ri `fetch` ishlatishni ESLint taqiqlaydi. SSR backendning `.env.local` dagi `API_BASE_URL` manziliga murojaat qiladi. Brauzer shu domenning `/api/backend/*` yo‘li orqali ishlaydi; backend manzili client bundle’ga kerak emas. Serverdagi shaxsiy so‘rovlarga `headers` orqali cookie/token aniq berilishi kerak; foydalanuvchi sessiyasi global server holatida saqlanmaydi.
+
+```ts
+import { apiRequest } from "@/lib/api";
+import { validateStorefrontProductsPageDto } from "@/generated/api-validators";
+
+const products = await apiRequest("/storefront/products", {
+  params: { page: 1, limit: 5 },
+  validate: validateStorefrontProductsPageDto,
+});
+```
+
+`ApiError` ichida `status`, `message`, `kind` mavjud. `kind`: `network`, `timeout`, `aborted`, `not_found`, `http`, `invalid_response`, `configuration`. Timeout javob tanasini o‘qishni ham qamrab oladi. GET va mutatsiyalar avtomatik takrorlanmaydi. 204/205 bo‘sh javoblar mutatsiyalar uchun qabul qilinadi; katalog javobi sifatida xato beradi.
+
+`/api-test` sahifasi haqiqiy backenddan mahsulotlarni SSR va brauzerda alohida yuklaydi. Bu sahifa `USE_MOCK_DATA`ni chetlab o‘tadi: demo mahsulotlar muvaffaqiyat deb ko‘rsatilmaydi. Natija va xatolar sahifada ko‘rinadi.
+
+OpenAPI manbasi, generatsiya buyruqlari va kontraktdagi noaniqliklar: [contract/README.md](contract/README.md).
+
+Haqiqiy backend va Chrome bilan smoke test (alohida terminalda `npm run dev` yoki build qilingan server ishlab tursin):
+
+```sh
+npm run test:api:live
+# Boshqa frontend porti uchun:
+API_TEST_URL=http://127.0.0.1:3101 npm run test:api:live
+```
+
+Test Google Chrome (`CHROME_PATH` bilan almashtirish mumkin) orqali mahsulotlarning SSR HTML va brauzerda chiqishini, internet uzilgandagi xatoni va qayta ulanishni tekshiradi. U real backendga bog‘liq bo‘lgani uchun odatiy CI unit testlaridan alohida ishlatiladi.

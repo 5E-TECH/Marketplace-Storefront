@@ -1,16 +1,15 @@
-import { apiClient } from "@/lib/api-client";
+import { apiRequest } from "@/lib/api";
+import { validateMyProductsPageDto, validateProductDto, validateProductVariantDto, validateStorefrontProductsPageDto } from "@/generated/api-validators";
 import type { ID, ProductQuery } from "@/types/commerce";
 import type {
   ProductVariantInput,
   ProductVariantUpdateInput,
   ProductCreateInput,
   ProductUpdateInput,
-  StorefrontProductDto,
-  StorefrontProductEnvelope,
-  StorefrontProductsEnvelope,
+  ProductManagementDto,
+  MyProductsResponse,
+  StorefrontProductsResponse,
   StorefrontVariantDto,
-  StorefrontVariantEnvelope,
-  StorefrontVariantsEnvelope,
 } from "@/types/storefront-api";
 
 const PRODUCTS_PATH = "/products";
@@ -20,23 +19,6 @@ export type MyProductsQuery = ProductQuery & { status?: string };
 const authorization = (accessToken: string): HeadersInit => {
   if (!accessToken.trim()) throw new Error("Product management API uchun access token kerak");
   return { Authorization: `Bearer ${accessToken}` };
-};
-
-const unwrapVariant = (response: StorefrontVariantEnvelope): StorefrontVariantDto => {
-  const data = (response as { data?: unknown }).data;
-  return data && typeof data === "object" ? data as StorefrontVariantDto : response as StorefrontVariantDto;
-};
-
-const unwrapProduct = (response: StorefrontProductEnvelope): StorefrontProductDto => {
-  const data = (response as { data?: unknown }).data;
-  return data && typeof data === "object" ? data as StorefrontProductDto : response as StorefrontProductDto;
-};
-
-const unwrapVariants = (response: StorefrontVariantsEnvelope): StorefrontVariantDto[] => {
-  if (Array.isArray(response)) return response;
-  const value = "data" in response ? response.data : response;
-  if (Array.isArray(value)) return value;
-  return Array.isArray(value.items) ? value.items : [];
 };
 
 const queryParams = (query: MyProductsQuery) => ({
@@ -52,44 +34,47 @@ const queryParams = (query: MyProductsQuery) => ({
 
 // Seller/admin endpointlari. Token auth service ulangach UI qatlamidan beriladi.
 export const productAdminService = {
-  list(query: ProductQuery, accessToken: string): Promise<StorefrontProductsEnvelope> {
-    return apiClient(PRODUCTS_PATH, { params: queryParams(query), headers: authorization(accessToken), cache: "no-store" });
+  list(query: ProductQuery, accessToken: string): Promise<StorefrontProductsResponse> {
+    return apiRequest(PRODUCTS_PATH, { params: queryParams(query), headers: authorization(accessToken), cache: "no-store", validate: validateStorefrontProductsPageDto });
   },
 
-  listMine(query: MyProductsQuery, accessToken: string): Promise<StorefrontProductsEnvelope> {
-    return apiClient(`${PRODUCTS_PATH}/my`, { params: queryParams(query), headers: authorization(accessToken), cache: "no-store" });
+  listMine(query: MyProductsQuery, accessToken: string): Promise<MyProductsResponse> {
+    return apiRequest(`${PRODUCTS_PATH}/my`, { params: queryParams(query), headers: authorization(accessToken), cache: "no-store", validate: validateMyProductsPageDto });
   },
 
-  async create(input: ProductCreateInput, accessToken: string): Promise<StorefrontProductDto> {
-    const response = await apiClient<StorefrontProductEnvelope>(PRODUCTS_PATH, {
+  async create(input: ProductCreateInput, accessToken: string): Promise<ProductManagementDto> {
+    const response = await apiRequest<ProductManagementDto>(PRODUCTS_PATH, {
       method: "POST",
       body: input,
       headers: authorization(accessToken),
       cache: "no-store",
+      validate: validateProductDto,
     });
-    return unwrapProduct(response);
+    return response;
   },
 
-  async getById(productId: ID, accessToken: string): Promise<StorefrontProductDto> {
-    const response = await apiClient<StorefrontProductEnvelope>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}`, {
+  async getById(productId: ID, accessToken: string): Promise<ProductManagementDto> {
+    const response = await apiRequest<ProductManagementDto>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}`, {
       headers: authorization(accessToken),
       cache: "no-store",
+      validate: validateProductDto,
     });
-    return unwrapProduct(response);
+    return response;
   },
 
-  async update(productId: ID, input: ProductUpdateInput, accessToken: string): Promise<StorefrontProductDto> {
-    const response = await apiClient<StorefrontProductEnvelope>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}`, {
+  async update(productId: ID, input: ProductUpdateInput, accessToken: string): Promise<ProductManagementDto> {
+    const response = await apiRequest<ProductManagementDto>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}`, {
       method: "PATCH",
       body: input,
       headers: authorization(accessToken),
       cache: "no-store",
+      validate: validateProductDto,
     });
-    return unwrapProduct(response);
+    return response;
   },
 
   async delete(productId: ID, accessToken: string): Promise<void> {
-    await apiClient(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}`, {
+    await apiRequest(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}`, {
       method: "DELETE",
       headers: authorization(accessToken),
       cache: "no-store",
@@ -97,43 +82,47 @@ export const productAdminService = {
   },
 
   async createVariant(productId: ID, input: ProductVariantInput, accessToken: string): Promise<StorefrontVariantDto> {
-    const response = await apiClient<StorefrontVariantEnvelope>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants`, {
+    const response = await apiRequest<StorefrontVariantDto>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants`, {
       method: "POST",
       body: input,
       headers: authorization(accessToken),
       cache: "no-store",
+      validate: validateProductVariantDto,
     });
-    return unwrapVariant(response);
+    return response;
   },
 
   async listVariants(productId: ID, accessToken: string): Promise<StorefrontVariantDto[]> {
-    const response = await apiClient<StorefrontVariantsEnvelope>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants`, {
+    const response = await apiRequest<StorefrontVariantDto[]>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants`, {
       headers: authorization(accessToken),
       cache: "no-store",
+      validate: (value): value is StorefrontVariantDto[] => Array.isArray(value) && value.every(validateProductVariantDto),
     });
-    return unwrapVariants(response);
+    return response;
   },
 
   async getVariant(productId: ID, variantId: ID, accessToken: string): Promise<StorefrontVariantDto> {
-    const response = await apiClient<StorefrontVariantEnvelope>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants/${encodeURIComponent(String(variantId))}`, {
+    const response = await apiRequest<StorefrontVariantDto>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants/${encodeURIComponent(String(variantId))}`, {
       headers: authorization(accessToken),
       cache: "no-store",
+      validate: validateProductVariantDto,
     });
-    return unwrapVariant(response);
+    return response;
   },
 
   async updateVariant(productId: ID, variantId: ID, input: ProductVariantUpdateInput, accessToken: string): Promise<StorefrontVariantDto> {
-    const response = await apiClient<StorefrontVariantEnvelope>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants/${encodeURIComponent(String(variantId))}`, {
+    const response = await apiRequest<StorefrontVariantDto>(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants/${encodeURIComponent(String(variantId))}`, {
       method: "PATCH",
       body: input,
       headers: authorization(accessToken),
       cache: "no-store",
+      validate: validateProductVariantDto,
     });
-    return unwrapVariant(response);
+    return response;
   },
 
   async deleteVariant(productId: ID, variantId: ID, accessToken: string): Promise<void> {
-    await apiClient(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants/${encodeURIComponent(String(variantId))}`, {
+    await apiRequest(`${PRODUCTS_PATH}/${encodeURIComponent(String(productId))}/variants/${encodeURIComponent(String(variantId))}`, {
       method: "DELETE",
       headers: authorization(accessToken),
       cache: "no-store",
@@ -141,4 +130,4 @@ export const productAdminService = {
   },
 };
 
-export type ProductManagementDto = StorefrontProductDto;
+export type { ProductManagementDto } from "@/types/storefront-api";
