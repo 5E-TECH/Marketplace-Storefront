@@ -1,5 +1,3 @@
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
 import { StorefrontHome } from "@/components/storefront-home";
 import { productService } from "@/services/product.service";
 import type { ProductQuery } from "@/types/commerce";
@@ -16,5 +14,5 @@ export default async function Home({ searchParams }: { searchParams: Promise<Hom
   };
   const query: ProductQuery = { search, categoryId: params.categoryId, minPrice: finiteNumber(params.minPrice), maxPrice: finiteNumber(params.maxPrice), sort: params.sort, page: Math.max(1, Math.floor(finiteNumber(params.page) ?? 1)), limit: 20 };
   const catalog = await productService.list(query);
-  return <><Header/><StorefrontHome query={query} catalog={catalog}/><Footer/></>;
+  return <StorefrontHome query={query} catalog={catalog}/>;
 }

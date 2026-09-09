@@ -36,7 +36,7 @@ export function Header() {
       <div className="header-actions">
         <form className="search" onSubmit={submitSearch}><Search size={18}/><input id="header-search" name="search" value={search} onChange={(event) => setSearch(event.target.value)} aria-label="Mahsulot qidirish" placeholder="Nima qidiryapsiz?" />{search && <button className="search-clear" type="button" onClick={() => setSearch("")} aria-label="Qidiruvni tozalash"><X/></button>}</form>
         <Link className="icon-button header-favorite" href="/favorites" aria-label={`Sevimlilar: ${favorites.count}`}><Heart fill={favorites.count ? "currentColor" : "none"}/>{favorites.count > 0 && <span>{favorites.count > 99 ? "99+" : favorites.count}</span>}</Link>
-        <Link className="icon-button user-action" href="/profile" aria-label="Profil"><UserRound /></Link>
+        <Link className="user-action" href="/profile" aria-label="Kirish yoki profil"><UserRound/><span>Kirish</span></Link>
         <button className="icon-button bag" onClick={() => cart.setOpen(true)} aria-label="Savatcha"><ShoppingBag />{cart.quantity > 0 && <span>{cart.quantity > 99 ? "99+" : cart.quantity}</span>}</button>
       </div>
     </Container>

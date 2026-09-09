@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartDrawer } from "@/components/cart-drawer";
+import { Footer } from "@/components/footer";
+import { Header } from "@/components/header";
 import { CartProvider } from "@/providers/cart-provider";
 import { FavoritesProvider } from "@/providers/favorites-provider";
 
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="uz">
-      <body><FavoritesProvider><CartProvider>{children}<CartDrawer/></CartProvider></FavoritesProvider></body>
+      <body><FavoritesProvider><CartProvider><Header/>{children}<Footer/><CartDrawer/></CartProvider></FavoritesProvider></body>
     </html>
   );
 }
