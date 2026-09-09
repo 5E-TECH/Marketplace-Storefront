@@ -12,7 +12,6 @@ export function ApiTestClient() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true); setError(""); setCatalog(null);
     apiRequest("/storefront/products", { params: { page: 1, limit: 5 }, signal: controller.signal, validate: validateStorefrontProductsPageDto })
       .then((result) => { if (!controller.signal.aborted) setCatalog(result); })
       .catch((caught: unknown) => {
@@ -21,6 +20,12 @@ export function ApiTestClient() {
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [attempt]);
+  const retry = () => {
+    setLoading(true);
+    setError("");
+    setCatalog(null);
+    setAttempt((value) => value + 1);
+  };
   return <section aria-labelledby="browser-title">
     <h2 id="browser-title">Brauzer</h2>
     {loading && <p role="status">Yuklanmoqda...</p>}
@@ -29,6 +34,6 @@ export function ApiTestClient() {
       <p data-testid="browser-success">Backenddan {catalog.total} ta mahsulot. Javob kontrakt tekshiruvidan o‘tdi.</p>
       <ul>{catalog.items.map((product) => <li key={product.id}>{product.name} — {product.price} so‘m</li>)}</ul>
     </>}
-    <button className="button button--primary" disabled={loading} onClick={() => setAttempt((value) => value + 1)}>Qayta tekshirish</button>
+    <button className="button button--primary" disabled={loading} onClick={retry}>Qayta tekshirish</button>
   </section>;
 }

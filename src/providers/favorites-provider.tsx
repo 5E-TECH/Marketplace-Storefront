@@ -18,7 +18,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     catch (caught) { setError(caught instanceof Error ? caught.message : "Sevimlilarni yuklab bo‘lmadi"); }
     finally { setLoading(false); setHydrated(true); }
   }, []);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void refresh(); });
+    return () => { active = false; };
+  }, [refresh]);
   useEffect(() => {
     window.addEventListener("elchi:guest-merged", refresh);
     return () => window.removeEventListener("elchi:guest-merged", refresh);

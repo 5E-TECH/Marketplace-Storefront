@@ -29,7 +29,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return task;
   }, []);
   const refresh = useCallback(async () => { await run(() => cartService.get()); }, [run]);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) void refresh(); });
+    return () => { active = false; };
+  }, [refresh]);
   useEffect(() => {
     window.addEventListener("elchi:guest-merged", refresh);
     return () => window.removeEventListener("elchi:guest-merged", refresh);

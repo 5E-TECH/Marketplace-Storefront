@@ -19,7 +19,16 @@ export function CheckoutContent() {
   const [session, setSession] = useState<AuthSession | null | undefined>(undefined);
   const [authOpen, setAuthOpen] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "courier">("pickup");
-  useEffect(() => { const current = authService.getSession(); setSession(current); setAuthOpen(!current); }, []);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      const current = authService.getSession();
+      setSession(current);
+      setAuthOpen(!current);
+    });
+    return () => { active = false; };
+  }, []);
   const delivery = cart.subtotal >= 300_000 ? 0 : 25_000;
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
