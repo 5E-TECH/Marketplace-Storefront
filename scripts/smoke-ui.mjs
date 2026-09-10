@@ -140,6 +140,20 @@ try {
   })`);
   assert.deepEqual(pageState, { page: "2", sort: "price:asc", pagination: "2 / 2", activeSort: "Arzondan qimmatga" });
 
+  await send("Page.navigate", { url: `${base}/profile` });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.profile-auth-action'))"), "profile auth action");
+  await evaluate("document.querySelector('.profile-auth-action').click()");
+  await until(() => evaluate("Boolean(document.querySelector('[data-testid=login-form]'))"), "real login form");
+  const loginState = await evaluate(`({
+    phone: Boolean(document.querySelector('[aria-label="Telefon raqami"]')),
+    password: Boolean(document.querySelector('[aria-label="Parol"]')),
+    mergeMessage: document.querySelector('[data-testid=login-form]')?.textContent.includes('Mehmon savatingiz akkauntingizga avtomatik qo‘shiladi'),
+    width: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  })`);
+  assert.deepEqual({ phone: loginState.phone, password: loginState.password, mergeMessage: loginState.mergeMessage }, { phone: true, password: true, mergeMessage: true });
+  assert.ok(loginState.scrollWidth <= loginState.width, `Login modal must not overflow at 375px (${loginState.scrollWidth}px > ${loginState.width}px)`);
+
   await send("Page.navigate", { url: `${base}${productUrl}` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.detail-summary h1'))"), "product detail");
   const initialProduct = await evaluate(`({

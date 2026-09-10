@@ -10,6 +10,7 @@ const routes: [RegExp, string[]][] = [
   [/^\/storefront\/shops\/[^/]+$/, ["GET"]],
   [/^\/products(?:\/[^/]+)?$/, ["GET", "POST", "PATCH", "DELETE"]],
   [/^\/products\/[^/]+\/variants(?:\/[^/]+)?$/, ["GET", "POST", "PATCH", "DELETE"]],
+  [/^\/auth\/login$/, ["POST"]],
   [/^\/cart$/, ["GET"]],
   [/^\/cart\/items$/, ["POST"]],
   [/^\/cart\/items\/[^/]+$/, ["PATCH", "DELETE"]],

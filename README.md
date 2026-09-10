@@ -25,7 +25,7 @@ npm run start:prod  # Production: 3002
 - `src/app`: sahifalar va backendga yo‘naltiruvchi API route’lar.
 - `src/components`: katalog, mahsulot, savatcha, checkout va profil interfeysi.
 - `src/providers`: umumiy savatcha va sevimlilar holati. Savatcha so‘rovlari ketma-ket bajariladi.
-- `src/services`: mahsulot, savatcha, sevimlilar, demo auth/buyurtma adapterlari.
+- `src/services`: mahsulot, savatcha, sevimlilar, auth va buyurtma adapterlari.
 - `src/lib`: HTTP client, token/guest session, DTO adapterlari va formatterlar.
 - `src/types`: frontend domain turlari va backend DTO’lari.
 - `tests`: narx, miqdor, buyurtma va HTTP xatolari bo‘yicha regression testlar.
@@ -36,7 +36,7 @@ Katalog serverda yuklanadi va 30 soniyalik revalidation ishlatadi. Bu brauzerda 
 
 Katalog, `/mahsulot/<slug>` mahsulot sahifasi, `/dokon/<slug>` do‘kon sahifasi, savatcha va sevimlilar backend API bilan ishlaydi. Mahsulot sahifasi Telegram uchun Open Graph/Twitter teglarini va Google uchun Product JSON-LD ma’lumotini serverda chiqaradi. Endpointlar: [API_CONTRACT.md](API_CONTRACT.md).
 
-Telefon tasdiqlash **demo**: `111111`, SMS yuborilmaydi va haqiqiy access token yaratilmaydi. Buyurtmalar faqat shu brauzerning localStorage xotirasida saqlanadi; backend buyurtmasi, haqiqiy karta to‘lovi, foydalanuvchilar orasida ajratilgan buyurtma tarixi hali yo‘q. Demo checkout backenddagi savatcha elementlarini tozalashga urinadi. Uni real savdo jarayoni deb ishlatishdan oldin auth, order va payment API contractlari bilan integratsiya qilish kerak.
+Login backendning `/auth/login` endpointi bilan ishlaydi. Mehmon savati va sevimlilar login muvaffaqiyatli bo‘lgach `/guest/merge` orqali akkauntga birlashtiriladi. Buyurtmalar hozircha shu brauzerning localStorage xotirasida saqlanadi; backend buyurtmasi va haqiqiy karta to‘lovi hali ulanmagan.
 
 Obuna formasi, manzillar boshqaruvi va marketingdagi yetkazish da’volari to‘liq biznes integratsiyasini kutmoqda.
 

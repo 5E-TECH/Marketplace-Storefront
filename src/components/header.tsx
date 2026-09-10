@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/providers/cart-provider";
 import { useFavorites } from "@/providers/favorites-provider";
+import { authService } from "@/services/auth.service";
 import { Container } from "./ui";
 import type { CatalogCategory } from "@/types/commerce";
 
@@ -15,6 +16,7 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
   const [open, setOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [authenticated, setAuthenticated] = useState(false);
   const router = useRouter();
   const cart = useCart();
   const favorites = useFavorites();
@@ -24,6 +26,13 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
     };
     window.addEventListener("keydown", closeMenus);
     return () => window.removeEventListener("keydown", closeMenus);
+  }, []);
+  useEffect(() => {
+    const syncAuth = () => setAuthenticated(Boolean(authService.getSession()));
+    queueMicrotask(syncAuth);
+    window.addEventListener("elchi:auth-changed", syncAuth);
+    window.addEventListener("elchi:auth-expired", syncAuth);
+    return () => { window.removeEventListener("elchi:auth-changed", syncAuth); window.removeEventListener("elchi:auth-expired", syncAuth); };
   }, []);
   const submitSearch = (event: FormEvent) => { event.preventDefault(); router.push(search.trim() ? `/?search=${encodeURIComponent(search.trim())}#products` : "/#products"); };
   return <header className="header">
@@ -36,7 +45,7 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
       <div className="header-actions">
         <form className="search" onSubmit={submitSearch}><Search size={18}/><input id="header-search" name="search" value={search} onChange={(event) => setSearch(event.target.value)} aria-label="Mahsulot qidirish" placeholder="Nima qidiryapsiz?" />{search && <button className="search-clear" type="button" onClick={() => setSearch("")} aria-label="Qidiruvni tozalash"><X/></button>}</form>
         <Link className="icon-button header-favorite" href="/favorites" aria-label={`Sevimlilar: ${favorites.count}`}><Heart fill={favorites.count ? "currentColor" : "none"}/>{favorites.count > 0 && <span>{favorites.count > 99 ? "99+" : favorites.count}</span>}</Link>
-        <Link className="user-action" href="/profile" aria-label="Kirish yoki profil"><UserRound/><span>Kirish</span></Link>
+        <Link className="user-action" href="/profile" aria-label={authenticated ? "Profil" : "Kirish"}><UserRound/><span>{authenticated ? "Profil" : "Kirish"}</span></Link>
         <button className="icon-button bag" onClick={() => cart.setOpen(true)} aria-label="Savatcha"><ShoppingBag />{cart.quantity > 0 && <span>{cart.quantity > 99 ? "99+" : cart.quantity}</span>}</button>
       </div>
     </Container>

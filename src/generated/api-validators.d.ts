@@ -9,3 +9,4 @@ export declare const validateMyProductsPageDto: (value: unknown) => value is com
 export declare const validateProductVariantDto: (value: unknown) => value is components["schemas"]["ProductVariantDto"];
 export declare const validateCartDto: (value: unknown) => value is components["schemas"]["CartDto"];
 export declare const validateFavoritesPageDto: (value: unknown) => value is components["schemas"]["FavoritesPageDto"];
+export declare const validateLoginSuccessResponseDto: (value: unknown) => value is components["schemas"]["LoginSuccessResponseDto"];

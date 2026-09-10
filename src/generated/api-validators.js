@@ -2316,3 +2316,34 @@ return false;
 validate21.errors = vErrors;
 return errors === 0;
 }
+
+export const validateLoginSuccessResponseDto = validate25;
+const schema28 = {"type":"object","properties":{"accessToken":{"type":"string","description":"Himoyalangan endpointlar uchun Bearer access token"}},"required":["accessToken"]};
+
+function validate25(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if((data.accessToken === undefined) && (missing0 = "accessToken")){
+validate25.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.accessToken !== undefined){
+if(typeof data.accessToken !== "string"){
+validate25.errors = [{instancePath:instancePath+"/accessToken",schemaPath:"#/properties/accessToken/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+}
+}
+}
+else {
+validate25.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate25.errors = vErrors;
+return errors === 0;
+}

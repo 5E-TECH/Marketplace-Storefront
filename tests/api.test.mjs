@@ -86,11 +86,13 @@ test('bad JSON, HTML success and incompatible product fields cannot silently suc
   await assert.rejects(apiRequest('/storefront/products', { validate: validateStorefrontProductsPageDto }), { kind: 'invalid_response' });
 });
 
-test('204 is accepted for mutations but rejected when a catalog is required', async (t) => {
+test('empty successful mutation responses are accepted but rejected when data is required', async (t) => {
   const { apiRequest } = client();
-  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 204 }));
+  const mockedFetch = t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 204 }));
   assert.equal(await apiRequest('/cart/items/1', { method: 'DELETE' }), undefined);
   await assert.rejects(apiRequest('/storefront/products', { validate: validateStorefrontProductsPageDto }), { kind: 'invalid_response' });
+  mockedFetch.mock.mockImplementation(async () => new Response(null, { status: 201 }));
+  assert.equal(await apiRequest('/guest/merge', { method: 'POST' }), undefined);
 });
 
 test('invalid configuration and upstream path escapes never send a request', async (t) => {

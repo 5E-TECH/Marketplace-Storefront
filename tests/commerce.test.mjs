@@ -23,6 +23,85 @@ test('cart totals use the selected variant price and normalize invalid quantitie
   assert.deepEqual(cartTotals(cart.items), { quantity: 3, subtotal: 500 });
 });
 
+test('cart rows are grouped by seller and each seller subtotal is calculated', () => {
+  const { groupCartItemsBySeller } = loadTypeScript('src/lib/cart-groups.ts');
+  const items = [
+    { id: 'a', product: { ...product, shop: { id: 'shop-1', name: 'Elchi Tech' } }, quantity: 2 },
+    { id: 'b', product: { ...product, price: 50, shop: { id: 'shop-2', name: 'Moda' } }, quantity: 1 },
+    { id: 'c', product: { ...product, price: 25, shop: { id: 'shop-1', name: 'Elchi Tech' } }, quantity: 4 },
+  ];
+  const groups = groupCartItemsBySeller(items);
+  assert.deepEqual(groups.map(({ name, items: rows, subtotal }) => ({ name, ids: rows.map((item) => item.id), subtotal })), [
+    { name: 'Elchi Tech', ids: ['a', 'c'], subtotal: 300 },
+    { name: 'Moda', ids: ['b'], subtotal: 50 },
+  ]);
+});
+
+test('successful login merges the existing guest cart before saving the session', async (t) => {
+  const stored = new Map();
+  const events = [];
+  const previousStorage = globalThis.localStorage;
+  const previousWindow = globalThis.window;
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) } });
+  globalThis.window = { dispatchEvent: (event) => events.push(event.type) };
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: previousStorage });
+    if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow;
+  });
+  const calls = [];
+  const { authService } = loadTypeScript('src/services/auth.service.ts', {
+    '@/generated/api-validators': { validateLoginSuccessResponseDto: () => true },
+    '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options.body]); return { accessToken: 'signed-token' }; } },
+    '@/lib/access-token': { getAccessToken: () => 'signed-token', clearAccessToken: () => {}, rotateGuestSessionId: () => 'new-guest' },
+    '@/services/guest.service': { guestService: { mergeAfterAuth: async (token) => calls.push(['/guest/merge', token]) } },
+  });
+  const session = await authService.login('+998901234567', 'password');
+  assert.deepEqual(calls, [['/auth/login', { phone: '+998901234567', password: 'password' }], ['/guest/merge', 'signed-token']]);
+  assert.equal(JSON.parse(stored.get('elchi_auth_v1')).phone, session.phone);
+  assert.deepEqual(events, ['elchi:auth-changed']);
+});
+
+test('failed guest merge clears the new token and preserves the guest session for retry', async () => {
+  const calls = [];
+  const previousWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: () => {} };
+  try {
+    const { guestService } = loadTypeScript('src/services/guest.service.ts', {
+      '@/lib/api': { apiRequest: async () => { throw new Error('offline'); } },
+      '@/lib/access-token': {
+        setAccessToken: (token) => calls.push(['set', token]),
+        clearAccessToken: () => calls.push(['clear']),
+        rotateGuestSessionId: () => calls.push(['rotate']),
+      },
+    });
+    await assert.rejects(guestService.mergeAfterAuth('signed-token'), /offline/);
+    assert.deepEqual(calls, [['set', 'signed-token'], ['clear']]);
+  } finally { if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow; }
+});
+
+test('successful guest merge rotates the consumed session and refreshes storefront state', async () => {
+  const calls = [];
+  const previousWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: (event) => calls.push(['event', event.type]) };
+  try {
+    const { guestService } = loadTypeScript('src/services/guest.service.ts', {
+      '@/lib/api': { apiRequest: async (path, options) => calls.push(['request', path, options.headers.Authorization]) },
+      '@/lib/access-token': {
+        setAccessToken: (token) => calls.push(['set', token]),
+        clearAccessToken: () => calls.push(['clear']),
+        rotateGuestSessionId: () => calls.push(['rotate']),
+      },
+    });
+    await guestService.mergeAfterAuth('signed-token');
+    assert.deepEqual(calls, [
+      ['set', 'signed-token'],
+      ['request', '/guest/merge', 'Bearer signed-token'],
+      ['rotate'],
+      ['event', 'elchi:guest-merged'],
+    ]);
+  } finally { if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow; }
+});
+
 test('invalid cart quantities never reach the backend', async () => {
   let requests = 0;
   const { cartService } = loadTypeScript('src/services/cart.service.ts', {

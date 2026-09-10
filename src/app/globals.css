@@ -393,7 +393,16 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 .page-empty p { max-width: 430px; margin: 0 0 20px; color: var(--color-muted); font-size: 12px; line-height: 1.6; }
 .cart-page, .checkout-page, .profile-page, .orders-page { min-height: 65vh; padding: 55px 0 25px; }
 .cart-page-layout, .checkout-layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 28px; align-items: start; }
-.cart-page-items { border: 1px solid var(--color-line); border-radius: 18px; background: white; }
+.cart-seller-groups { display: grid; gap: 16px; }
+.cart-seller-group { overflow: hidden; border: 1px solid var(--color-line); border-radius: 18px; background: white; }
+.cart-seller-group > header { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 18px; border-bottom: 1px solid var(--color-line); background: var(--color-surface); }
+.cart-seller-group > header > div { display: flex; align-items: center; gap: 10px; }
+.cart-seller-group > header > div > svg { width: 20px; color: var(--color-brand); }
+.cart-seller-group > header span { display: flex; flex-direction: column; gap: 3px; }
+.cart-seller-group > header small { color: var(--color-muted); font-size: 8px; font-weight: 800; letter-spacing: .12em; }
+.cart-seller-group > header b { font-size: 13px; }
+.cart-seller-group > header .price strong { font-size: 15px; }
+.cart-page-items { background: white; }
 .cart-page-item { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 18px; padding: 18px; border-bottom: 1px solid var(--color-line); }
 .cart-page-item:last-child { border: 0; }
 .cart-page-item > a { height: 140px; position: relative; overflow: hidden; border-radius: 13px; background: var(--color-surface); }
@@ -450,6 +459,8 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 .profile-hero > span { width: 76px; height: 76px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; background: white; color: var(--color-brand); }
 .profile-hero h1 { margin: 7px 0; font-size: 32px; }
 .profile-hero p { margin: 0; color: var(--color-muted); font-size: 11px; }
+.profile-auth-action { margin-left: auto; flex: 0 0 auto; }
+.profile-auth-action svg { width: 17px; }
 .profile-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; }
 .profile-links > a { min-height: 100px; display: flex; align-items: center; gap: 14px; padding: 20px; border: 1px solid var(--color-line); border-radius: 16px; }
 .profile-links > a > span { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 12px; background: #fff0f1; color: var(--color-brand); }
@@ -499,6 +510,10 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 .phone-field:focus-within { border-color: var(--color-brand); }
 .phone-field > span { padding: 0 13px; border-right: 1px solid var(--color-line); color: var(--color-muted); font-size: 14px; }
 .phone-field input { min-width: 0; flex: 1; height: 100%; padding: 0 13px; border: 0; outline: 0; font-size: 15px; letter-spacing: .06em; }
+.auth-password { height: 52px; display: flex; align-items: center; overflow: hidden; margin-bottom: 10px; border: 1px solid #cfd1d6; border-radius: 11px; text-align: left; }
+.auth-password:focus-within { border-color: var(--color-brand); }
+.auth-password > span { padding: 0 13px; border-right: 1px solid var(--color-line); color: var(--color-muted); font-size: 12px; }
+.auth-password input { min-width: 0; flex: 1; height: 100%; padding: 0 13px; border: 0; outline: 0; font-size: 15px; }
 .auth-modal .button { width: 100%; margin-top: 8px; }
 .auth-policy { margin-top: auto; padding-top: 35px; color: #888b92; font-size: 9px; line-height: 1.55; }
 .auth-error { margin: 0 0 5px; color: var(--color-brand); font-size: 10px; text-align: left; }
@@ -699,6 +714,7 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
   .page-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
   .checkout-forms fieldset { padding: 16px; }
   .profile-hero { flex-direction: column; }
+  .profile-auth-action { width: 100%; margin-left: 0; }
   .profile-hero h1 { font-size: 27px; }
   .orders-list article header { align-items: flex-start; flex-wrap: wrap; }
   .orders-list article header > span { margin-left: 0; }

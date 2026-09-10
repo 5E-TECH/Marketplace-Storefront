@@ -72,11 +72,19 @@ try {
   await evaluate("document.querySelector('[data-testid=product-add-to-cart]').click()");
   const cartItem = await until(() => evaluate("document.querySelector('.cart-drawer.open .cart-item')?.textContent"), 'real add to cart');
   assert.ok(cartItem.includes(product.name), `Cart must contain ${product.name}`);
-  await until(() => evaluate("document.querySelector('[data-testid=cart-remove-item]') && !document.querySelector('[data-testid=cart-remove-item]').disabled"), 'cart remove button');
-  await evaluate("document.querySelector('[data-testid=cart-remove-item]').click()");
-  await until(() => evaluate("!document.querySelector('.cart-item')"), 'real cart cleanup');
+  assert.equal(await evaluate("document.querySelector('.header .bag span')?.textContent"), '1', 'Header badge must show the guest cart quantity');
+  await send('Page.navigate', { url: `${base}/cart` });
+  await until(() => evaluate("document.readyState === 'complete' && document.querySelector('[data-testid=cart-page-item]') && !document.querySelector('.cart-page-item .quantity button:last-child').disabled"), 'real cart page');
+  assert.equal(await evaluate("document.querySelectorAll('[data-testid=cart-seller-group]').length"), 1, 'Cart items must be grouped by seller');
+  assert.ok(await evaluate(`document.querySelector('[data-testid=cart-page-item]').textContent.includes(${JSON.stringify(product.name)})`), 'Cart page must show the real product');
+  assert.ok(await evaluate("Boolean(document.querySelector('[data-testid=cart-summary] .order-total .price'))"), 'Cart page must show the total');
+  await evaluate("document.querySelector('.cart-page-item .quantity button:last-child').click()");
+  await until(() => evaluate("document.querySelector('[data-testid=cart-item-quantity]')?.textContent === '2' && document.querySelector('.header .bag span')?.textContent === '2'"), 'real cart quantity update');
+  await until(() => evaluate("document.querySelector('[data-testid=cart-page-remove]') && !document.querySelector('[data-testid=cart-page-remove]').disabled"), 'cart remove button');
+  await evaluate("document.querySelector('[data-testid=cart-page-remove]').click()");
+  await until(() => evaluate("Boolean(document.querySelector('[data-testid=empty-cart]')) && !document.querySelector('.header .bag span')"), 'real cart cleanup');
   assert.deepEqual(exceptions, []);
-  console.log(`PASS: SSR, proxy and Chrome loaded ${catalog.items.length} real products; offline/recovery and real add-to-cart passed.`);
+  console.log(`PASS: ${catalog.items.length} real products; guest add, cart page, seller group, quantity, total, header badge, removal, offline/recovery passed.`);
 } finally {
   socket?.close();
   chrome.kill();
