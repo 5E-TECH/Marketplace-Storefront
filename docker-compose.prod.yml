@@ -1,0 +1,38 @@
+# Storefront production stack — C2.28.
+#
+# Backend stack'i (`Elchi-Marketplace/docker-compose.prod.yml`) yaratadigan
+# `marketplace_edge` tarmog'iga ulanadi. Domen bo'lganda Cloudflare Tunnel
+# yoki Caddy shu tarmoq orqali `storefront:3001` ga proxy qiladi va port
+# tashqariga umuman ochilmaydi.
+#
+# Domen hali yo'q — shuning uchun hozircha port to'g'ridan-to'g'ri chiqariladi
+# (kabinet 8080 da, storefront 8081 da). Domen qo'shilgach `ports` bo'limini
+# olib tashlash kerak (C5.3).
+
+services:
+  storefront:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build vaqtida faqat rasm hosti uchun kerak (images.remotePatterns).
+        API_BASE_URL: ${API_BASE_URL}
+    image: marketplace-storefront:latest
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      # Ishlash vaqtidagi qiymatlar. Bularni o'zgartirish uchun qayta build
+      # SHART EMAS — konteynerni qayta ko'tarish yetadi.
+      NODE_ENV: production
+      PORT: 3001
+      HOSTNAME: 0.0.0.0
+    ports:
+      - '${STOREFRONT_PORT:-8081}:3001'
+    networks:
+      - edge
+
+networks:
+  # Backend stack'i yaratadi. Bu yerda faqat ulanamiz.
+  edge:
+    name: marketplace_edge
+    external: true

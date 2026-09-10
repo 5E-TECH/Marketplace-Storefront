@@ -12,6 +12,9 @@ const apiImagePattern = (() => {
 const nextConfig: NextConfig = {
     // `next build` ishlayotgan dev server manifestlarini buzmasligi uchun cache'lar ajratilgan.
     distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
+    // Docker uchun: `.next/standalone` ichida o'zi yetarli server chiqadi,
+    // shuning uchun image'ga butun node_modules ni ko'chirish shart emas.
+    output: "standalone",
     reactStrictMode: true,
     allowedDevOrigins: ["192.168.1.69"],
     images: {

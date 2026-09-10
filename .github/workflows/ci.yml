@@ -18,3 +18,103 @@ jobs:
       - run: npm run check
         env:
           USE_MOCK_DATA: 'true'
+
+      # Docker image haqiqatan quriladimi — deploy paytida bilish kech bo'ladi.
+      - name: Docker image quriladimi
+        run: docker build --build-arg API_BASE_URL=http://api.example.com/api/v1 -t marketplace-storefront:ci .
+
+  # C2.28 TC2. Secretlar qo'yilmaguncha bu job o'tkazib yuboriladi —
+  # aks holda har push'da qizil bo'lib turardi.
+  deploy-production:
+    name: Deploy production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secretlar bormi
+        id: guard
+        run: |
+          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "Deploy secretlari yo'q — deploy o'tkazib yuborildi." >&2
+            echo "Kerak: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY (base64), DEPLOY_KNOWN_HOSTS" >&2
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: SSH konfiguratsiyasini tayyorlash
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$DEPLOY_SSH_KEY" | base64 --decode > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Fayllarni serverga yuborish
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          rsync -az --delete \
+            --exclude '.git/' \
+            --exclude '.env.production' \
+            --exclude 'node_modules/' \
+            --exclude '.next/' \
+            --exclude '.next-dev/' \
+            --exclude 'test-results/' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+                 -o ServerAliveInterval=30 -o ServerAliveCountMax=20" \
+            ./ "$DEPLOY_USER@$DEPLOY_HOST:/home/deploy/marketplace-storefront/"
+
+      - name: Konteynerni yangilash
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          # Keepalive shart: Next.js build uzoq davom etadi va shu paytda
+          # SSH ulanishi jim turadi (backend deploy'ida aynan shu sabab
+          # uzilishlar bo'lgan).
+          ssh -i ~/.ssh/deploy_key \
+            -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+            "$DEPLOY_USER@$DEPLOY_HOST" <<'REMOTE'
+          set -euo pipefail
+          cd /home/deploy/marketplace-storefront
+          test -f .env.production
+
+          # Backend stack'i `marketplace_edge` tarmog'ini yaratadi.
+          docker network inspect marketplace_edge >/dev/null 2>&1 || {
+            echo "XATO: marketplace_edge tarmog'i yo'q — avval backend stack'ini ko'taring"
+            exit 1
+          }
+
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.prod.yml \
+            up -d --build --remove-orphans
+
+          # Konteyner haqiqatan javob berayotganini tasdiqlaymiz.
+          healthy=false
+          for attempt in $(seq 1 24); do
+            if docker compose --env-file .env.production -f docker-compose.prod.yml \
+                 exec -T storefront node -e "fetch('http://127.0.0.1:3001/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; then
+              healthy=true
+              break
+            fi
+            echo "Kutilmoqda... ($attempt/24)"
+            sleep 5
+          done
+
+          if [ "$healthy" != "true" ]; then
+            echo "XATO: storefront konteyneri javob bermadi"
+            docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail 50 storefront
+            exit 1
+          fi
+
+          docker image prune -f
+          REMOTE
