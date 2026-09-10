@@ -1,9 +1,12 @@
 export type ID = string | number;
 
-export type ProductVariant = { id: ID; name?: string; sku?: string; price: number; oldPrice?: number; stock?: number; color?: string; size?: string; image?: string; attributes: Record<string, string | number | boolean> };
+export type ProductVariant = { id: ID; name?: string; sku?: string; price: number; oldPrice?: number; stock?: number; color?: string; size?: string; image?: string; isActive?: boolean; attributes: Record<string, string | number | boolean> };
+
+export type Shop = { id: ID; name: string; slug: string; logoUrl?: string; bannerUrl?: string; description?: string; status?: string; rating?: number; ordersCount?: number };
 
 export type Product = {
   id: ID;
+  slug?: string;
   name: string;
   category: string;
   price: number;
@@ -16,7 +19,7 @@ export type Product = {
   description: string;
   colors: string[];
   status?: string;
-  shop?: { id: ID; name: string; slug: string; logoUrl?: string; status?: string };
+  shop?: Shop;
   categoryInfo?: { id: ID; name: string; slug?: string };
   variants?: ProductVariant[];
   createdAt?: string;
@@ -42,3 +45,4 @@ export type Paginated<T> = { data: T[]; total: number; page: number; limit: numb
 export type CatalogResult = Paginated<Product> & { totalPages: number; source: "api" | "mock" | "unavailable"; error?: string };
 export type CatalogCategory = { id: ID; name: string; slug: string; parentId?: ID | null; iconUrl?: string; icon: string; children: CatalogCategory[] };
 export type CategoryResult = { data: CatalogCategory[]; source: "api" | "fallback"; error?: string };
+export type ShopPageResult = { shop: Shop; products: CatalogResult };

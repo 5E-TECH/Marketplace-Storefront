@@ -1,6 +1,7 @@
 import { env } from "@/config/env";
 import { mockProducts } from "@/data/mock-products";
 import { ApiError, apiRequest } from "@/lib/api";
+import { productSlug } from "@/lib/product-url";
 import { validateStorefrontProductDto, validateStorefrontProductsPageDto } from "@/generated/api-validators";
 import type { CatalogResult, Product, ProductQuery } from "@/types/commerce";
 import type { StorefrontProductDto, StorefrontProductsResponse } from "@/types/storefront-api";
@@ -49,7 +50,7 @@ const imageUrl = (value: unknown): string => {
 };
 
 // Storefront DTO -> UI domain. Backend field nomlari aniqlashgach faqat shu funksiya toraytiriladi.
-const normalizeProduct = (value: StorefrontProductDto): Product => {
+export const normalizeProduct = (value: StorefrontProductDto): Product => {
   const raw = object(value);
   const media = Array.isArray(raw.images) ? raw.images : Array.isArray(raw.media) ? raw.media : Array.isArray(raw.photos) ? raw.photos : [];
   const images = media.map(imageUrl).filter(Boolean);
@@ -57,7 +58,7 @@ const normalizeProduct = (value: StorefrontProductDto): Product => {
   const category = object(raw.category);
   const shop = object(raw.shop);
   const rawVariants = Array.isArray(value.variants) ? value.variants.map(object) : [];
-  const variants = rawVariants.map((variant) => ({ id: id(variant.id), name: text(variant.name) || undefined, sku: text(variant.sku) || undefined, price: number(variant.price, raw.price), oldPrice: number(variant.oldPrice) || undefined, stock: typeof variant.stock === "number" ? variant.stock : undefined, color: text(variant.color, object(variant.attributes).color) || undefined, size: text(variant.size, object(variant.attributes).size) || undefined, image: imageUrl(variant.imageUrl) || (Array.isArray(variant.images) ? variant.images : []).map(imageUrl).find(Boolean), attributes: Object.fromEntries(Object.entries(object(variant.attributes)).filter((entry): entry is [string, string | number | boolean] => ["string", "number", "boolean"].includes(typeof entry[1]))) }));
+  const variants = rawVariants.map((variant) => ({ id: id(variant.id), name: text(variant.name) || undefined, sku: text(variant.sku) || undefined, price: number(variant.price, raw.price), oldPrice: number(variant.oldPrice) || undefined, stock: typeof variant.stock === "number" ? variant.stock : undefined, color: text(variant.color, object(variant.attributes).color) || undefined, size: text(variant.size, object(variant.attributes).size, object(variant.attributes).storage) || undefined, image: imageUrl(variant.imageUrl) || (Array.isArray(variant.images) ? variant.images : []).map(imageUrl).find(Boolean), isActive: typeof variant.isActive === "boolean" ? variant.isActive : undefined, attributes: Object.fromEntries(Object.entries(object(variant.attributes)).filter((entry): entry is [string, string | number | boolean] => ["string", "number", "boolean"].includes(typeof entry[1]))) }));
   const variantImages = rawVariants.flatMap((variant) => [imageUrl(variant.imageUrl), ...(Array.isArray(variant.images) ? variant.images : []).map(imageUrl)]).filter(Boolean);
   const allImages = [...new Set([...images, ...variantImages])];
   const primaryImage = image === "/placeholder-product.svg" && allImages[0] ? allImages[0] : image;
@@ -66,6 +67,7 @@ const normalizeProduct = (value: StorefrontProductDto): Product => {
   const price = number(raw.price, raw.salePrice, raw.currentPrice) || (variantPrices.length ? Math.min(...variantPrices) : 0);
   return {
     id: id(raw.id, raw.productId),
+    slug: text(raw.slug) || undefined,
     name: text(raw.name, raw.title),
     category: text(category.name, raw.categoryName, raw.category, "Mahsulot"),
     price,
@@ -78,7 +80,7 @@ const normalizeProduct = (value: StorefrontProductDto): Product => {
     description: text(raw.description, raw.shortDescription, "Sifatli va ishonchli mahsulot."),
     colors: colors.length ? colors : ["#17181a"],
     status: text(raw.status) || undefined,
-    shop: shop.id !== undefined && shop.id !== null ? { id: id(shop.id), name: text(shop.name, "Do‘kon"), slug: text(shop.slug), logoUrl: imageUrl(shop.logoUrl) || undefined, status: text(shop.status) || undefined } : undefined,
+    shop: shop.id !== undefined && shop.id !== null ? { id: id(shop.id), name: text(shop.name, "Do‘kon"), slug: text(shop.slug), logoUrl: imageUrl(shop.logoUrl) || undefined, bannerUrl: imageUrl(shop.bannerUrl) || undefined, description: text(shop.description) || undefined, status: text(shop.status) || undefined, rating: number(shop.rating) || undefined, ordersCount: number(shop.ordersCount) || undefined } : undefined,
     categoryInfo: category.id !== undefined && category.id !== null ? { id: id(category.id), name: text(category.name, "Mahsulot"), slug: text(category.slug) || undefined } : undefined,
     variants,
     createdAt: text(raw.createdAt) || undefined,
@@ -132,6 +134,19 @@ export const productService = {
       const response = await apiRequest(`${STOREFRONT_PRODUCTS_PATH}/${encodeURIComponent(String(id))}`, { next: { revalidate: 30 }, validate: validateStorefrontProductDto });
       const product = normalizeProduct(response);
       return product.id !== "" && product.name ? product : null;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
+  },
+  async getBySlug(slug: string): Promise<Product | null> {
+    const normalizedSlug = slug.trim().toLocaleLowerCase("uz");
+    if (!normalizedSlug) return null;
+    if (env.useMockData) return demoCatalog.find((product) => productSlug(product) === normalizedSlug) ?? null;
+    if (!env.apiUrl) return null;
+    try {
+      const response = await apiRequest(STOREFRONT_PRODUCTS_PATH, { params: { search: normalizedSlug.replace(/-/g, " "), page: 1, limit: 100 }, next: { revalidate: 30 }, validate: validateStorefrontProductsPageDto });
+      return response.items.map(normalizeProduct).find((product) => product.slug?.toLocaleLowerCase("uz") === normalizedSlug) ?? null;
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return null;
       throw error;

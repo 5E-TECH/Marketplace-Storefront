@@ -21,8 +21,10 @@ export const mockProducts: Product[] = [
     colors: ["#17181a", "#e7e2d8"],
     status: "ACTIVE",
     variants: [
-      { id: "hp-black", name: "Qora", price: 899_000, oldPrice: 1_149_000, stock: 18, color: "#17181a", attributes: {} },
-      { id: "hp-sand", name: "Qumrang", price: 929_000, oldPrice: 1_149_000, stock: 7, color: "#e7e2d8", attributes: {} },
+      { id: "hp-black-128", name: "Qora, 128 GB", price: 899_000, oldPrice: 1_149_000, stock: 18, color: "#17181a", size: "128 GB", isActive: true, attributes: { color: "#17181a", storage: "128 GB" } },
+      { id: "hp-black-256", name: "Qora, 256 GB", price: 999_000, oldPrice: 1_249_000, stock: 8, color: "#17181a", size: "256 GB", isActive: true, attributes: { color: "#17181a", storage: "256 GB" } },
+      { id: "hp-sand-128", name: "Qumrang, 128 GB", price: 929_000, oldPrice: 1_149_000, stock: 7, color: "#e7e2d8", size: "128 GB", isActive: true, attributes: { color: "#e7e2d8", storage: "128 GB" } },
+      { id: "hp-sand-256", name: "Qumrang, 256 GB", price: 1_029_000, oldPrice: 1_249_000, stock: 0, color: "#e7e2d8", size: "256 GB", isActive: true, attributes: { color: "#e7e2d8", storage: "256 GB" } },
     ],
   },
   {

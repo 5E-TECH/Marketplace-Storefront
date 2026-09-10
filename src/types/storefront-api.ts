@@ -3,6 +3,7 @@ import type { components } from "@/generated/api-types";
 // Backend DTOs come only from the checked-in OpenAPI snapshot.
 export type StorefrontProductDto = components["schemas"]["StorefrontProductDto"];
 export type StorefrontProductsResponse = components["schemas"]["StorefrontProductsPageDto"];
+export type StorefrontShopPageResponse = components["schemas"]["StorefrontShopPageDto"];
 export type StorefrontVariantDto = components["schemas"]["ProductVariantDto"];
 export type StorefrontShopDto = components["schemas"]["SellerShopDto"];
 export type StorefrontCategoryDto = components["schemas"]["StorefrontCategoryDto"];

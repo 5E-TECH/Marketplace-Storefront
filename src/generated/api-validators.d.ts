@@ -2,6 +2,7 @@
 import type { components } from "./api-types";
 export declare const validateStorefrontProductDto: (value: unknown) => value is components["schemas"]["StorefrontProductDto"];
 export declare const validateStorefrontProductsPageDto: (value: unknown) => value is components["schemas"]["StorefrontProductsPageDto"];
+export declare const validateStorefrontShopPageDto: (value: unknown) => value is components["schemas"]["StorefrontShopPageDto"];
 export declare const validateCategoryTreeDto: (value: unknown) => value is components["schemas"]["CategoryTreeDto"];
 export declare const validateProductDto: (value: unknown) => value is components["schemas"]["ProductDto"];
 export declare const validateMyProductsPageDto: (value: unknown) => value is components["schemas"]["MyProductsPageDto"];

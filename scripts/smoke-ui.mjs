@@ -6,7 +6,8 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 const base = process.env.UI_TEST_URL ?? "http://127.0.0.1:3001";
-const routes = ["/", "/?sort=price%3Aasc&page=2", "/katalog", "/katalog/audio?sort=price%3Aasc", "/cart", "/checkout", "/favorites", "/product/demo-headphones", "/profile", "/profile/orders", "/ui-kit"];
+const productUrl = "/mahsulot/airbeat-pro-simsiz-quloqchin";
+const routes = ["/", "/?sort=price%3Aasc&page=2", "/katalog", "/katalog/audio?sort=price%3Aasc", "/cart", "/checkout", "/favorites", productUrl, "/dokon/elchi-tech", "/profile", "/profile/orders", "/ui-kit"];
 const homeResponse = await fetch(base);
 const homeHtml = await homeResponse.text();
 assert.equal(homeResponse.status, 200);
@@ -18,6 +19,21 @@ const emptyResponse = await fetch(`${base}/?search=__missing_product__`);
 const emptyHtml = await emptyResponse.text();
 assert.equal(emptyResponse.status, 200);
 assert.match(emptyHtml, /Mahsulot topilmadi/, "Empty search needs an understandable SSR message");
+
+const productResponse = await fetch(`${base}${productUrl}`);
+const productHtml = await productResponse.text();
+assert.equal(productResponse.status, 200);
+assert.match(productHtml, /AirBeat Pro simsiz quloqchin/, "Product name must be present in SSR HTML");
+assert.match(productHtml, /property="og:title" content="AirBeat Pro simsiz quloqchin"/, "Telegram title must be server-rendered");
+assert.match(productHtml, /property="og:image"/, "Telegram image must be server-rendered");
+assert.match(productHtml, /name="twitter:card" content="summary_large_image"/, "Large social card metadata must be server-rendered");
+assert.match(productHtml, /application\/ld\+json/, "Google Product structured data must be server-rendered");
+assert.match(productHtml, /schema.org\/InStock/, "Structured data must contain availability");
+const missingProduct = await fetch(`${base}/mahsulot/mavjud-emas`);
+assert.equal(missingProduct.status, 404, "Unknown product slug must return HTTP 404");
+const legacyProduct = await fetch(`${base}/product/demo-headphones`, { redirect: "manual" });
+assert.equal(legacyProduct.status, 308, "Legacy product URL must permanently redirect");
+assert.equal(legacyProduct.headers.get("location"), productUrl);
 const profile = await mkdtemp(join(tmpdir(), "elchi-ui-browser-"));
 const chrome = spawn(process.env.CHROME_PATH ?? "google-chrome", [
   "--headless=new",
@@ -123,6 +139,23 @@ try {
   })`);
   assert.deepEqual(pageState, { page: "2", sort: "price:asc", pagination: "2 / 2", activeSort: "Arzondan qimmatga" });
 
+  await send("Page.navigate", { url: `${base}${productUrl}` });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.detail-summary h1'))"), "product detail");
+  const initialProduct = await evaluate(`({
+    title: document.querySelector(".detail-summary h1")?.textContent.trim(),
+    images: document.querySelectorAll(".detail-thumbs button").length,
+    stock: document.querySelector(".stock-status")?.textContent.trim(),
+    shop: document.querySelector(".seller-link")?.getAttribute("href"),
+    sizes: [...document.querySelectorAll(".variant-options button")].map((button) => button.textContent.trim()),
+  })`);
+  assert.equal(initialProduct.title, "AirBeat Pro simsiz quloqchin");
+  assert.ok(initialProduct.images >= 2, "Image gallery must contain thumbnails");
+  assert.equal(initialProduct.stock, "18 ta qoldi");
+  assert.equal(initialProduct.shop, "/dokon/elchi-tech");
+  assert.ok(initialProduct.sizes.some((size) => size.includes("256 GB")), "Size/storage variants must be rendered");
+  await evaluate(`[...document.querySelectorAll(".variant-options button")].find((button) => button.textContent.includes("256 GB")).click()`);
+  await until(() => evaluate("Number(document.querySelector('.purchase-price .price strong').textContent.replace(/\\D/g, '')) === 999000"), "variant price update");
+
   await send("Page.navigate", { url: `${base}/ui-kit` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "UI kit content");
   const components = await evaluate(`(() => {
@@ -137,7 +170,7 @@ try {
     };
   })()`);
   assert.deepEqual(components, { image: true, name: true, price: true, shop: true, empty: true, error: true });
-  console.log(`PASS: SSR catalog, pagination and empty state; slug category and URL filters; ${routes.length} routes at 375px without horizontal overflow.`);
+  console.log(`PASS: SSR catalog and product metadata; gallery, variants, price, shop link and 404; pagination and URL filters; ${routes.length} routes at 375px without horizontal overflow.`);
 } finally {
   socket?.close();
   chrome.kill();

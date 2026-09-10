@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { catalogHref } from "@/lib/catalog-query";
+import { productPath } from "@/lib/product-url";
 import type { CatalogCategory, Product, ProductQuery, ProductSort } from "@/types/commerce";
 import { ProductGrid } from "./product-grid";
 import { Button, Container, SectionHeader } from "./ui";
@@ -11,7 +12,7 @@ export function Hero({ product }: { product?: Product }) {
   if (!product) return null;
   return <Container><section className="hero">
     <div className="hero-copy"><span className="hero-kicker">{product.shop?.name ?? product.category}</span><h1>{product.name}</h1><p>{product.description}</p>
-      <div className="hero-buttons"><Link className="button button--primary" href={`/product/${product.id}`}>Hozir xarid qilish <ArrowRight size={18}/></Link><Link className="button button--secondary" href="#products">Katalogni ko‘rish</Link></div>
+      <div className="hero-buttons"><Link className="button button--primary" href={productPath(product)}>Hozir xarid qilish <ArrowRight size={18}/></Link><Link className="button button--secondary" href="#products">Katalogni ko‘rish</Link></div>
       <div className="hero-meta"><span>★ {product.rating} / 5 reyting</span><span>{product.reviews} ta sharh</span></div>
     </div>
     <div className="hero-visual"><Image src={product.image} alt={product.name} fill priority sizes="(max-width: 768px) 100vw, 52vw"/><div className="hero-product-label"><small>{product.shop?.name ?? "Marketplace"}</small><b>{formatPrice(product.price)} so‘m</b></div></div>
@@ -39,7 +40,7 @@ export function Benefits() { return <Container><div className="benefits">{benefi
 export function Inspiration({ products }: { products: Product[] }) {
   const items = products.slice(1, 5);
   if (!items.length) return null;
-  return <Container><section className="content-section"><SectionHeader title="Siz uchun g‘oyalar" link="Katalogga o‘tish"/><div className="inspiration-grid">{items.map((product) => <Link href={`/product/${product.id}`} key={product.id} className="inspiration-card"><Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 80vw, 25vw"/><div><h3>{product.name}</h3><p>{product.shop?.name ?? product.category}</p></div><span><ArrowRight/></span></Link>)}</div></section></Container>;
+  return <Container><section className="content-section"><SectionHeader title="Siz uchun g‘oyalar" link="Katalogga o‘tish"/><div className="inspiration-grid">{items.map((product) => <Link href={productPath(product)} key={product.id} className="inspiration-card"><Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 80vw, 25vw"/><div><h3>{product.name}</h3><p>{product.shop?.name ?? product.category}</p></div><span><ArrowRight/></span></Link>)}</div></section></Container>;
 }
 
 export function Newsletter() { return <Container><section className="newsletter"><div><span>FAQAT A’ZOLAR UCHUN</span><h2>Yaxshi takliflar sizni topsin.</h2><p>Yangi mahsulotlar va yopiq chegirmalarni birinchi bo‘lib oling.</p></div><form><input id="newsletter-email" name="email" type="email" required aria-label="Email manzil" placeholder="Email manzilingiz"/><Button type="submit">Obuna bo‘lish</Button></form></section></Container>; }

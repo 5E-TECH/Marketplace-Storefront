@@ -108,3 +108,9 @@ test('category service uses backend slugs and finds nested categories', async ()
   assert.equal(categories.source, 'api');
   assert.equal(findCategoryBySlug(categories.data, 'mobil-telefonlar').id, '7');
 });
+
+test('product links use the backend slug and fall back to an SEO-safe name', () => {
+  const { productPath, productSlug } = loadTypeScript('src/lib/product-url.ts');
+  assert.equal(productPath({ name: 'Ignored name', slug: 'iphone-16-pro' }), '/mahsulot/iphone-16-pro');
+  assert.equal(productSlug({ name: 'AirBeat Pro simsiz quloqchin' }), 'airbeat-pro-simsiz-quloqchin');
+});

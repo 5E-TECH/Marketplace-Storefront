@@ -12,7 +12,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Frontend: http://localhost:3001. `.env.local` ichida backend manzilini belgilang. `USE_MOCK_DATA=true` faqat katalog uchun demo mahsulotlarni yoqadi; savatcha va sevimlilar uchun backend kerak.
+Frontend: http://localhost:3001. `.env.local` ichida backend manzilini belgilang. Productionda `NEXT_PUBLIC_SITE_URL=https://domen.uz` ko‘rinishida haqiqiy frontend domenini yozing; Telegram preview va canonical URL shu qiymatdan yaratiladi. `USE_MOCK_DATA=true` faqat katalog uchun demo mahsulotlarni yoqadi; savatcha va sevimlilar uchun backend kerak.
 
 ```sh
 npm run check       # TypeScript, ESLint, regression testlar, production build
@@ -34,11 +34,11 @@ Katalog serverda yuklanadi va 30 soniyalik revalidation ishlatadi. Bu brauzerda 
 
 ## Integratsiya holati
 
-Katalog, mahsulot detail, savatcha va sevimlilar backend API bilan ishlaydi. Endpointlar: [API_CONTRACT.md](API_CONTRACT.md).
+Katalog, `/mahsulot/<slug>` mahsulot sahifasi, `/dokon/<slug>` do‘kon sahifasi, savatcha va sevimlilar backend API bilan ishlaydi. Mahsulot sahifasi Telegram uchun Open Graph/Twitter teglarini va Google uchun Product JSON-LD ma’lumotini serverda chiqaradi. Endpointlar: [API_CONTRACT.md](API_CONTRACT.md).
 
 Telefon tasdiqlash **demo**: `111111`, SMS yuborilmaydi va haqiqiy access token yaratilmaydi. Buyurtmalar faqat shu brauzerning localStorage xotirasida saqlanadi; backend buyurtmasi, haqiqiy karta to‘lovi, foydalanuvchilar orasida ajratilgan buyurtma tarixi hali yo‘q. Demo checkout backenddagi savatcha elementlarini tozalashga urinadi. Uni real savdo jarayoni deb ishlatishdan oldin auth, order va payment API contractlari bilan integratsiya qilish kerak.
 
-Obuna formasi, ijtimoiy tarmoq havolalari, manzillar boshqaruvi va marketingdagi reyting/yetkazish da’volari to‘liq biznes integratsiyasini kutmoqda. Statik kategoriya ID’lari backend kategoriyalari bilan moslashtirilishi kerak.
+Obuna formasi, manzillar boshqaruvi va marketingdagi yetkazish da’volari to‘liq biznes integratsiyasini kutmoqda.
 
 ## GitHub
 
