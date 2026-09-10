@@ -25,6 +25,7 @@ const productHtml = await productResponse.text();
 assert.equal(productResponse.status, 200);
 assert.match(productHtml, /AirBeat Pro simsiz quloqchin/, "Product name must be present in SSR HTML");
 assert.match(productHtml, /property="og:title" content="AirBeat Pro simsiz quloqchin"/, "Telegram title must be server-rendered");
+assert.match(productHtml, /property="og:description" content="899 000 so‘m/, "Telegram description must contain the server-rendered price");
 assert.match(productHtml, /property="og:image"/, "Telegram image must be server-rendered");
 assert.match(productHtml, /name="twitter:card" content="summary_large_image"/, "Large social card metadata must be server-rendered");
 assert.match(productHtml, /application\/ld\+json/, "Google Product structured data must be server-rendered");
@@ -144,17 +145,25 @@ try {
   const initialProduct = await evaluate(`({
     title: document.querySelector(".detail-summary h1")?.textContent.trim(),
     images: document.querySelectorAll(".detail-thumbs button").length,
-    stock: document.querySelector(".stock-status")?.textContent.trim(),
+    price: Number(document.querySelector(".purchase-price .price strong")?.textContent.replace(/\\D/g, "")),
+    description: document.querySelector("[data-testid=product-description]")?.textContent.trim(),
+    stock: document.querySelector("[data-testid=product-stock]")?.textContent.trim(),
     shop: document.querySelector(".seller-link")?.getAttribute("href"),
     sizes: [...document.querySelectorAll(".variant-options button")].map((button) => button.textContent.trim()),
   })`);
   assert.equal(initialProduct.title, "AirBeat Pro simsiz quloqchin");
   assert.ok(initialProduct.images >= 2, "Image gallery must contain thumbnails");
+  assert.equal(initialProduct.price, 899000, "Initial product price must be visible");
+  assert.ok(initialProduct.description?.length > 20, "Product description must be visible");
   assert.equal(initialProduct.stock, "18 ta qoldi");
   assert.equal(initialProduct.shop, "/dokon/elchi-tech");
   assert.ok(initialProduct.sizes.some((size) => size.includes("256 GB")), "Size/storage variants must be rendered");
   await evaluate(`[...document.querySelectorAll(".variant-options button")].find((button) => button.textContent.includes("256 GB")).click()`);
   await until(() => evaluate("Number(document.querySelector('.purchase-price .price strong').textContent.replace(/\\D/g, '')) === 999000"), "variant price update");
+  assert.equal(await evaluate("document.querySelector('[data-testid=product-stock]').textContent.trim()"), "8 ta qoldi", "Variant stock must update with its price");
+  await evaluate(`[...document.querySelectorAll(".variant-options button")].find((button) => button.textContent.includes("#e7e2d8")).click()`);
+  await until(() => evaluate("Number(document.querySelector('.purchase-price .price strong').textContent.replace(/\\D/g, '')) === 1029000"), "color variant price update");
+  assert.equal(await evaluate("document.querySelector('[data-testid=product-stock]').textContent.trim()"), "Sotuvda yo‘q", "Out-of-stock variant must update availability");
 
   await send("Page.navigate", { url: `${base}/ui-kit` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "UI kit content");

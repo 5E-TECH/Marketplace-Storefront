@@ -16,6 +16,8 @@ const raw = await proxyResponse.json();
 const catalog = raw.data ?? raw;
 assert.ok(catalog.items.length > 0, 'Acceptance requires real backend products');
 for (const product of catalog.items) assert.ok(html.includes(product.name));
+const product = catalog.items.find((item) => item.slug && item.variants?.some((variant) => variant.isActive !== false && variant.stock !== 0));
+assert.ok(product, 'Acceptance requires a real product with an available variant');
 
 const profile = await mkdtemp(join(tmpdir(), 'elchi-api-browser-'));
 const chrome = spawn(process.env.CHROME_PATH ?? 'google-chrome', ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
@@ -65,8 +67,16 @@ try {
   await send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await evaluate("document.querySelector('[data-testid=browser-retry]').click()");
   await until(() => evaluate(success), 'recovery after offline');
+  await send('Page.navigate', { url: `${base}/mahsulot/${encodeURIComponent(product.slug)}` });
+  await until(() => evaluate("document.readyState === 'complete' && document.querySelector('[data-testid=product-add-to-cart]') && !document.querySelector('[data-testid=product-add-to-cart]').disabled"), 'real product and cart initialization');
+  await evaluate("document.querySelector('[data-testid=product-add-to-cart]').click()");
+  const cartItem = await until(() => evaluate("document.querySelector('.cart-drawer.open .cart-item')?.textContent"), 'real add to cart');
+  assert.ok(cartItem.includes(product.name), `Cart must contain ${product.name}`);
+  await until(() => evaluate("document.querySelector('[data-testid=cart-remove-item]') && !document.querySelector('[data-testid=cart-remove-item]').disabled"), 'cart remove button');
+  await evaluate("document.querySelector('[data-testid=cart-remove-item]').click()");
+  await until(() => evaluate("!document.querySelector('.cart-item')"), 'real cart cleanup');
   assert.deepEqual(exceptions, []);
-  console.log(`PASS: SSR, proxy and Chrome loaded ${catalog.items.length} real products; offline and recovery passed.`);
+  console.log(`PASS: SSR, proxy and Chrome loaded ${catalog.items.length} real products; offline/recovery and real add-to-cart passed.`);
 } finally {
   socket?.close();
   chrome.kill();
