@@ -1332,7 +1332,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Provayder sozlanganligini tekshirish (maxfiy kalitsiz) */
+        get: operations["PaymentsController_providerStatus"];
         /** To‘lov provayderi konfiguratsiyasini saqlash */
         put: operations["PaymentsController_upsertProviderConfig"];
         post?: never;
@@ -1707,6 +1708,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit jurnali (actor/action/sana filtr + sahifalash) */
+        get: operations["AdminAuditController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin jamoasi ro‘yxati */
+        get: operations["AdminTeamController_list"];
+        put?: never;
+        /** Admin jamoasiga a’zo qo‘shish */
+        post: operations["AdminTeamController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/team/{id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Jamoa a’zosi rolini o‘zgartirish */
+        patch: operations["AdminTeamController_updateRole"];
+        trace?: never;
+    };
+    "/api/v1/admin/team/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Jamoa a’zosini o‘chirish */
+        delete: operations["AdminTeamController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1724,7 +1794,7 @@ export interface components {
              * @default BUYER
              * @enum {string}
              */
-            role?: "SELLER" | "OPERATOR" | "BUYER" | "ADMIN" | "SUPERADMIN";
+            role?: "BUYER" | "SELLER";
         };
         AuthUserDto: {
             /** @example 42 */
@@ -2797,6 +2867,11 @@ export interface components {
             createdAt: string;
         };
         UpsertProviderConfigDto: {
+            /**
+             * @description Click service_id (merchant_id dan alohida)
+             * @example 12345
+             */
+            serviceId?: string;
             /** @example merchant-123 */
             merchantId?: string;
             /** @example provider-secret */
@@ -2889,6 +2964,60 @@ export interface components {
             rating: number;
             /** @example Mahsulot juda yaxshi ekan */
             comment?: string;
+        };
+        AdminTeamMemberDto: {
+            /** @example 7 */
+            id: string;
+            /** @example Admin Operator */
+            name: string;
+            /** @example +998901112233 */
+            phone: string;
+            /** @enum {string} */
+            role: "ADMIN" | "SUPERADMIN";
+            /** @example true */
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateAdminTeamMemberDto: {
+            /** @example Admin Operator */
+            name: string;
+            /** @example +998901112233 */
+            phone: string;
+            /**
+             * @example ADMIN
+             * @enum {string}
+             */
+            role: "ADMIN" | "SUPERADMIN";
+            /** @description Berilmasa bir martalik vaqtinchalik parol yaratiladi */
+            password?: string;
+        };
+        CreateAdminTeamMemberResultDto: {
+            /** @example 7 */
+            id: string;
+            /** @example Admin Operator */
+            name: string;
+            /** @example +998901112233 */
+            phone: string;
+            /** @enum {string} */
+            role: "ADMIN" | "SUPERADMIN";
+            /** @example true */
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /** @description Parol bodyda berilmagan bo‘lsa faqat shu javobda qaytadi */
+            temporaryPassword?: string;
+        };
+        UpdateAdminTeamRoleDto: {
+            /**
+             * @example ADMIN
+             * @enum {string}
+             */
+            role: "ADMIN" | "SUPERADMIN";
         };
     };
     responses: never;
@@ -5491,6 +5620,25 @@ export interface operations {
             };
         };
     };
+    PaymentsController_providerStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     PaymentsController_upsertProviderConfig: {
         parameters: {
             query?: never;
@@ -6044,6 +6192,179 @@ export interface operations {
         requestBody?: never;
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminAuditController_list: {
+        parameters: {
+            query?: {
+                /** @description Amalni bajargan user ID */
+                actorId?: string;
+                action?: string;
+                dateFrom?: string;
+                dateTo?: string;
+                page?: components["schemas"]["Object"];
+                limit?: components["schemas"]["Object"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { items, total, page, limit, totalPages } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Filtr yoki sahifalash qiymati noto‘g‘ri */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTeamController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTeamMemberDto"][];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminTeamController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAdminTeamMemberDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateAdminTeamMemberResultDto"];
+                };
+            };
+            /** @description Telefon allaqachon band */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminTeamController_updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAdminTeamRoleDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTeamMemberDto"];
+                };
+            };
+            /** @description Oxirgi SUPERADMIN himoyalangan */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminTeamController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description { id, removed: true } */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Oxirgi SUPERADMIN himoyalangan */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
