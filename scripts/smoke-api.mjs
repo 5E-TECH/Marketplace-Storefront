@@ -67,11 +67,11 @@ try {
   await send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await evaluate("document.querySelector('[data-testid=browser-retry]').click()");
   await until(() => evaluate(success), 'recovery after offline');
-  await send('Page.navigate', { url: `${base}/mahsulot/${encodeURIComponent(product.slug)}` });
+  await send('Page.navigate', { url: `${base}/mahsulot/${encodeURIComponent(`${product.slug}-p-${product.id}`)}` });
   await until(() => evaluate("document.readyState === 'complete' && document.querySelector('[data-testid=product-add-to-cart]') && !document.querySelector('[data-testid=product-add-to-cart]').disabled"), 'real product and cart initialization');
   await evaluate("document.querySelector('[data-testid=product-add-to-cart]').click()");
-  const cartItem = await until(() => evaluate("document.querySelector('.cart-drawer.open .cart-item')?.textContent"), 'real add to cart');
-  assert.ok(cartItem.includes(product.name), `Cart must contain ${product.name}`);
+  await until(() => evaluate("document.querySelector('.header .bag span')?.textContent === '1'"), 'real add to cart');
+  assert.equal(await evaluate("Boolean(document.querySelector('.cart-drawer'))"), false, 'Adding to cart must not open a drawer');
   assert.equal(await evaluate("document.querySelector('.header .bag span')?.textContent"), '1', 'Header badge must show the guest cart quantity');
   await send('Page.navigate', { url: `${base}/cart` });
   await until(() => evaluate("document.readyState === 'complete' && document.querySelector('[data-testid=cart-page-item]') && !document.querySelector('.cart-page-item .quantity button:last-child').disabled"), 'real cart page');

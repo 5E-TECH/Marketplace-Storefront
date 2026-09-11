@@ -5,6 +5,8 @@ type Context = { params: Promise<{ path: string[] }> };
 // Only expose operations used by this storefront. Backend remains responsible for authorization.
 const routes: [RegExp, string[]][] = [
   [/^\/categories$/, ["GET"]],
+  [/^\/regions$/, ["GET"]],
+  [/^\/regions\/[^/]+\/districts$/, ["GET"]],
   [/^\/storefront\/products(?:\/[^/]+)?$/, ["GET"]],
   [/^\/storefront\/shops\/[^/]+\/products$/, ["GET"]],
   [/^\/storefront\/shops\/[^/]+$/, ["GET"]],
@@ -18,6 +20,7 @@ const routes: [RegExp, string[]][] = [
   [/^\/checkout$/, ["POST"]],
   [/^\/checkout\/delivery-preview$/, ["POST"]],
   [/^\/checkout\/[^/]+\/confirm$/, ["POST"]],
+  [/^\/orders\/[^/]+\/tracking$/, ["GET"]],
   [/^\/favorites$/, ["GET"]],
   [/^\/favorites\/[^/]+$/, ["POST", "DELETE"]],
   [/^\/favorites\/[^/]+\/check$/, ["GET"]],

@@ -2,21 +2,30 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { cartService, cartTotals } from "@/services/cart.service";
-import type { AddCartInput, Cart } from "@/types/commerce";
+import type { AddCartInput, Cart, CartItem } from "@/types/commerce";
 
-type CartContextValue = Cart & { loading: boolean; error: string | null; open: boolean; quantity: number; subtotal: number; setOpen: (open: boolean) => void; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void>; clear: () => Promise<void>; refresh: () => Promise<void> };
+type CartContextValue = Cart & { loading: boolean; error: string | null; quantity: number; subtotal: number; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void>; clear: () => Promise<void>; refresh: () => Promise<void>; beginCheckout: () => boolean; endCheckout: () => void };
 const CartContext = createContext<CartContextValue | null>(null);
-type CartActionsContextValue = { add: (input: AddCartInput) => Promise<boolean> };
+type CartActionsContextValue = { items: CartItem[]; loading: boolean; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void> };
 const CartActionsContext = createContext<CartActionsContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart>({ items: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const pending = useRef(0);
-  const run = useCallback((action: () => Promise<Cart>): Promise<boolean> => {
+  const checkoutLock = useRef(false);
+  const [checkoutPending, setCheckoutPending] = useState(false);
+  const beginCheckout = useCallback(() => {
+    if (checkoutLock.current || pending.current > 0) return false;
+    checkoutLock.current = true;
+    setCheckoutPending(true);
+    return true;
+  }, []);
+  const endCheckout = useCallback(() => { checkoutLock.current = false; setCheckoutPending(false); }, []);
+  const run = useCallback((action: () => Promise<Cart>, mutation = false): Promise<boolean> => {
+    if (mutation && checkoutLock.current) return Promise.resolve(false);
     pending.current += 1;
     setLoading(true);
     const task = queue.current.then(async () => {
@@ -39,18 +48,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("elchi:guest-merged", refresh);
   }, [refresh]);
   const add = useCallback(async (input: AddCartInput) => {
-    const success = await run(() => cartService.add(input));
-    setOpen(true);
-    return success;
+    return run(() => cartService.add(input), true);
   }, [run]);
-  const actions = useMemo(() => ({ add }), [add]);
-  const value = useMemo(() => ({ ...cart, ...cartTotals(cart.items), loading, error, open, setOpen,
+  const update = useCallback(async (id: string, quantity: number) => { await run(() => cartService.update(id, quantity), true); }, [run]);
+  const remove = useCallback(async (id: string) => { await run(() => cartService.remove(id), true); }, [run]);
+  const actions = useMemo(() => ({ items: cart.items, loading: loading || checkoutPending, add, update, remove }), [add, cart.items, checkoutPending, loading, remove, update]);
+  const value = useMemo(() => ({ ...cart, ...cartTotals(cart.items), loading: loading || checkoutPending, error, beginCheckout, endCheckout,
     add,
-    update: async (id: string, quantity: number) => { await run(() => cartService.update(id, quantity)); },
-    remove: async (id: string) => { await run(() => cartService.remove(id)); },
-    clear: async () => { await run(() => cartService.clear()); },
+    update,
+    remove,
+    clear: async () => { await run(() => cartService.clear(), true); },
     refresh,
-  }), [add, cart, error, loading, open, refresh, run]);
+  }), [add, beginCheckout, cart, checkoutPending, endCheckout, error, loading, refresh, remove, run, update]);
   return <CartActionsContext.Provider value={actions}><CartContext.Provider value={value}>{children}</CartContext.Provider></CartActionsContext.Provider>;
 }
 

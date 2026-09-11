@@ -23,6 +23,21 @@ test('cart totals use the selected variant price and normalize invalid quantitie
   assert.deepEqual(cartTotals(cart.items), { quantity: 3, subtotal: 500 });
 });
 
+test('repeated cart refreshes reuse product metadata instead of producing N+1 requests', async () => {
+  let productRequests = 0;
+  const cartResponse = { items: [{ id: 'a', productId: '1', variantId: 'v', unitPriceSnapshot: 100, quantity: 1 }] };
+  const { cartService } = loadTypeScript('src/services/cart.service.ts', {
+    '@/lib/api': { ApiError: class extends Error {}, apiRequest: async (path) => {
+      if (path === '/cart') return cartResponse;
+      productRequests++;
+      return product;
+    } },
+  });
+  await cartService.get();
+  await cartService.get();
+  assert.equal(productRequests, 1);
+});
+
 test('cart rows are grouped by seller and each seller subtotal is calculated', () => {
   const { groupCartItemsBySeller } = loadTypeScript('src/lib/cart-groups.ts');
   const items = [
@@ -123,7 +138,7 @@ test('clearing an order snapshot does not refetch and delete newly added items',
   assert.deepEqual(calls, [['/cart/items/original', { method: 'DELETE' }]]);
 });
 
-test('a saved order remains successful if cart cleanup fails', async (t) => {
+test('confirmed backend receipts are saved without creating orders or clearing carts', async (t) => {
   const stored = new Map();
   const originalStorage = globalThis.localStorage;
   const originalWindow = globalThis.window;
@@ -136,8 +151,10 @@ test('a saved order remains successful if cart cleanup fails', async (t) => {
   const { orderService } = loadTypeScript('src/services/order.service.ts', {
     './cart.service': { cartService: { get: async () => ({ items: [{ id: 'a', product, quantity: 1 }] }), clear: async () => { throw new Error('offline'); } }, cartTotals: () => ({ subtotal: 100 }) },
   });
-  const order = await orderService.create({ name: 'Ali', phone: '+998901234567', address: 'Toshkent' }, 'cash', 0);
-  assert.ok(order.warning);
+  const order = { id: 'backend-order-77', items: [], total: 100 };
+  await orderService.record(order);
+  await orderService.record(order);
+  assert.equal((await orderService.list())[0].id, 'backend-order-77');
   assert.equal((await orderService.list()).length, 1);
 });
 
@@ -188,8 +205,10 @@ test('category service uses backend slugs and finds nested categories', async ()
   assert.equal(findCategoryBySlug(categories.data, 'mobil-telefonlar').id, '7');
 });
 
-test('product links use the backend slug and fall back to an SEO-safe name', () => {
-  const { productPath, productSlug } = loadTypeScript('src/lib/product-url.ts');
-  assert.equal(productPath({ name: 'Ignored name', slug: 'iphone-16-pro' }), '/mahsulot/iphone-16-pro');
+test('product links carry the ID for a direct detail request and retain an SEO slug', () => {
+  const { productIdFromRoute, productPath, productSlug } = loadTypeScript('src/lib/product-url.ts');
+  assert.equal(productPath({ id: 77, name: 'Ignored name', slug: 'iphone-16-pro' }), '/mahsulot/iphone-16-pro-p-77');
+  assert.equal(productIdFromRoute('iphone-16-pro-p-77'), '77');
+  assert.equal(productIdFromRoute('legacy-slug'), null);
   assert.equal(productSlug({ name: 'AirBeat Pro simsiz quloqchin' }), 'airbeat-pro-simsiz-quloqchin');
 });

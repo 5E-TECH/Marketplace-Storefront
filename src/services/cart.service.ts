@@ -5,22 +5,33 @@ import { ApiError } from "@/lib/api";
 import { normalizeApiProduct } from "@/lib/normalize-product";
 
 const CART_PATH = "/cart";
+const PRODUCT_CACHE_TTL_MS = 5 * 60_000;
+const PRODUCT_CACHE_LIMIT = 100;
+type CachedProduct = { expiresAt: number; promise: Promise<unknown> };
+const productCache = new Map<string, CachedProduct>();
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" ? value as Record<string, unknown> : {};
+const cartProduct = (productId: string): Promise<unknown> => {
+  const now = Date.now();
+  const cached = productCache.get(productId);
+  if (cached && cached.expiresAt > now) return cached.promise;
+  if (cached) productCache.delete(productId);
+  if (productCache.size >= PRODUCT_CACHE_LIMIT) productCache.delete(productCache.keys().next().value as string);
+  const promise = apiRequest(`/storefront/products/${encodeURIComponent(productId)}`, { validate: validateStorefrontProductDto })
+    .catch((error) => {
+      productCache.delete(productId);
+      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+      return { id: productId, name: `Mahsulot #${productId}` };
+    });
+  productCache.set(productId, { expiresAt: now + PRODUCT_CACHE_TTL_MS, promise });
+  return promise;
+};
 const normalizeCart = async (response: unknown): Promise<Cart> => {
   const root = object(response);
   const data = object(root.data ?? response);
   const rawItems = Array.isArray(data.items) ? data.items : Array.isArray(root.items) ? root.items : [];
   // The contract returns product IDs and price snapshots, not embedded products.
   const productIds = [...new Set(rawItems.filter((input) => !object(input).product && !object(object(input).variant).product).map((input) => String(object(input).productId)))];
-  const products = new Map<string, unknown>(await Promise.all(productIds.map(async (productId) => {
-    try {
-      const product = await apiRequest(`/storefront/products/${encodeURIComponent(productId)}`, { validate: validateStorefrontProductDto });
-      return [productId, product] as const;
-    } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 404) throw error;
-      return [productId, { id: productId, name: `Mahsulot #${productId}` }] as const;
-    }
-  })));
+  const products = new Map<string, unknown>(await Promise.all(productIds.map(async (productId) => [productId, await cartProduct(productId)] as const)));
   const items = rawItems.map((input): CartItem | null => {
     const item = object(input);
     const variant = object(item.variant);

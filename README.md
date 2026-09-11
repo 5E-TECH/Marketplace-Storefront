@@ -36,7 +36,7 @@ Katalog serverda yuklanadi va 30 soniyalik revalidation ishlatadi. Bu brauzerda 
 
 Katalog, `/mahsulot/<slug>` mahsulot sahifasi, `/dokon/<slug>` do‘kon sahifasi, savatcha va sevimlilar backend API bilan ishlaydi. Mahsulot sahifasi Telegram uchun Open Graph/Twitter teglarini va Google uchun Product JSON-LD ma’lumotini serverda chiqaradi. Endpointlar: [API_CONTRACT.md](API_CONTRACT.md).
 
-Login backendning `/auth/login` endpointi bilan ishlaydi. Mehmon savati va sevimlilar login muvaffaqiyatli bo‘lgach `/guest/merge` orqali akkauntga birlashtiriladi. Buyurtmalar hozircha shu brauzerning localStorage xotirasida saqlanadi; backend buyurtmasi va haqiqiy karta to‘lovi hali ulanmagan.
+Login backendning `/auth/login` endpointi bilan ishlaydi. Mehmon savati va sevimlilar login muvaffaqiyatli bo‘lgach `/guest/merge` orqali akkauntga birlashtiriladi. Checkout haqiqiy backendda buyurtma yaratadi va COD (qo‘lga to‘lash) buyurtmasini tasdiqlaydi. Buyurtmalar sahifasi hozircha shu brauzerda saqlangan tasdiqlangan buyurtma nusxalarini ko‘rsatadi; backenddagi yetkazish holatini kuzatish va onlayn karta to‘lovi hali ulanmagan.
 
 Obuna formasi, manzillar boshqaruvi va marketingdagi yetkazish da’volari to‘liq biznes integratsiyasini kutmoqda.
 
@@ -75,3 +75,28 @@ API_TEST_URL=http://127.0.0.1:3101 npm run test:api:live
 ```
 
 Test Google Chrome (`CHROME_PATH` bilan almashtirish mumkin) orqali mahsulotlarning SSR HTML va brauzerda chiqishini, internet uzilgandagi xatoni va qayta ulanishni tekshiradi. U real backendga bog‘liq bo‘lgani uchun odatiy CI unit testlaridan alohida ishlatiladi.
+
+## Checkout
+
+`/checkout` mehmon va kirgan xaridorning mavjud savatini ishlatadi. Oqim: `POST /checkout/delivery-preview` → `POST /checkout` → `POST /checkout/:orderId/confirm`. Barcha so‘rovlarda savatning `X-Session-Id` qiymati, kirgan xaridorda access token ham bor. Yaratish uchun `Idempotency-Key` proxy orqali saqlanadi. Yaratish javobi yo‘qolsa bir xil kalit bilan qayta so‘raladi; ID olingach faqat tasdiqlash takrorlanadi. SessionStorage davom etayotgan buyurtmani sahifa yangilanganda tiklaydi. Backend bir xil kalitni deduplikatsiya qilishi va COD tasdiqlashni takrorlashga ruxsat berishi kerak.
+
+Tasdiqlangach xaridor `/orders/:orderId?placed=1` sahifasiga o‘tadi. Buyurtma cheki mehmon uchun localStorage’da qoladi, `/track-order` saqlangan raqamlarni ko‘rsatadi va qo‘lda raqam kiritishga imkon beradi. Holat `GET /orders/:orderId/tracking` orqali `X-Session-Id` yoki login tokeni bilan yangilanadi; backend hali mavjud bo‘lmasa saqlangan chek ko‘rsatiladi.
+
+Manzil/miqdor/narx o‘zgarganda eski yetkazish hisobi darhol bekor bo‘ladi. Narx olinmasdan tasdiqlash mumkin emas. So‘rov vaqtida savat mutatsiyalari bloklanadi. Tasdiqlangan buyurtmani brauzer tarixiga saqlashdagi xato backend muvaffaqiyatini bekor qilmaydi.
+
+### Viloyat va tumanlar
+
+Checkout viloyatlarni `GET /regions`, tanlangan viloyat tumanlarini `GET /regions/:regionId/districts` orqali oladi. Tanlov qiymatlari backendning haqiqiy IDlari bo‘lib, preview va buyurtma yaratish so‘rovlariga `regionId` hamda `districtId` sifatida yuboriladi. Endpoint ishlamasa select bloklanadi va qayta yuklash tugmasi chiqadi; lokal yoki tartib raqamidan yasalgan ID ishlatilmaydi.
+
+### Checkout tekshiruvlari
+
+```sh
+npm run check
+npm run test:checkout # builddan keyin: lokal fixture backend + Chrome, haqiqiy buyurtmasiz
+```
+
+Brauzer testi mehmon oqimi, proxy headerlari, mobil ekran, ikki marta bosish, eski narxni bekor qilish, narxni qayta hisoblash, qoldiq/manzil xatolari, create/confirm timeoutidan keyin reload va tarixga yozishdagi xatoni tekshiradi.
+
+Haqiqiy sotuvchi kabinetida ko‘rinishini tekshirish uchun `npm run test:checkout:live` bor. Bu **haqiqiy COD test buyurtmasi yaratadi**. Ishlab turgan storefront va test sotuvchi/mahsulotdan foydalaning. Kerakli env: `CHECKOUT_API_URL` (`/api/v1` bilan), `CHECKOUT_TEST_PRODUCT_ID`, `CHECKOUT_TEST_VARIANT_ID`, `CHECKOUT_TEST_NAME`, `CHECKOUT_TEST_PHONE`, `CHECKOUT_TEST_ADDRESS`. Seller auth uchun `CHECKOUT_SELLER_TOKEN_FILE` yoki `CHECKOUT_SELLER_PHONE` + `CHECKOUT_SELLER_PASSWORD_FILE` beriladi; parol va token repoga yozilmaydi. Ixtiyoriy: `CHECKOUT_STOREFRONT_URL` (standart `http://127.0.0.1:3001`), `CHECKOUT_TEST_REGION_ID`, `CHECKOUT_TEST_DISTRICT_ID`. Test `/seller/orders`dagi `salesOrderId` orqali natijani tekshiradi; test buyurtmasi ko‘rib chiqish uchun kabinetda qoldiriladi.
+
+Kabinetdagi eski `CheckoutPage`ni olib tashlash alohida C5.4 vazifasidir; bu repository storefront oqimini amalga oshiradi.

@@ -14,7 +14,9 @@
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check",
     "test:api:live": "node scripts/smoke-api.mjs",
-    "test:ui": "node scripts/smoke-ui.mjs"
+    "test:ui": "node scripts/smoke-ui.mjs",
+    "test:checkout": "node scripts/smoke-checkout.mjs",
+    "test:checkout:live": "node scripts/smoke-checkout-live.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

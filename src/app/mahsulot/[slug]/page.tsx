@@ -7,14 +7,15 @@ import { ProductDetail } from "@/components/product-detail";
 import { ProductCard } from "@/components/product-card";
 import { Container, SectionHeader } from "@/components/ui";
 import { formatPrice } from "@/lib/format";
-import { productPath } from "@/lib/product-url";
+import { productIdFromRoute, productPath } from "@/lib/product-url";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/commerce";
 
 type Props = { params: Promise<{ slug: string }> };
 
 const getProductPageData = cache(async (slug: string) => {
-  const product = await productService.getBySlug(slug);
+  const productId = productIdFromRoute(slug);
+  const product = productId ? await productService.getById(productId) : await productService.getBySlug(slug);
   if (!product) return { product: null, similar: [] };
   const catalog = product.shop?.id
     ? await productService.listByShop(product.shop.id, { page: 1, limit: 6 })

@@ -12,6 +12,7 @@ const readLocal = (): Order[] => {
 
 export const orderService = {
   async list(): Promise<Order[]> { return readLocal(); },
+  async find(id: string): Promise<Order | null> { return readLocal().find((item) => item.id === id) ?? null; },
   async record(order: Order): Promise<void> {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...readLocal().filter((item) => item.id !== order.id)]));
   },

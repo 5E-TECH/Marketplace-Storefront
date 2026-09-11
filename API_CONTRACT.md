@@ -53,9 +53,20 @@ Brauzer `X-Session-Id` va mavjud bo‘lsa `Authorization: Bearer ...` yuboradi. 
 
 `product-admin.service.ts`: `/products`, `/products/my`, `/products/:id` va `/products/:productId/variants` operatsiyalari. Request va response DTO’lari generatsiya qilingan tiplarga bog‘langan. Haqiqiy access token tashqaridan beriladi; seller UI hozir yo‘q.
 
-## Ushbu vazifa doirasidan tashqarida
+## Auth va checkout
 
-OpenAPI auth, checkout va payment endpointlarini ham hujjatlashtiradi. Hozirgi `auth.service.ts` demo session, `order.service.ts` esa localStorage buyurtmasini ishlatadi. Ularni haqiqiy foydalanuvchi va to‘lov oqimiga ulash bu HTTP qatlamidan alohida vazifa.
+`auth.service.ts`: `POST /auth/login`, so‘ng `POST /guest/merge`. Checkout mehmon uchun ham `X-Session-Id` bilan ishlaydi:
+
+- `POST /checkout/delivery-preview`: `{ address: CheckoutAddressDto }`.
+- `POST /checkout`: `CreateCheckoutDto`, `paymentMethod: "cod"`; `Idempotency-Key` va `X-Session-Id` saqlanadi.
+- `POST /checkout/:orderId/confirm`: yaratilgan COD buyurtmani tasdiqlash.
+- `GET /orders/:orderId/tracking`: xaridor yoki shu mehmon sessiyasiga tegishli buyurtma holati. `X-Session-Id` yoki bearer token qabul qiladi. Javobda kamida `orderId`/`salesOrderId`/`id` va `status`; ixtiyoriy `estimatedDeliveryAt`, `updatedAt`, `trackingUrl`, `shipment.status` bo‘ladi. Storefront `PENDING`, `CONFIRMED`, `SHIPMENT_CREATED`, `ON_THE_ROAD`, `DELIVERED`, `CANCELLED`, `RETURNED` holatlarini ko‘rsatadi. Boshqa xaridor buyurtmasi uchun ma’lumot bermasligi, topilmagan yoki ruxsatsiz raqamga 404 qaytarishi kerak.
+
+Snapshot preview/create/confirm javob turlarini bermaydi. Preview adapteri umumiy yetkazish haqi va barcha posilkalar narxini tekshiradi; yetishmagan yoki noto‘g‘ri narx bepul deb olinmaydi. 2026-09-11 kuni haqiqiy preview `{ subtotal, deliveryFee, totalAmount, packages: [{ shopId, itemsCount, subtotal, deliveryFee, totalAmount }] }` shaklida keldi. Yaratish javobidan kabinetdagi adapter kabi `orderId`, `id` yoki `salesOrderId` o‘qiladi.
+
+Hudud ma’lumotlari ochiq endpointlardan olinadi: `GET /regions` va `GET /regions/:regionId/districts`. Checkout backend qaytargan haqiqiy `regionId` va `districtId`ni preview hamda create so‘rovlariga yuboradi. O‘qiladigan `address` qiymati viloyat, tuman va ko‘cha nomlaridan yig‘iladi.
+
+`order.service.ts` faqat tasdiqlangan backend buyurtmasining brauzerdagi nusxasini saqlaydi. Sotuvchi kabineti buyurtmalarni `/seller/orders`dan oladi. Onlayn karta to‘lovi va xaridorning backend buyurtma tarixini ulash alohida vazifa.
 
 ## Tekshirish
 

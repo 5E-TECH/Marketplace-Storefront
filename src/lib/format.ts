@@ -11,3 +11,9 @@ export const formatDate = (value: string): string => {
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   return `${day}.${month}.${date.getUTCFullYear()}`;
 };
+
+export const formatDateTime = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return `${formatDate(value)}, ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+};

@@ -8,6 +8,7 @@ import { PhoneAuthModal } from "./phone-auth-modal";
 
 const links = [
   { href: "/profile/orders", icon: Package, title: "Buyurtmalarim", text: "Buyurtmalar tarixi va holati" },
+  { href: "/track-order", icon: Package, title: "Buyurtmani kuzatish", text: "Buyurtma raqami orqali holatini tekshiring" },
   { href: "/favorites", icon: Heart, title: "Sevimlilar", text: "Saqlangan mahsulotlar" },
   { href: "/cart", icon: ShoppingBag, title: "Savatcha", text: "Tanlangan mahsulotlar" },
   { href: "/profile", icon: MapPin, title: "Manzillar", text: "Yetkazib berish manzillari" },

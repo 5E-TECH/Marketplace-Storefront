@@ -20,8 +20,15 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, []);
   useEffect(() => {
     let active = true;
-    queueMicrotask(() => { if (active) void refresh(); });
-    return () => { active = false; };
+    const load = () => { if (active) void refresh(); };
+    // Favorites do not block the first interaction. Load them when the browser is idle,
+    // with a short deadline so the header count still appears promptly.
+    if ("requestIdleCallback" in window) {
+      const handle = window.requestIdleCallback(load, { timeout: 1_000 });
+      return () => { active = false; window.cancelIdleCallback(handle); };
+    }
+    const handle = setTimeout(load, 200);
+    return () => { active = false; clearTimeout(handle); };
   }, [refresh]);
   useEffect(() => {
     window.addEventListener("elchi:guest-merged", refresh);
