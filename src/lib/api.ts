@@ -87,7 +87,7 @@ export async function apiRequest<T = unknown>(path: string, options: ApiOptions<
     if (response.status === 401 && typeof window !== "undefined" && getAccessToken()) window.dispatchEvent(new CustomEvent("elchi:auth-expired"));
     throw new ApiError(response.status, message, data, response.status === 504 ? "timeout" : response.status === 502 && error.kind === "network" ? "network" : response.status === 404 ? "not_found" : "http");
   }
-  if (response.status === 204 || response.status === 205) {
+  if (response.status === 204 || response.status === 205 || !content) {
     if (validate) throw new ApiError(response.status, "Backend kutilgan javobni qaytarmadi", undefined, "invalid_response");
     return undefined as T;
   }

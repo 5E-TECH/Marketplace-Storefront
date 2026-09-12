@@ -28,7 +28,6 @@ export function ProductDetail({ product }: { product: Product }) {
     if (!selectedVariant) return;
     const added = await cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant.id });
     if (!added) return;
-    cart.setOpen(false);
     router.push("/checkout");
   };
 

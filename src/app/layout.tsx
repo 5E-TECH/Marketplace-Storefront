@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { CartDrawer } from "@/components/cart-drawer";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { CartProvider } from "@/providers/cart-provider";
@@ -19,7 +18,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const categories = await categoryService.list();
   return (
     <html lang="uz">
-      <body><FavoritesProvider><CartProvider><Header categories={categories.data}/>{children}<Footer/><CartDrawer/></CartProvider></FavoritesProvider></body>
+      <body><FavoritesProvider><CartProvider><Header categories={categories.data}/>{children}<Footer/></CartProvider></FavoritesProvider></body>
     </html>
   );
 }

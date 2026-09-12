@@ -37,7 +37,7 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
         <form className="search" onSubmit={submitSearch}><Search size={18}/><input id="header-search" name="search" value={search} onChange={(event) => setSearch(event.target.value)} aria-label="Mahsulot qidirish" placeholder="Nima qidiryapsiz?" />{search && <button className="search-clear" type="button" onClick={() => setSearch("")} aria-label="Qidiruvni tozalash"><X/></button>}</form>
         <Link className="icon-button header-favorite" href="/favorites" aria-label={`Sevimlilar: ${favorites.count}`}><Heart fill={favorites.count ? "currentColor" : "none"}/>{favorites.count > 0 && <span>{favorites.count > 99 ? "99+" : favorites.count}</span>}</Link>
         <Link className="user-action" href="/profile" aria-label="Kirish yoki profil"><UserRound/><span>Kirish</span></Link>
-        <button className="icon-button bag" onClick={() => cart.setOpen(true)} aria-label="Savatcha"><ShoppingBag />{cart.quantity > 0 && <span>{cart.quantity > 99 ? "99+" : cart.quantity}</span>}</button>
+        <Link className="icon-button bag" href="/cart" aria-label={`Savatcha: ${cart.quantity} ta mahsulot`}><ShoppingBag />{cart.quantity > 0 && <span>{cart.quantity > 99 ? "99+" : cart.quantity}</span>}</Link>
       </div>
     </Container>
     <div className="category-strip"><Container>{categories.slice(0, 6).map((category) => <Link href={`/katalog/${category.slug}`} onClick={() => setCatalogOpen(false)} key={category.id}><span>{category.icon}</span>{category.name}</Link>)}<button type="button" className={catalogOpen ? "active" : ""} onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu">Yana <ChevronDown/></button></Container></div>

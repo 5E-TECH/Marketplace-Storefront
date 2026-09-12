@@ -55,7 +55,7 @@ Brauzer `X-Session-Id` va mavjud bo‘lsa `Authorization: Bearer ...` yuboradi. 
 
 ## Ushbu vazifa doirasidan tashqarida
 
-OpenAPI auth, checkout va payment endpointlarini ham hujjatlashtiradi. Hozirgi `auth.service.ts` demo session, `order.service.ts` esa localStorage buyurtmasini ishlatadi. Ularni haqiqiy foydalanuvchi va to‘lov oqimiga ulash bu HTTP qatlamidan alohida vazifa.
+OpenAPI checkout endpointlari storefrontga ulangan: delivery preview, idempotent order yaratish va COD confirm. `order.service.ts` localStorage’dan faqat tasdiqlangan buyurtmaning xaridor ko‘radigan qisqa tarix nusxasi sifatida foydalanadi.
 
 ## Tekshirish
 

@@ -4,6 +4,7 @@ import { proxyBackend } from "@/lib/backend-proxy";
 type Context = { params: Promise<{ path: string[] }> };
 // Only expose operations used by this storefront. Backend remains responsible for authorization.
 const routes: [RegExp, string[]][] = [
+  [/^\/auth\/login$/, ["POST"]],
   [/^\/categories$/, ["GET"]],
   [/^\/storefront\/products(?:\/[^/]+)?$/, ["GET"]],
   [/^\/storefront\/shops\/[^/]+\/products$/, ["GET"]],
@@ -13,6 +14,10 @@ const routes: [RegExp, string[]][] = [
   [/^\/cart\/items$/, ["POST"]],
   [/^\/cart\/items\/[^/]+$/, ["PATCH", "DELETE"]],
   [/^\/cart\/merge$/, ["POST"]],
+  [/^\/checkout$/, ["POST"]],
+  [/^\/checkout\/delivery-preview$/, ["POST"]],
+  [/^\/checkout\/[^/]+\/confirm$/, ["POST"]],
+  [/^\/orders\/[^/]+\/tracking$/, ["GET"]],
   [/^\/favorites$/, ["GET"]],
   [/^\/favorites\/[^/]+$/, ["POST", "DELETE"]],
   [/^\/favorites\/[^/]+\/check$/, ["GET"]],

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ApiError, apiResponse } from "@/lib/api";
 
-const FORWARDED_HEADERS = ["authorization", "cookie", "accept-language", "x-session-id", "content-type"] as const;
+const FORWARDED_HEADERS = ["authorization", "cookie", "accept-language", "x-session-id", "idempotency-key", "content-type"] as const;
 
 export async function proxyBackend(request: NextRequest, path: string): Promise<Response> {
   const headers = new Headers();
