@@ -20,8 +20,13 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, []);
   useEffect(() => {
     let active = true;
-    queueMicrotask(() => { if (active) void refresh(); });
-    return () => { active = false; };
+    const load = () => { if (active) void refresh(); };
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(load, { timeout: 1_000 });
+      return () => { active = false; window.cancelIdleCallback(idleId); };
+    }
+    const timeoutId = setTimeout(load, 200);
+    return () => { active = false; clearTimeout(timeoutId); };
   }, [refresh]);
   useEffect(() => {
     window.addEventListener("elchi:guest-merged", refresh);

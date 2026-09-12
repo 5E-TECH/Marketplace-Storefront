@@ -36,7 +36,7 @@ Katalog serverda yuklanadi va 30 soniyalik revalidation ishlatadi. Bu brauzerda 
 
 Katalog, mahsulot detail, savatcha va sevimlilar backend API bilan ishlaydi. Endpointlar: [API_CONTRACT.md](API_CONTRACT.md).
 
-Telefon tasdiqlash **demo**: `111111`, SMS yuborilmaydi va haqiqiy access token yaratilmaydi. Buyurtmalar faqat shu brauzerning localStorage xotirasida saqlanadi; backend buyurtmasi, haqiqiy karta to‘lovi, foydalanuvchilar orasida ajratilgan buyurtma tarixi hali yo‘q. Demo checkout backenddagi savatcha elementlarini tozalashga urinadi. Uni real savdo jarayoni deb ishlatishdan oldin auth, order va payment API contractlari bilan integratsiya qilish kerak.
+Checkout mehmon sessiyasi bilan ishlaydi: yetkazish narxini backenddan oladi, buyurtmani idempotent tarzda yaratadi va COD sifatida tasdiqlaydi. Tasdiqlangan buyurtmaning qisqa nusxasi shu brauzerda xaridor tarixi uchun saqlanadi. Karta orqali to‘lov hali yoqilmagan.
 
 Obuna formasi, ijtimoiy tarmoq havolalari, manzillar boshqaruvi va marketingdagi reyting/yetkazish da’volari to‘liq biznes integratsiyasini kutmoqda. Statik kategoriya ID’lari backend kategoriyalari bilan moslashtirilishi kerak.
 

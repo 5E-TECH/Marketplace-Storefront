@@ -1,0 +1,75 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
+
+const base = process.env.CART_TEST_URL ?? "http://127.0.0.1:3002";
+const profile = await mkdtemp(join(tmpdir(), "elchi-cart-browser-"));
+const chrome = spawn(process.env.CHROME_PATH ?? "google-chrome", ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"], { stdio: "ignore" });
+let socket;
+let spawnError;
+chrome.on("error", (error) => { spawnError = error; });
+
+async function until(check, description) {
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (spawnError) throw spawnError;
+    const value = await check();
+    if (value) return value;
+    await delay(150);
+  }
+  throw new Error(`Timed out: ${description}`);
+}
+
+try {
+  const port = await until(async () => (await readFile(join(profile, "DevToolsActivePort"), "utf8").catch(() => "")).split("\n")[0], "Chrome startup");
+  const targets = await fetch(`http://127.0.0.1:${port}/json/list`).then((response) => response.json());
+  socket = new WebSocket(targets.find((target) => target.type === "page").webSocketDebuggerUrl);
+  await new Promise((resolve, reject) => { socket.addEventListener("open", resolve, { once: true }); socket.addEventListener("error", reject, { once: true }); });
+  let sequence = 0;
+  const pending = new Map();
+  const exceptions = [];
+  socket.addEventListener("message", (event) => {
+    const data = JSON.parse(event.data);
+    if (data.method === "Runtime.exceptionThrown") exceptions.push(data.params.exceptionDetails.text);
+    const request = pending.get(data.id);
+    if (!request) return;
+    pending.delete(data.id);
+    if (data.error) request.reject(new Error(data.error.message)); else request.resolve(data.result);
+  });
+  const send = (method, params = {}) => new Promise((resolve, reject) => {
+    const id = ++sequence;
+    const deadline = setTimeout(() => { pending.delete(id); reject(new Error(`CDP timeout: ${method}`)); }, 10_000);
+    pending.set(id, { resolve: (value) => { clearTimeout(deadline); resolve(value); }, reject: (error) => { clearTimeout(deadline); reject(error); } });
+    socket.send(JSON.stringify({ id, method, params }));
+  });
+  const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result.value;
+  await send("Runtime.enable");
+  await send("Page.enable");
+  await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
+  await send("Page.navigate", { url: base });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean([...document.querySelectorAll('[data-testid=product-card-add]')].find((button) => !button.disabled))"), "enabled cart button");
+  assert.equal(await evaluate("Boolean(document.querySelector('.cart-drawer'))"), false, "Cart drawer must not be rendered");
+  await evaluate("[...document.querySelectorAll('[data-testid=product-card-add]')].find((button) => !button.disabled).click()");
+  assert.equal(await until(() => evaluate("document.querySelector('[data-testid=product-card-stepper] b')?.textContent"), "inline quantity stepper"), "1");
+  await evaluate("document.querySelector('[data-testid=product-card-stepper] button:last-child').click()");
+  await until(() => evaluate("document.querySelector('[data-testid=product-card-stepper] b')?.textContent === '2'"), "quantity increase");
+  assert.equal(await evaluate("document.querySelector('.bag')?.getAttribute('href')"), "/cart");
+  await evaluate("document.querySelector('.bag').click()");
+  await until(() => evaluate("location.pathname === '/cart' && Boolean(document.querySelector('[data-testid=cart-item]'))"), "full cart page");
+  assert.equal(await evaluate("document.querySelector('[data-testid=cart-item] .quantity b')?.textContent"), "2");
+  assert.ok(await evaluate("Boolean(document.querySelector('.order-summary'))"));
+  assert.ok(await evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"), "Mobile cart must not overflow horizontally");
+  await until(() => evaluate("!document.querySelector('[data-testid=cart-item] button[aria-label=\"O‘chirish\"]')?.disabled"), "cart actions ready");
+  await evaluate("document.querySelector('[data-testid=cart-item] button[aria-label=\"O‘chirish\"]').click()");
+  await until(() => evaluate("!document.querySelector('[data-testid=cart-item]')"), "cart cleanup");
+  assert.deepEqual(exceptions, []);
+  console.log("PASS: inline −/quantity/+ controls, no drawer, full cart page, totals and cleanup.");
+} finally {
+  socket?.close();
+  chrome.kill();
+  await delay(300);
+  await rm(profile, { recursive: true, force: true });
+}

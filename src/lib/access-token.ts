@@ -21,6 +21,13 @@ export const setAccessToken = (token: string): void => {
   localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
 };
 
+export const clearAccessToken = (): void => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  sessionStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+  localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+};
+
 export const getGuestSessionId = (): string => {
   if (typeof window === "undefined") return "";
   const current = localStorage.getItem(GUEST_SESSION_KEY);

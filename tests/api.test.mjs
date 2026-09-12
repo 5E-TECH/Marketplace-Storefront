@@ -47,6 +47,51 @@ test('browser uses same-origin proxy and session headers without exposing backen
   assert.deepEqual(await apiRequest('/storefront/products', { params: { limit: 5 }, headers: new Headers({ Authorization: 'Bearer override' }), validate: validateStorefrontProductsPageDto }), page);
 });
 
+test('checkout proxy forwards guest session and idempotency headers upstream', async () => {
+  let forwarded;
+  const { proxyBackend } = loadTypeScript('src/lib/backend-proxy.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/api': {
+      ApiError: class ApiError extends Error {},
+      apiResponse: async (path, options) => { forwarded = { path, options }; return Response.json({ id: 'order-1' }, { status: 201 }); },
+    },
+  });
+  const request = {
+    method: 'POST',
+    headers: new Headers({ 'X-Session-Id': 'guest-1', 'Idempotency-Key': 'request-1', 'Content-Type': 'application/json' }),
+    text: async () => '{"paymentMethod":"cod"}',
+    nextUrl: { searchParams: new URLSearchParams() },
+  };
+  const response = await proxyBackend(request, '/checkout');
+  assert.equal(response.status, 201);
+  assert.equal(forwarded.options.headers.get('x-session-id'), 'guest-1');
+  assert.equal(forwarded.options.headers.get('idempotency-key'), 'request-1');
+});
+
+test('generic proxy explicitly allows checkout preview, create and confirm routes', async () => {
+  const paths = [];
+  const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/backend-proxy': { proxyBackend: async (_request, path) => { paths.push(path); return new Response(null, { status: 201 }); } },
+  });
+  const request = { method: 'POST' };
+  await route.POST(request, { params: Promise.resolve({ path: ['checkout', 'delivery-preview'] }) });
+  await route.POST(request, { params: Promise.resolve({ path: ['checkout'] }) });
+  await route.POST(request, { params: Promise.resolve({ path: ['checkout', 'order-1', 'confirm'] }) });
+  assert.deepEqual(paths, ['/checkout/delivery-preview', '/checkout', '/checkout/order-1/confirm']);
+});
+
+test('generic proxy allows buyer and guest order tracking', async () => {
+  const paths = [];
+  const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/backend-proxy': { proxyBackend: async (_request, path) => { paths.push(path); return Response.json({ status: 'CONFIRMED' }); } },
+  });
+  const response = await route.GET({ method: 'GET' }, { params: Promise.resolve({ path: ['orders', 'order-1', 'tracking'] }) });
+  assert.equal(response.status, 200);
+  assert.deepEqual(paths, ['/orders/order-1/tracking']);
+});
+
 test('offline, 404, 500 and proxy timeout produce explicit API error kinds', async (t) => {
   const { apiRequest } = client();
   const mockedFetch = t.mock.method(globalThis, 'fetch', async () => { throw new TypeError('offline'); });
@@ -116,6 +161,7 @@ test('contract cart rows keep price snapshots and resolve each product only once
   } });
   const cart = await cartService.get();
   assert.equal(cart.items.length, 2);
+  assert.equal(cart.items[0].shopId, cartResponse.items[0].shopId);
   assert.deepEqual(cartTotals(cart.items), { quantity: 3, subtotal: 400 });
   assert.deepEqual(calls, ['/cart', `/storefront/products/${product.id}`]);
 });

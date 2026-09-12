@@ -2,18 +2,17 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { cartService, cartTotals } from "@/services/cart.service";
-import type { AddCartInput, Cart } from "@/types/commerce";
+import type { AddCartInput, Cart, CartItem } from "@/types/commerce";
 
-type CartContextValue = Cart & { loading: boolean; error: string | null; open: boolean; quantity: number; subtotal: number; setOpen: (open: boolean) => void; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void>; clear: () => Promise<void>; refresh: () => Promise<void> };
+type CartContextValue = Cart & { loading: boolean; error: string | null; quantity: number; subtotal: number; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void>; clear: () => Promise<void>; refresh: () => Promise<void> };
 const CartContext = createContext<CartContextValue | null>(null);
-type CartActionsContextValue = { add: (input: AddCartInput) => Promise<boolean> };
+type CartActionsContextValue = { items: CartItem[]; loading: boolean; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void> };
 const CartActionsContext = createContext<CartActionsContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart>({ items: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const pending = useRef(0);
   const run = useCallback((action: () => Promise<Cart>): Promise<boolean> => {
@@ -39,18 +38,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("elchi:guest-merged", refresh);
   }, [refresh]);
   const add = useCallback(async (input: AddCartInput) => {
-    const success = await run(() => cartService.add(input));
-    setOpen(true);
-    return success;
+    return run(() => cartService.add(input));
   }, [run]);
-  const actions = useMemo(() => ({ add }), [add]);
-  const value = useMemo(() => ({ ...cart, ...cartTotals(cart.items), loading, error, open, setOpen,
+  const update = useCallback(async (id: string, quantity: number) => { await run(() => cartService.update(id, quantity)); }, [run]);
+  const remove = useCallback(async (id: string) => { await run(() => cartService.remove(id)); }, [run]);
+  const clear = useCallback(async () => { await run(() => cartService.clear(cart)); }, [cart, run]);
+  const actions = useMemo(() => ({ items: cart.items, loading, add, update, remove }), [add, cart.items, loading, remove, update]);
+  const value = useMemo(() => ({ ...cart, ...cartTotals(cart.items), loading, error,
     add,
-    update: async (id: string, quantity: number) => { await run(() => cartService.update(id, quantity)); },
-    remove: async (id: string) => { await run(() => cartService.remove(id)); },
-    clear: async () => { await run(() => cartService.clear()); },
+    update,
+    remove,
+    clear,
     refresh,
-  }), [add, cart, error, loading, open, refresh, run]);
+  }), [add, cart, clear, error, loading, refresh, remove, update]);
   return <CartActionsContext.Provider value={actions}><CartContext.Provider value={value}>{children}</CartContext.Provider></CartActionsContext.Provider>;
 }
 
