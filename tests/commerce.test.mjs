@@ -196,8 +196,17 @@ test('an unconfirmed backend order is not reported as successful or removed from
   assert.equal((await orderService.list()).length, 0);
 });
 
-test('buyer and guest tracking use the public order endpoint and normalize Elchi statuses', async () => {
+test('tracking adapter normalizes a mocked response and refreshes the saved order status', async (t) => {
   const calls = [];
+  const stored = new Map([['elchi_orders_v1', JSON.stringify([{ id: 'order/42', status: 'Qabul qilindi' }])]]);
+  const originalStorage = globalThis.localStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = {};
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value) } });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
   const { orderService, normalizeOrderStatus } = loadTypeScript('src/services/order.service.ts', {
     '@/lib/api': { apiRequest: async (path, options) => {
       calls.push([path, options]);
@@ -210,6 +219,7 @@ test('buyer and guest tracking use the public order endpoint and normalize Elchi
   assert.equal(tracking.status, 'Yo‘lda');
   assert.equal(tracking.packages[0].status, 'Yo‘lda');
   assert.equal(tracking.packages[0].id, '7');
+  assert.equal(JSON.parse(stored.get('elchi_orders_v1'))[0].status, 'Yo‘lda');
   assert.equal(normalizeOrderStatus('delivered'), 'Yetkazildi');
   assert.equal(normalizeOrderStatus('cancelled'), 'Bekor qilindi');
 });
@@ -223,6 +233,14 @@ test('tracking rejects an empty or oversized order id before calling backend', a
   await assert.rejects(orderService.track('   '), /raqami noto‘g‘ri/);
   await assert.rejects(orderService.track('x'.repeat(129)), /raqami noto‘g‘ri/);
   assert.equal(called, false);
+});
+
+test('tracking rejects a response that does not match the buyer tracking contract', async () => {
+  const { orderService } = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest: async () => ({ orderId: '42', orderStatus: 'CONFIRMED' }) },
+    './cart.service': { cartService: {} },
+  });
+  await assert.rejects(orderService.track('42'), /tracking javobini noto‘g‘ri/);
 });
 
 test('API client preserves Headers authorization when sending JSON', async (t) => {

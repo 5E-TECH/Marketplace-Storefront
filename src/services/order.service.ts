@@ -63,10 +63,15 @@ const safeHttpUrl = (value: unknown): string | undefined => {
   try { return ["http:", "https:"].includes(new URL(text).protocol) ? text : undefined; }
   catch { return undefined; }
 };
-const normalizeTracking = (response: unknown, requestedId: string): OrderTracking => {
+const normalizeTracking = (response: unknown): OrderTracking => {
   const root = object(response);
   const order = object(root.order ?? root.salesOrder);
   const shipmentValues = root.packages ?? root.shipments ?? order.packages ?? order.shipments;
+  const rawId = root.orderId ?? root.salesOrderId ?? root.id ?? order.id;
+  const rawStatus = root.deliveryStatus ?? root.orderStatus ?? root.status ?? order.status;
+  if ((typeof rawId !== "string" && typeof rawId !== "number") || !String(rawId).trim() || typeof rawStatus !== "string" || !Array.isArray(shipmentValues)) {
+    throw new Error("Backend tracking javobini noto‘g‘ri qaytardi");
+  }
   const packages: TrackingPackage[] = Array.isArray(shipmentValues) ? shipmentValues.map((value, index) => {
     const item = object(value);
     return {
@@ -78,9 +83,7 @@ const normalizeTracking = (response: unknown, requestedId: string): OrderTrackin
       updatedAt: optionalText(item.updatedAt),
     };
   }) : [];
-  const rawId = root.orderId ?? root.salesOrderId ?? root.id ?? order.id;
-  const id = typeof rawId === "string" || typeof rawId === "number" ? String(rawId) : requestedId;
-  const rawStatus = root.deliveryStatus ?? root.orderStatus ?? root.status ?? order.status;
+  const id = String(rawId);
   return {
     orderId: id,
     status: rawStatus === undefined && packages[0] ? packages[0].status : normalizeOrderStatus(rawStatus),
@@ -101,7 +104,16 @@ export const orderService = {
   async track(orderId: string): Promise<OrderTracking> {
     const id = orderId.trim();
     if (!id || id.length > 128) throw new Error("Buyurtma raqami noto‘g‘ri");
-    return normalizeTracking(await apiRequest(`/orders/${encodeURIComponent(id)}/tracking`, { method: "GET" }), id);
+    const tracking = normalizeTracking(await apiRequest(`/orders/${encodeURIComponent(id)}/tracking`, { method: "GET" }));
+    if (typeof window !== "undefined") {
+      const orders = readLocal();
+      const index = orders.findIndex((order) => order.id === id);
+      if (index >= 0) {
+        orders[index] = { ...orders[index], status: tracking.status };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(orders)); } catch { /* Tracking remains usable if storage is unavailable. */ }
+      }
+    }
+    return tracking;
   },
   preview: previewDelivery,
   async create(address: CheckoutAddress, idempotencyKey: string, preview?: DeliveryPreview): Promise<Order> {
@@ -114,9 +126,10 @@ export const orderService = {
     const id = orderIdFrom(created);
     await apiRequest(`/checkout/${encodeURIComponent(id)}/confirm`, { method: "POST" });
     const order: Order = { id, createdAt: new Date().toISOString(), status: "Qabul qilindi", customer: { name: address.recipientName, phone: address.phone, address: address.address }, items: cart.items, subtotal: delivery.subtotal, delivery: delivery.deliveryFee, total: delivery.totalAmount, payment: "cash" };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...readLocal().filter((item) => item.id !== id)]));
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...readLocal().filter((item) => item.id !== id)])); }
+    catch { order.warning = `Buyurtma qabul qilindi. Brauzerda saqlab bo‘lmadi; buyurtma raqamini yozib oling: ${id}.`; }
     try { await cartService.clear(cart); }
-    catch { order.warning = "Buyurtma yaratildi, lekin savatchani tozalab bo‘lmadi. Buyurtmani qayta yubormang."; }
+    catch { order.warning = [order.warning, "Buyurtma yaratildi, lekin savatchani tozalab bo‘lmadi. Buyurtmani qayta yubormang."].filter(Boolean).join(" "); }
     return order;
   },
 };

@@ -57,6 +57,20 @@ Brauzer `X-Session-Id` va mavjud bo‘lsa `Authorization: Bearer ...` yuboradi. 
 
 OpenAPI checkout endpointlari storefrontga ulangan: delivery preview, idempotent order yaratish va COD confirm. `order.service.ts` localStorage’dan faqat tasdiqlangan buyurtmaning xaridor ko‘radigan qisqa tarix nusxasi sifatida foydalanadi.
 
+## Xaridor buyurtmasini kuzatish — backend talabi
+
+Storefront quyidagi endpoint tayyor bo‘lishini kutadi:
+
+- `GET /orders/{orderId}/tracking`
+- autentifikatsiyadan o‘tgan xaridor uchun `Authorization: Bearer ...`;
+- mehmon uchun buyurtma yaratilganda ishlatilgan `X-Session-Id`; 2026-09-14 jonli tekshiruvda ayni sessiyaga tegishli buyurtma `200`, begona sessiya `403` qaytardi;
+- begona sessiyaga buyurtma ma’lumotini bermaslik;
+- topilmagan buyurtma uchun `404`, sessiya buyurtmaga tegishli bo‘lmasa `403`;
+- javob: `orderId`, `orderStatus`, ixtiyoriy `estimatedDeliveryAt`, `updatedAt`, va `shipments` massivi;
+- har bir shipment: `shipmentId`, ixtiyoriy `shopId`, `shopName`, `shipmentStatus`, `trackingUrl`, `updatedAt`.
+
+Qo‘llanadigan statuslar: `PENDING`/`CONFIRMED`, `PROCESSING`/`SHIPMENT_CREATED`, `IN_TRANSIT`/`ON_THE_ROAD`/`OUT_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`, `RETURNED`. Muvaffaqiyatli javob shu DTO bilan OpenAPI sxemasiga kiritilishi kerak. Endpoint qo‘shilgach `npm run api:sync && npm run api:generate && npm run check` bajariladi.
+
 ## Tekshirish
 
 `npm run check`: artifactlar yangiligi, TypeScript, ESLint, unit/regression testlar va production build.

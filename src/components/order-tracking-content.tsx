@@ -17,15 +17,20 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
   const [tracking, setTracking] = useState<OrderTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState(false);
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
     setError("");
+    setNotFound(false);
     try {
       const [snapshot, current] = await Promise.all([orderService.getLocal(orderId), orderService.track(orderId)]);
       setOrder(snapshot); setTracking(current);
     } catch (caught) {
       setOrder(await orderService.getLocal(orderId));
-      setError(caught instanceof ApiError && caught.status === 404 ? "Bu raqam bilan buyurtma topilmadi. Raqamni tekshirib qayta urinib ko‘ring." : caught instanceof Error ? caught.message : "Buyurtma holatini olib bo‘lmadi");
+      const missing = caught instanceof ApiError && caught.status === 404;
+      setNotFound(missing);
+      if (missing || (caught instanceof ApiError && [401, 403].includes(caught.status))) { setTracking(null); setOrder(null); }
+      setError(missing ? "Bu raqam bilan buyurtma topilmadi. Raqamni tekshirib qayta urinib ko‘ring." : caught instanceof ApiError && [401, 403].includes(caught.status) ? "Buyurtmani uni yaratgan brauzerda oching yoki o‘z hisobingizga kiring." : "Buyurtma holatini hozir yuklab bo‘lmadi. Birozdan keyin qayta urinib ko‘ring.");
     } finally { setLoading(false); }
   }, [orderId]);
   useEffect(() => {
@@ -36,7 +41,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
   }, [load]);
   if (loading) return <section className="tracking-page" role="status"><div className="orders-loading">Buyurtma holati yuklanmoqda...</div></section>;
-  if (!tracking) return <section className="page-empty"><span><Package/></span><h1>Buyurtma topilmadi</h1><p role="alert">{error || "Buyurtma ma’lumoti mavjud emas."}</p><button className="button button--primary" onClick={() => void load()}>Qayta urinish</button><Link className="button button--secondary" href="/profile/orders">Buyurtmalarim</Link></section>;
+  if (!tracking) return <section className="page-empty"><span><Package/></span><h1>{notFound ? "Buyurtma topilmadi" : "Buyurtma holatini yuklab bo‘lmadi"}</h1><p>Buyurtma raqami: {orderId}</p><p role="alert">{error || "Buyurtma ma’lumoti mavjud emas."}</p><button className="button button--primary" onClick={() => void load()}>Qayta urinish</button><Link className="button button--secondary" href="/profile/orders">Buyurtmalarim</Link></section>;
   const current = steps.indexOf(tracking.status);
   return <section className="tracking-page"><div className="page-heading"><div><span>BUYURTMA HOLATI</span><h1>#{tracking.orderId}</h1></div><button onClick={() => void load()}><RefreshCw/> Yangilash</button></div>
     {error && <p className="form-error" role="alert">{error}</p>}
