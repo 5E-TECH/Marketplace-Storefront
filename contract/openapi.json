@@ -4444,6 +4444,34 @@
         ]
       }
     },
+    "/api/v1/orders/{orderId}/tracking": {
+      "get": {
+        "operationId": "OrdersController_tracking",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "x-session-id",
+            "required": false,
+            "in": "header",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Xaridor buyurtmasi va Elchi yetkazish holati" }
+        },
+        "security": [
+          { "bearer": [] },
+          {}
+        ],
+        "summary": "Xaridor o‘z buyurtmasini kuzatishi",
+        "tags": ["orders"]
+      }
+    },
     "/api/v1/payments": {
       "post": {
         "operationId": "PaymentsController_create",

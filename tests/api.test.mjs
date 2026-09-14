@@ -81,7 +81,7 @@ test('generic proxy explicitly allows checkout preview, create and confirm route
   assert.deepEqual(paths, ['/checkout/delivery-preview', '/checkout', '/checkout/order-1/confirm']);
 });
 
-test('generic proxy allows buyer and guest order tracking', async () => {
+test('generic proxy allows the tracking route once backend implements its contract', async () => {
   const paths = [];
   const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
     'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
