@@ -1,5 +1,8 @@
 import { apiRequest } from "@/lib/api";
+import { authHeaders, getAccessToken } from "@/lib/access-token";
+import { validateBuyerOrdersPageDto } from "@/generated/api-validators";
 import type { CheckoutAddress, DeliveryPreview, Order, OrderStatus, OrderTracking, TrackingPackage } from "@/types/commerce";
+import type { BuyerOrdersResponse } from "@/types/storefront-api";
 import { cartService } from "./cart.service";
 
 const STORAGE_KEY = "elchi_orders_v1";
@@ -63,6 +66,38 @@ const safeHttpUrl = (value: unknown): string | undefined => {
   try { return ["http:", "https:"].includes(new URL(text).protocol) ? text : undefined; }
   catch { return undefined; }
 };
+const normalizeBuyerOrder = (value: unknown, index: number): Order => {
+  const item = object(value);
+  const idValue = item.orderId ?? item.id;
+  const id = typeof idValue === "string" || typeof idValue === "number" ? String(idValue) : "";
+  const createdAt = optionalText(item.createdAt);
+  const rawItems = item.items;
+  if (!id || !createdAt || !Array.isArray(rawItems)) throw new Error(`Backend ${index + 1}-buyurtmani noto‘g‘ri qaytardi`);
+  const items = rawItems.map((raw, itemIndex) => {
+    const line = object(raw);
+    const product = object(line.product);
+    const productId = line.productId ?? product.id;
+    const name = optionalText(line.name ?? line.productName ?? product.name);
+    const quantity = Number(line.quantity);
+    const unitPrice = money(line.unitPrice ?? line.price ?? line.unitPriceSnapshot, "buyurtma narxi");
+    if ((typeof productId !== "string" && typeof productId !== "number") || !name || !Number.isSafeInteger(quantity) || quantity < 1) throw new Error(`Backend ${id} buyurtma mahsulotini noto‘g‘ri qaytardi`);
+    return {
+      id: String(line.id ?? `${id}:${productId}:${itemIndex}`), productId, variantId: typeof line.variantId === "string" || typeof line.variantId === "number" ? line.variantId : undefined,
+      shopId: typeof line.shopId === "string" || typeof line.shopId === "number" ? line.shopId : "unknown", quantity, color: "",
+      product: { id: productId, name, category: "", price: unitPrice, rating: 0, reviews: 0, image: safeHttpUrl(line.imageUrl ?? product.imageUrl) ?? "/placeholder-product.svg", images: [], description: "", colors: [] },
+    };
+  });
+  return {
+    id, createdAt, status: normalizeOrderStatus(item.orderStatus ?? item.status),
+    customer: { name: "", phone: "", address: "" }, items,
+    subtotal: money(item.subtotal, "subtotal"), delivery: money(item.deliveryFee ?? item.delivery, "deliveryFee"), total: money(item.totalAmount ?? item.total, "totalAmount"), payment: "cash",
+  };
+};
+
+const remoteOrders = async (): Promise<Order[]> => {
+  const page = await apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: 1, limit: 20 }, validate: validateBuyerOrdersPageDto });
+  return page.items.map(normalizeBuyerOrder);
+};
 const normalizeTracking = (response: unknown): OrderTracking => {
   const root = object(response);
   const order = object(root.order ?? root.salesOrder);
@@ -100,11 +135,21 @@ const previewDelivery = async (address: CheckoutAddress): Promise<DeliveryPrevie
 
 export const orderService = {
   async list(): Promise<Order[]> { return readLocal(); },
+  async listForCurrentBuyer(): Promise<{ orders: Order[]; error?: string }> {
+    const local = readLocal();
+    if (!getAccessToken()) return { orders: local };
+    try {
+      const remote = await remoteOrders();
+      return { orders: [...remote, ...local.filter((saved) => !remote.some((order) => order.id === saved.id))] };
+    } catch (error) {
+      return { orders: local, error: error instanceof Error ? error.message : "Buyurtmalarni backenddan yuklab bo‘lmadi" };
+    }
+  },
   async getLocal(orderId: string): Promise<Order | null> { return readLocal().find((order) => order.id === orderId) ?? null; },
   async track(orderId: string): Promise<OrderTracking> {
     const id = orderId.trim();
     if (!id || id.length > 128) throw new Error("Buyurtma raqami noto‘g‘ri");
-    const tracking = normalizeTracking(await apiRequest(`/orders/${encodeURIComponent(id)}/tracking`, { method: "GET" }));
+    const tracking = normalizeTracking(await apiRequest(`/orders/${encodeURIComponent(id)}/tracking`, { method: "GET", headers: authHeaders() }));
     if (typeof window !== "undefined") {
       const orders = readLocal();
       const index = orders.findIndex((order) => order.id === id);

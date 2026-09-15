@@ -51,6 +51,16 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .search-clear { width: 28px; height: 28px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--color-muted); }
 .search-clear:hover { background: #e8e9eb; color: var(--color-ink); }
 .search-clear svg { width: 15px; }
+.search { position: relative; }
+.search-suggestions { position: absolute; z-index: 40; top: calc(100% + 10px); left: 0; width: min(420px, 88vw); padding: 8px; border: 1px solid var(--color-line); border-radius: 16px; background: white; box-shadow: 0 18px 45px rgb(16 24 40 / 16%); color: var(--color-ink); }
+.search-suggestions > a { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 12px; border-radius: 10px; }
+.search-suggestions > a:hover { background: var(--color-surface); }
+.search-suggestions span { display: grid; min-width: 0; }
+.search-suggestions b, .search-suggestions small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-suggestions small, .search-suggestions p { color: var(--color-muted); }
+.search-suggestions strong { flex: 0 0 auto; font-size: 12px; }
+.search-suggestions p { margin: 0; padding: 10px 12px; font-size: 13px; }
+.search-suggestions .search-all { margin-top: 4px; border-top: 1px solid var(--color-line); border-radius: 0 0 10px 10px; color: var(--color-brand); font-weight: 700; }
 .icon-button { width: 40px; height: 40px; display: grid; place-items: center; position: relative; padding: 0; background: transparent; border: 0; border-radius: 50%; transition: background .2s; }
 .icon-button:hover { background: var(--color-surface); }
 .icon-button svg { width: 19px; }
@@ -148,6 +158,17 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .catalog-hero small { color: var(--color-brand); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
 .catalog-hero h1 { margin: 4px 0; font-size: 40px; letter-spacing: -.045em; }
 .catalog-hero p { margin: 0; color: var(--color-muted); font-size: 13px; }
+.shop-hero p { max-width: 720px; line-height: 1.6; }
+.search-page-heading { padding: 44px 0 4px; }
+.search-page-heading small { color: var(--color-brand); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.search-page-heading h1 { margin: 6px 0; font-size: clamp(30px, 5vw, 48px); letter-spacing: -.045em; }
+.search-page-heading p, .search-alternatives > p { margin: 0; color: var(--color-muted); }
+.search-filters { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding: 22px; border: 1px solid var(--color-line); border-radius: var(--radius-md); background: var(--color-surface); }
+.search-filters label { display: grid; flex: 1 1 190px; gap: 6px; }
+.search-filters label span { color: var(--color-muted); font-size: 12px; font-weight: 700; }
+.search-filters input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--color-line); border-radius: var(--radius-sm); background: white; }
+.search-alternatives { padding-bottom: 64px; }
+.search-alternatives h2 { margin-bottom: 4px; }
 .catalog-notice { display: flex; align-items: center; gap: 12px; margin: -5px 0 18px; padding: 11px 14px; border: 1px solid #f1d78b; border-radius: 11px; background: #fff9e8; color: #6d5719; }
 .catalog-notice span { flex: 0 0 auto; padding: 4px 7px; border-radius: 5px; background: #f0c84b; color: #332700; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .catalog-notice p { margin: 0; font-size: 10px; line-height: 1.5; }
@@ -284,6 +305,35 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 
 /* Detailed product information */
 .product-information { margin-top: 70px; padding-top: 28px; border-top: 1px solid var(--color-line); }
+.reviews-section { scroll-margin-top: 110px; margin-top: 58px; padding-top: 34px; border-top: 1px solid var(--color-line); }
+.reviews-heading > div { display: flex; align-items: center; gap: 18px; }
+.reviews-heading h2 { margin: 0 0 4px; font-size: 27px; }
+.reviews-heading p { margin: 0; color: var(--color-muted); font-size: 13px; }
+.reviews-score { display: inline-flex; align-items: center; gap: 7px; font-size: 28px; font-weight: 800; }
+.reviews-score svg { width: 25px; color: #ffad0d; }
+.reviews-list { display: grid; margin-top: 24px; border-top: 1px solid var(--color-line); }
+.reviews-list article { padding: 22px 0; border-bottom: 1px solid var(--color-line); }
+.reviews-list header { display: flex; justify-content: space-between; gap: 16px; }
+.reviews-list time { color: var(--color-muted); font-size: 12px; }
+.reviews-list article > p { max-width: 760px; margin: 10px 0 0; line-height: 1.65; }
+.review-stars { display: flex; gap: 3px; margin-top: 8px; color: #ffad0d; }
+.review-stars svg { width: 16px; height: 16px; }
+.reviews-pagination { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin-top: 22px; }
+.reviews-pagination > :last-child { justify-self: end; }
+.reviews-pagination > b { color: var(--color-muted); font-size: 13px; }
+.review-form-card { max-width: 760px; margin-top: 32px; padding: 25px; border: 1px solid var(--color-line); border-radius: 16px; background: #fff; }
+.review-form-card h3 { margin: 0 0 10px; }
+.review-form-card > p { margin: 0; color: var(--color-muted); line-height: 1.55; }
+.review-form-card form { display: grid; gap: 16px; margin-top: 18px; }
+.review-form-card label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; }
+.review-form-card select, .review-form-card textarea { width: 100%; padding: 12px; border: 1px solid var(--color-line); border-radius: 9px; background: #fff; font: inherit; resize: vertical; }
+.review-form-card fieldset { margin: 0; padding: 0; border: 0; }
+.review-form-card legend { margin-bottom: 7px; font-size: 12px; font-weight: 700; }
+.review-rating-input { display: flex; gap: 5px; }
+.review-rating-input button { padding: 2px; border: 0; background: transparent; color: #ffad0d; }
+.review-rating-input svg { width: 28px; height: 28px; }
+.review-form-card .button { justify-self: start; }
+.form-success { padding: 12px; border-radius: 10px; background: #edfff2; color: #16763a !important; font-size: 12px; }
 .product-tabs { display: flex; gap: 9px; margin-bottom: 28px; }
 .product-tabs button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 22px; background: #eceef1; color: #555861; font-size: 12px; font-weight: 700; }
 .product-tabs button.active { background: var(--color-ink); color: white; }
@@ -318,8 +368,8 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 .seller-metrics > span + span { border-left: 1px solid var(--color-line); }
 .seller-metrics b { font-size: 14px; }
 .seller-metrics small { color: var(--color-muted); font-size: 8px; }
-.seller-card > button { width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--color-line); border-radius: 10px; background: white; font-size: 11px; font-weight: 700; }
-.seller-card > button svg { width: 15px; }
+.seller-card > button, .seller-card > a { width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--color-line); border-radius: 10px; background: white; font-size: 11px; font-weight: 700; }
+.seller-card > button svg, .seller-card > a svg { width: 15px; }
 
 /* Favorites */
 .favorites-page { min-height: 65vh; padding: 58px 0 30px; }
@@ -643,6 +693,7 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
   .catalog-page { padding-top: 36px; }
   .catalog-page-grid { grid-template-columns: repeat(2, 1fr); }
   .product-information { margin-top: 45px; }
+  .reviews-section { margin-top: 40px; padding-top: 25px; }
   .product-tabs { overflow-x: auto; padding-bottom: 3px; scrollbar-width: none; }
   .product-tabs button { flex: 0 0 auto; }
   .product-info-layout { grid-template-columns: 1fr; gap: 24px; }
@@ -771,7 +822,7 @@ body { font-size: 16px; line-height: 1.5; }
 .delivery-details p small { font-size: 12px; }
 .seller-title h3 { font-size: 17px; }
 .seller-title small, .seller-metrics small { font-size: 10px; }
-.seller-card > p, .seller-card > button { font-size: 13px; }
+.seller-card > p, .seller-card > button, .seller-card > a { font-size: 13px; }
 
 .catalog-mega-grid section > a { font-size: 13px; }
 .catalog-category-title { font-size: 15px !important; }

@@ -5,19 +5,20 @@ turadigan Node.js jarayoni**. Sahifalar serverda yasaladi (SSR) — SEO uchun
 va Telegram'ga havola tashlanganda mahsulot nomi/narxi/rasmi ko'rinishi uchun.
 Shuning uchun uni nginx bilan almashtirib bo'lmaydi.
 
-## Hozirgi holat (2026-09-10)
+## Domenlar va reverse proxy
 
-Domen hali yo'q, shuning uchun port to'g'ridan-to'g'ri chiqarilgan:
+Productionda trafik Docker'ning `marketplace_edge` tarmog‘i orqali uzatiladi:
 
 ```
-Internet ──► :8080 ──► kabinet konteyneri     (SPA, nginx)
-Internet ──► :8081 ──► storefront konteyneri  (SSR, Node)
-Internet ──► :80   ──► Caddy ──► api-gateway  (API)
+https://<domen>       ──► Caddy ──► storefront:3001 (Next.js SSR)
+https://admin.<domen> ──► Caddy ──► frontend:8080   (kabinet SPA)
+https://api.<domen>   ──► Caddy ──► api-gateway
 ```
 
-Domen olingach (C5.1/C5.2) tunnel `marketplace_edge` tarmog'i orqali
-`storefront:3001` ga proxy qiladi va `docker-compose.prod.yml` dagi `ports`
-bo'limi butunlay olib tashlanadi.
+Storefront compose tashqi port ochmaydi. Backend Caddy konfiguratsiyasiga
+[`deploy/Caddyfile`](deploy/Caddyfile) bloklarini qo‘shing va Caddy konteyneriga
+`STOREFRONT_DOMAIN` hamda `ADMIN_DOMAIN` qiymatlarini bering. Kabinetdagi
+`frontend` va do‘kondagi `storefront` aliaslari bir xil external tarmoqda.
 
 ## Nega bu saytga CORS kerak emas
 
@@ -43,7 +44,8 @@ namunasi `.env.production.example` da.
 | `API_BASE_URL` | ishlash | Backend manzili. O'zgartirish uchun qayta build SHART EMAS |
 | `API_TIMEOUT_MS` | ishlash | SSR so'rovi kutish muddati |
 | `NEXT_PUBLIC_SITE_URL` | build | Kanonik havola va `og:url` |
-| `STOREFRONT_PORT` | ishlash | Tashqi port (domen qo'shilgach kerak bo'lmaydi) |
+| `STOREFRONT_DOMAIN` | Caddy | Ildiz domen, masalan `elchimarket.uz` |
+| `ADMIN_DOMAIN` | Caddy | Kabinet subdomeni, masalan `admin.elchimarket.uz` |
 
 > `next.config.ts` rasm hostini (`images.remotePatterns`) **build vaqtida**
 > o'qiydi, shuning uchun `API_BASE_URL` compose'da `build.args` sifatida ham
@@ -80,8 +82,10 @@ ssh-keyscan -H 169.58.98.223      # DEPLOY_KNOWN_HOSTS
 ## Tekshirish
 
 ```bash
-curl -s http://169.58.98.223:8081/healthz          # {"status":"ok",...}
-curl -s http://169.58.98.223:8081/ | grep product-card
+curl -s https://elchimarket.uz/healthz             # {"status":"ok",...}
+curl -s https://elchimarket.uz/product/6 | grep '<title>'
+curl -s https://elchimarket.uz/robots.txt
+curl -I https://admin.elchimarket.uz/ | grep -i x-robots-tag
 docker compose -f docker-compose.prod.yml logs -f storefront
 ```
 

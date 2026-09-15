@@ -17,6 +17,7 @@
     "api:check": "node scripts/generate-api.mjs --check",
     "test:api:live": "node scripts/smoke-api.mjs",
     "test:cart:live": "node scripts/smoke-cart.mjs",
+    "test:seo:live": "node scripts/smoke-seo.mjs",
     "test:ui": "node scripts/smoke-ui.mjs"
   },
   "dependencies": {

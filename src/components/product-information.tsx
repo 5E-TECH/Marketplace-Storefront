@@ -2,6 +2,7 @@
 
 import { CheckCircle2, ChevronRight, PackageCheck, RotateCcw, ShieldCheck, Star, Store, Truck } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 import type { Product } from "@/types/commerce";
 
 type Tab = "description" | "specifications" | "delivery";
@@ -30,7 +31,7 @@ export function ProductInformation({ product }: { product: Product }) {
         {tab === "specifications" && <div className="specification-table"><h2>Mahsulot xususiyatlari</h2>{specifications.map(([name, value]) => <p key={name}><span>{name}</span><b>{value}</b></p>)}</div>}
         {tab === "delivery" && <div className="delivery-details"><h2>Yetkazib berish va xizmat</h2><div><span><Truck/></span><p><b>Tez yetkazib berish</b><small>Toshkent bo‘ylab odatda 1–2 kun, hududlarga 2–5 ish kuni.</small></p></div><div><span><PackageCheck/></span><p><b>Mahkam qadoqlash</b><small>Mahsulot tashish vaqtida shikastlanmasligi uchun himoyalangan holda yuboriladi.</small></p></div><div><span><RotateCcw/></span><p><b>30 kun ichida qaytarish</b><small>Mahsulot holati va komplektatsiyasi saqlangan bo‘lsa, qaytarish mumkin.</small></p></div><div><span><ShieldCheck/></span><p><b>Xavfsiz xarid</b><small>To‘lov va buyurtma ma’lumotlari himoyalangan.</small></p></div></div>}
       </div>
-      <aside className="seller-card"><div className="seller-title"><span><Store/></span><div><small>SOTUVCHI</small><h3>{product.shop?.name ?? "Elchi Select"}</h3></div></div><p><Star fill="currentColor"/> <b>4.9</b><span> · 366 ta baho</span></p><div className="seller-metrics"><span><b>98%</b><small>Mamnun xaridorlar</small></span><span><b>1 kun</b><small>Jo‘natish vaqti</small></span></div><button>Do‘konga o‘tish <ChevronRight/></button></aside>
+      <aside className="seller-card"><div className="seller-title"><span><Store/></span><div><small>SOTUVCHI</small><h3>{product.shop?.name ?? "Elchi Select"}</h3></div></div><p><Star fill="currentColor"/> <b>4.9</b><span> · 366 ta baho</span></p><div className="seller-metrics"><span><b>98%</b><small>Mamnun xaridorlar</small></span><span><b>1 kun</b><small>Jo‘natish vaqti</small></span></div>{product.shop?.slug && <Link href={`/dokon/${encodeURIComponent(product.shop.slug)}`}>Do‘konga o‘tish <ChevronRight/></Link>}</aside>
     </div>
   </section>;
 }

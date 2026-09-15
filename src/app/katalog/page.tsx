@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui";
 import { categoryService } from "@/services/category.service";
+import { defaultOpenGraphImages } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Mahsulotlar katalogi", description: "Elchi Market mahsulot kategoriyalari." };
+export const metadata: Metadata = { title: "Mahsulotlar katalogi", description: "Elchi Market’da telefon, elektronika, kiyim, uy-ro‘zg‘or va boshqa mahsulotlar katalogini ko‘ring.", alternates: { canonical: "/katalog" }, openGraph: { title: "Mahsulotlar katalogi", description: "Elchi Market mahsulot kategoriyalari va narxlari.", url: "/katalog", images: defaultOpenGraphImages } };
 
 export default async function CatalogPage() {
   const categories = await categoryService.list();

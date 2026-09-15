@@ -53,9 +53,42 @@ Brauzer `X-Session-Id` va mavjud bo‘lsa `Authorization: Bearer ...` yuboradi. 
 
 `product-admin.service.ts`: `/products`, `/products/my`, `/products/:id` va `/products/:productId/variants` operatsiyalari. Request va response DTO’lari generatsiya qilingan tiplarga bog‘langan. Haqiqiy access token tashqaridan beriladi; seller UI hozir yo‘q.
 
-## Ushbu vazifa doirasidan tashqarida
+## Xaridor akkaunti
+
+- `POST /auth/register`: `{ name, phone, password, role: "BUYER" }`
+- `POST /auth/login`: `{ phone, password }`
+- `POST /auth/forgot-password`: `{ phone }`
+- `POST /auth/reset-password`: `{ phone, code, newPassword }`
+- `GET /auth/me`
+- `PATCH /auth/profile`: `{ name, phone }`
+- `POST /auth/logout`
+- `POST /guest/merge`: login yoki ro‘yxatdan o‘tishdan keyin mehmon savatini birlashtiradi
+
+Auth sahifalari same-origin proxy orqali ishlaydi. Access token brauzerda saqlanadi; backend bergan refresh cookie proxy orqali mijozga uzatiladi. Profil va logout so‘rovlari Bearer token bilan yuboriladi.
+
+### Buyurtmalar tarixi
+
+Akkauntga kirgan xaridorning barcha qurilmalardagi tarixi quyidagi endpointdan olinadi:
+
+- `GET /orders?page=1&limit=20`, `Authorization: Bearer <buyer-token>`;
+- faqat token egasining buyurtmalari;
+- javob: `{ items, total, page, limit, totalPages }`;
+- har bir item: `orderId`, `createdAt`, `orderStatus`, `subtotal`, `deliveryFee`, `totalAmount`, `items[]`;
+- item mahsuloti uchun kamida `productId`, `name`, `quantity`, `unitPrice`, ixtiyoriy `imageUrl`;
+- token yo‘q/yaroqsiz bo‘lsa `401`, boshqa xaridor ma’lumoti hech qachon qaytmasligi kerak.
+
+`/profile/orders` backend tarixini shu brauzerda checkoutdan keyin saqlangan, hali ro‘yxatda ko‘rinmagan buyurtma nusxalari bilan birlashtiradi. Har bir buyurtmaning joriy holati `/orders/{orderId}/tracking` orqali kuzatiladi.
+
+## Checkout
 
 OpenAPI checkout endpointlari storefrontga ulangan: delivery preview, idempotent order yaratish va COD confirm. `order.service.ts` localStorage’dan faqat tasdiqlangan buyurtmaning xaridor ko‘radigan qisqa tarix nusxasi sifatida foydalanadi.
+
+## Mahsulot sharhlari
+
+- `GET /storefront/products/{productId}/reviews?page=1&limit=5` sharhlar, `rating`, `total` va sahifalash ma’lumotini qaytaradi.
+- `POST /storefront/products/{productId}/reviews` buyer bearer tokeni va `{ orderItemId, rating, comment? }` qabul qiladi.
+- Frontend formani faqat `/orders` ichidagi shu mahsulotga tegishli `DELIVERED` yoki `COMPLETED` pozitsiya uchun ochadi; backend xarid, yetkazilish va takroriy sharh cheklovini yakuniy tekshiradi.
+- Buyer orders javobidagi `items[].id` haqiqiy sales order item ID bo‘lishi shart.
 
 ## Xaridor buyurtmasini kuzatish — backend talabi
 

@@ -21,7 +21,7 @@ jobs:
 
       # Docker image haqiqatan quriladimi — deploy paytida bilish kech bo'ladi.
       - name: Docker image quriladimi
-        run: docker build --build-arg API_BASE_URL=http://api.example.com/api/v1 -t marketplace-storefront:ci .
+        run: docker build --build-arg API_BASE_URL=http://api.example.com/api/v1 --build-arg NEXT_PUBLIC_SITE_URL=https://shop.example.com -t marketplace-storefront:ci .
 
   # C2.28 TC2. Secretlar qo'yilmaguncha bu job o'tkazib yuboriladi —
   # aks holda har push'da qizil bo'lib turardi.

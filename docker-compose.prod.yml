@@ -5,9 +5,8 @@
 # yoki Caddy shu tarmoq orqali `storefront:3001` ga proxy qiladi va port
 # tashqariga umuman ochilmaydi.
 #
-# Domen hali yo'q — shuning uchun hozircha port to'g'ridan-to'g'ri chiqariladi
-# (kabinet 8080 da, storefront 8081 da). Domen qo'shilgach `ports` bo'limini
-# olib tashlash kerak (C5.3).
+# Productionda tashqi port ochilmaydi: Caddy ildiz domenni shu servisning
+# `storefront:3001` tarmoq manziliga uzatadi.
 
 services:
   storefront:
@@ -17,6 +16,7 @@ services:
       args:
         # Build vaqtida faqat rasm hosti uchun kerak (images.remotePatterns).
         API_BASE_URL: ${API_BASE_URL}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL kerak — masalan https://elchimarket.uz}
     image: marketplace-storefront:latest
     restart: unless-stopped
     env_file: .env.production
@@ -26,10 +26,12 @@ services:
       NODE_ENV: production
       PORT: 3001
       HOSTNAME: 0.0.0.0
-    ports:
-      - '${STOREFRONT_PORT:-8081}:3001'
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL kerak}
+      SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL kerak}
     networks:
-      - edge
+      edge:
+        aliases:
+          - storefront
 
 networks:
   # Backend stack'i yaratadi. Bu yerda faqat ulanamiz.

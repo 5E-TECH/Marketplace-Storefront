@@ -8,7 +8,7 @@ import { mockProducts } from "@/data/mock-products";
 export const metadata: Metadata = {
   title: "Storefront komponentlari",
   description: "Elchi Market umumiy storefront komponentlari namuna sahifasi.",
-  robots: { index: false, follow: false },
+  alternates: { canonical: "/ui-kit" },
 };
 
 const colors = [

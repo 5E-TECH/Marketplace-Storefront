@@ -1794,6 +1794,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Xaridor buyurtmalari tarixi */
+        get: operations["BuyerOrdersController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3035,6 +3052,33 @@ export interface components {
              * @enum {string}
              */
             role: "ADMIN" | "SUPERADMIN";
+        };
+        BuyerOrderItemDto: {
+            id?: string;
+            productId: string;
+            variantId?: string | null;
+            shopId?: string | null;
+            name: string;
+            quantity: number;
+            unitPrice: number;
+            imageUrl?: string | null;
+        };
+        BuyerOrderDto: {
+            orderId: string;
+            /** Format: date-time */
+            createdAt: string;
+            orderStatus: string;
+            subtotal: number;
+            deliveryFee: number;
+            totalAmount: number;
+            items: components["schemas"]["BuyerOrderItemDto"][];
+        };
+        BuyerOrdersPageDto: {
+            items: components["schemas"]["BuyerOrderDto"][];
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
         };
     };
     responses: never;
@@ -6404,6 +6448,36 @@ export interface operations {
             };
             /** @description Oxirgi SUPERADMIN himoyalangan */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BuyerOrdersController_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Xaridor buyurtmalari */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuyerOrdersPageDto"];
+                };
+            };
+            /** @description Access token kerak */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

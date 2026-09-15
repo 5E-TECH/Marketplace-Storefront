@@ -4,9 +4,11 @@ const DEMO_IMAGE = "/demo-product.svg";
 
 export const getSafeImageSrc = (value: string): string => {
   try {
-    return new URL(value).hostname === "images.unsplash.com" ? DEMO_IMAGE : value;
+    if (value.startsWith("/") && !value.startsWith("//")) return value;
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) && url.hostname === "api.elchimarket.uz" ? url.toString() : DEMO_IMAGE;
   } catch {
-    return value || DEMO_IMAGE;
+    return DEMO_IMAGE;
   }
 };
 

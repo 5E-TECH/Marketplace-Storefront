@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
 const apiUrl = process.env.API_BASE_URL ?? process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
+const productionImagePattern = { protocol: "https" as const, hostname: "api.elchimarket.uz", pathname: "/media/**" };
 const apiImagePattern = (() => {
   try {
     if (!apiUrl) return [];
     const url = new URL(apiUrl);
+    if (url.hostname === productionImagePattern.hostname && url.protocol === "https:") return [];
     return [{ protocol: url.protocol.slice(0, -1) as "http" | "https", hostname: url.hostname, port: url.port, pathname: "/**" }];
   } catch { return []; }
 })();
@@ -19,6 +21,7 @@ const nextConfig: NextConfig = {
     allowedDevOrigins: ["192.168.1.69"],
     images: {
       remotePatterns: [
+        productionImagePattern,
         ...apiImagePattern,
       ],
       formats: ["image/avif", "image/webp"],

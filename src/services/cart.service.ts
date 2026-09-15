@@ -20,6 +20,9 @@ const getCartProduct = (productId: string): Promise<unknown> => {
   productCache.set(productId, { expiresAt: Date.now() + PRODUCT_CACHE_TTL, value });
   return value;
 };
+const cacheCartProduct = (product: AddCartInput["product"]) => {
+  productCache.set(String(product.id), { expiresAt: Date.now() + PRODUCT_CACHE_TTL, value: Promise.resolve(product) });
+};
 
 const normalizeCart = async (response: unknown): Promise<Cart> => {
   const root = object(response);
@@ -55,10 +58,12 @@ const normalizeCart = async (response: unknown): Promise<Cart> => {
 const remoteGet = async (): Promise<Cart> => normalizeCart(await apiRequest(CART_PATH, { validate: validateCartDto }));
 
 export const cartService = {
+  rememberProduct(product: AddCartInput["product"]): void { cacheCartProduct(product); },
   async get(): Promise<Cart> { return remoteGet(); },
   async add(input: AddCartInput): Promise<Cart> {
     if (!Number.isSafeInteger(input.quantity) || input.quantity < 1) throw new Error("Miqdor musbat butun son bo‘lishi kerak");
     if (input.variantId === undefined || input.variantId === null || String(input.variantId).trim() === "") throw new Error("Mahsulot varianti mavjud emas");
+    cacheCartProduct(input.product);
     const response = await apiRequest(`${CART_PATH}/items`, { method: "POST", body: { productId: String(input.product.id), variantId: String(input.variantId), quantity: input.quantity }, validate: validateCartDto });
     return normalizeCart(response);
   },

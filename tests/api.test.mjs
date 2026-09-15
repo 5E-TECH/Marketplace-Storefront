@@ -92,6 +92,18 @@ test('generic proxy allows the tracking route once backend implements its contra
   assert.deepEqual(paths, ['/orders/order-1/tracking']);
 });
 
+test('generic proxy allows public review reads and authenticated review writes', async () => {
+  const calls = [];
+  const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/backend-proxy': { proxyBackend: async (request, path) => { calls.push([request.method, path]); return new Response(null, { status: 200 }); } },
+  });
+  const context = { params: Promise.resolve({ path: ['storefront', 'products', '6', 'reviews'] }) };
+  await route.GET({ method: 'GET' }, context);
+  await route.POST({ method: 'POST' }, context);
+  assert.deepEqual(calls, [['GET', '/storefront/products/6/reviews'], ['POST', '/storefront/products/6/reviews']]);
+});
+
 test('offline, 404, 500 and proxy timeout produce explicit API error kinds', async (t) => {
   const { apiRequest } = client();
   const mockedFetch = t.mock.method(globalThis, 'fetch', async () => { throw new TypeError('offline'); });

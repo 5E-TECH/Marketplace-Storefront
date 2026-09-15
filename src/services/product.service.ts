@@ -1,9 +1,9 @@
 import { env } from "@/config/env";
 import { mockProducts } from "@/data/mock-products";
 import { ApiError, apiRequest } from "@/lib/api";
-import { validateStorefrontProductDto, validateStorefrontProductsPageDto } from "@/generated/api-validators";
-import type { CatalogResult, Product, ProductQuery } from "@/types/commerce";
-import type { StorefrontProductDto, StorefrontProductsResponse } from "@/types/storefront-api";
+import { validateStorefrontProductDto, validateStorefrontProductsPageDto, validateStorefrontShopPageDto } from "@/generated/api-validators";
+import type { CatalogResult, Product, ProductQuery, ShopResult, StorefrontShop } from "@/types/commerce";
+import type { StorefrontProductDto, StorefrontProductsResponse, StorefrontShopPageDto } from "@/types/storefront-api";
 
 const STOREFRONT_PRODUCTS_PATH = "/storefront/products";
 const STOREFRONT_SHOPS_PATH = "/storefront/shops";
@@ -49,7 +49,7 @@ const imageUrl = (value: unknown): string => {
 };
 
 // Storefront DTO -> UI domain. Backend field nomlari aniqlashgach faqat shu funksiya toraytiriladi.
-const normalizeProduct = (value: StorefrontProductDto): Product => {
+export const normalizeProduct = (value: StorefrontProductDto): Product => {
   const raw = object(value);
   const media = Array.isArray(raw.images) ? raw.images : Array.isArray(raw.media) ? raw.media : Array.isArray(raw.photos) ? raw.photos : [];
   const images = media.map(imageUrl).filter(Boolean);
@@ -84,6 +84,15 @@ const normalizeProduct = (value: StorefrontProductDto): Product => {
     createdAt: text(raw.createdAt) || undefined,
     updatedAt: text(raw.updatedAt) || undefined,
   };
+};
+
+const normalizeShop = (value: unknown): StorefrontShop => {
+  const shop = object(value);
+  const shopId = id(shop.id);
+  const name = text(shop.name);
+  const slug = text(shop.slug);
+  if (shopId === "" || !name || !slug) throw new Error("Backend do‘kon ma’lumotini noto‘g‘ri qaytardi");
+  return { id: shopId, name, slug, description: text(shop.description) || undefined, logoUrl: imageUrl(shop.logoUrl) || undefined, bannerUrl: imageUrl(shop.bannerUrl) || undefined, address: text(shop.address) || undefined, rating: number(shop.rating) };
 };
 
 export const productService = {
@@ -157,6 +166,26 @@ export const productService = {
     } catch (error) {
       const reason = error instanceof Error ? error.message : "Do‘kon mahsulotlarini yuklab bo‘lmadi";
       return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: `${env.apiUrl}${path} — ${reason}` };
+    }
+  },
+  async getShop(slug: string, query: Omit<ProductQuery, "categoryId"> = {}): Promise<ShopResult | null> {
+    if (!slug.trim() || slug.length > 160) return null;
+    if (env.useMockData) {
+      const first = demoCatalog.find((product) => product.shop?.slug === slug);
+      if (!first?.shop) return null;
+      const catalog = await this.listByShop(first.shop.id, query);
+      return { shop: { id: first.shop.id, name: first.shop.name, slug: first.shop.slug, logoUrl: first.shop.logoUrl, rating: 0 }, catalog };
+    }
+    if (!env.apiUrl) return null;
+    try {
+      const response = await apiRequest<StorefrontShopPageDto>(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: { search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page: query.page ?? 1, limit: query.limit ?? 20 }, next: { revalidate: 30 }, validate: validateStorefrontShopPageDto });
+      const items = response.products.items.map(normalizeProduct).filter((product) => product.id !== "" && product.name);
+      const limit = Math.max(1, number(response.products.limit, query.limit ?? 20));
+      const total = number(response.products.total, items.length);
+      return { shop: normalizeShop(response.shop), catalog: { data: items, total, page: Math.max(1, number(response.products.page, query.page ?? 1)), limit, totalPages: Math.max(0, number(response.products.totalPages, Math.ceil(total / limit))), source: "api" } };
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
     }
   },
 };

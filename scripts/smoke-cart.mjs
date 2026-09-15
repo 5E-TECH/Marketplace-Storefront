@@ -31,9 +31,13 @@ try {
   let sequence = 0;
   const pending = new Map();
   const exceptions = [];
+  const cartPatches = [];
+  const productDetailGets = [];
   socket.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
     if (data.method === "Runtime.exceptionThrown") exceptions.push(data.params.exceptionDetails.text);
+    if (data.method === "Network.requestWillBeSent" && data.params.request.method === "PATCH" && /\/cart\/items\//.test(data.params.request.url)) cartPatches.push(data.params.request);
+    if (data.method === "Network.requestWillBeSent" && data.params.request.method === "GET" && /\/api\/backend\/storefront\/products\/[^/?]+/.test(data.params.request.url)) productDetailGets.push(data.params.request);
     const request = pending.get(data.id);
     if (!request) return;
     pending.delete(data.id);
@@ -48,25 +52,68 @@ try {
   const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result.value;
   await send("Runtime.enable");
   await send("Page.enable");
+  await send("Network.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
   await send("Page.navigate", { url: base });
   await until(() => evaluate("document.readyState === 'complete' && Boolean([...document.querySelectorAll('[data-testid=product-card-add]')].find((button) => !button.disabled))"), "enabled cart button");
   assert.equal(await evaluate("Boolean(document.querySelector('.cart-drawer'))"), false, "Cart drawer must not be rendered");
+  await until(() => evaluate("Boolean([...document.querySelectorAll('.product-card .favorite')].find((button) => !button.disabled))"), "hydrated favorite button");
+  await evaluate("[...document.querySelectorAll('.product-card .favorite')].find((button) => !button.disabled).click()");
+  await until(() => evaluate("document.querySelector('.header-favorite span')?.textContent === '1'"), "optimistic favorite count");
+  await evaluate("document.querySelector('.header-favorite').click()");
+  await until(() => evaluate("location.pathname === '/favorites' && Boolean(document.querySelector('.favorites-grid .product-card'))"), "guest favorites page");
+  await until(() => evaluate("!document.querySelector('.favorites-grid .favorite')?.disabled"), "favorite remove button");
+  await evaluate("document.querySelector('.favorites-grid .favorite').click()");
+  await until(() => evaluate("Boolean(document.querySelector('.state-panel--empty'))"), "favorite cleanup");
+  if (process.env.UI_AUTH_LIVE === "true") {
+    await send("Page.navigate", { url: base });
+    await until(() => evaluate("Boolean([...document.querySelectorAll('.product-card .favorite')].find((button) => !button.disabled))"), "favorite before registration");
+    await evaluate("[...document.querySelectorAll('.product-card .favorite')].find((button) => !button.disabled).click()");
+    await until(() => evaluate("document.querySelector('.header-favorite span')?.textContent === '1'"), "guest favorite before merge");
+    const suffix = String(Date.now()).slice(-9);
+    const phone = `+998${suffix}`;
+    const password = `TcFavorite!${suffix.slice(-4)}`;
+    await send("Page.navigate", { url: `${base}/register` });
+    await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('form input[name=name]'))"), "register form");
+    await evaluate(`(() => { const form=[...document.forms].find(item => item.querySelector('[name=name]')); form.elements.name.value='Favorites TC Buyer'; form.elements.phone.value=${JSON.stringify(phone)}; form.elements.password.value=${JSON.stringify(password)}; form.elements.passwordConfirm.value=${JSON.stringify(password)}; form.requestSubmit(); })()`);
+    await until(() => evaluate("location.pathname === '/profile'"), "registration and guest merge");
+    await send("Page.navigate", { url: `${base}/favorites` });
+    await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.favorites-grid .product-card'))"), "favorite retained after login");
+    assert.equal(await evaluate("document.querySelector('.header-favorite span')?.textContent"), "1", "Merged account must retain the guest favorite");
+    await until(() => evaluate("!document.querySelector('.favorites-grid .favorite')?.disabled"), "merged favorite cleanup button");
+    await evaluate("document.querySelector('.favorites-grid .favorite').click()");
+    await until(() => evaluate("Boolean(document.querySelector('.state-panel--empty'))"), "merged favorite cleanup");
+  }
+  await send("Page.navigate", { url: base });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean([...document.querySelectorAll('[data-testid=product-card-add]')].find((button) => !button.disabled))"), "catalog after favorites");
   await evaluate("[...document.querySelectorAll('[data-testid=product-card-add]')].find((button) => !button.disabled).click()");
   assert.equal(await until(() => evaluate("document.querySelector('[data-testid=product-card-stepper] b')?.textContent"), "inline quantity stepper"), "1");
-  await evaluate("document.querySelector('[data-testid=product-card-stepper] button:last-child').click()");
-  await until(() => evaluate("document.querySelector('[data-testid=product-card-stepper] b')?.textContent === '2'"), "quantity increase");
+  productDetailGets.length = 0;
+  await send("Page.reload");
+  await until(() => evaluate("document.readyState === 'complete' && document.querySelector('[data-testid=product-card-stepper] b')?.textContent === '1'"), "cart restore without N+1 product requests");
+  assert.equal(productDetailGets.length, 0, "Catalog data must hydrate cart products without one GET per cart item");
+  const patchCountBefore = cartPatches.length;
+  await evaluate(`(async () => {
+    for (let count = 2; count <= 5; count += 1) {
+      document.querySelector('[data-testid=product-card-stepper] button:last-child').click();
+      await new Promise(requestAnimationFrame);
+    }
+  })()`);
+  await until(() => evaluate("document.querySelector('[data-testid=product-card-stepper] b')?.textContent === '5'"), "optimistic quantity increase");
+  assert.equal(cartPatches.length, patchCountBefore, "Rapid clicks must update UI without an immediate request per click");
+  await until(() => cartPatches.length === patchCountBefore + 1, "debounced cart synchronization");
+  assert.equal(cartPatches.length, patchCountBefore + 1, "Four rapid clicks must be collapsed into one PATCH");
   assert.equal(await evaluate("document.querySelector('.bag')?.getAttribute('href')"), "/cart");
   await evaluate("document.querySelector('.bag').click()");
   await until(() => evaluate("location.pathname === '/cart' && Boolean(document.querySelector('[data-testid=cart-item]'))"), "full cart page");
-  assert.equal(await evaluate("document.querySelector('[data-testid=cart-item] .quantity b')?.textContent"), "2");
+  assert.equal(await evaluate("document.querySelector('[data-testid=cart-item] .quantity b')?.textContent"), "5");
   assert.ok(await evaluate("Boolean(document.querySelector('.order-summary'))"));
   assert.ok(await evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"), "Mobile cart must not overflow horizontally");
   await until(() => evaluate("!document.querySelector('[data-testid=cart-item] button[aria-label=\"O‘chirish\"]')?.disabled"), "cart actions ready");
   await evaluate("document.querySelector('[data-testid=cart-item] button[aria-label=\"O‘chirish\"]').click()");
   await until(() => evaluate("!document.querySelector('[data-testid=cart-item]')"), "cart cleanup");
   assert.deepEqual(exceptions, []);
-  console.log("PASS: inline −/quantity/+ controls, no drawer, full cart page, totals and cleanup.");
+  console.log(`PASS: favorite TC1 add, TC2 list, TC3 remove${process.env.UI_AUTH_LIVE === "true" ? ", TC4 guest-to-account merge" : ""}; optimistic quantity; four rapid clicks -> one PATCH; no cart N+1; totals and cleanup.`);
 } finally {
   socket?.close();
   chrome.kill();
