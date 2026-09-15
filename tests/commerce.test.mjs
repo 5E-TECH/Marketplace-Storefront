@@ -4,6 +4,79 @@ import { loadTypeScript } from './load-typescript.mjs';
 
 const product = { id: 1, name: 'Telefon', price: 100, colors: ['black'], images: [] };
 
+test('reviews normalize the live backend page contract', () => {
+  const { normalizeReviews } = loadTypeScript('src/services/review.service.ts', {
+    '@/generated/api-validators': {}, '@/lib/api': {}, '@/lib/access-token': {},
+  });
+  const result = normalizeReviews({ items: [{ id: '9', rating: 5, comment: 'Zo‘r', createdAt: '2026-09-15T10:00:00Z', user: { name: 'Ali' } }], rating: 4.8, total: 1, page: 1, limit: 5, totalPages: 1 });
+  assert.deepEqual(result.items[0], { id: '9', rating: 5, comment: 'Zo‘r', createdAt: '2026-09-15T10:00:00Z', authorName: 'Ali' });
+  assert.equal(result.rating, 4.8);
+});
+
+test('review creation sends only the backend CreateReviewDto fields', async () => {
+  const calls = [];
+  const { reviewService } = loadTypeScript('src/services/review.service.ts', {
+    '@/generated/api-validators': {},
+    '@/lib/api': { apiRequest: async (...args) => calls.push(args) },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+  });
+  await reviewService.create('6', { orderItemId: ' 31 ', rating: 5, comment: ' Yaxshi ' });
+  assert.deepEqual(calls, [['/storefront/products/6/reviews', { method: 'POST', headers: { Authorization: 'Bearer buyer' }, body: { orderItemId: '31', rating: 5, comment: 'Yaxshi' } }]]);
+});
+
+test('review form eligibility includes only delivered matching order items', async () => {
+  const response = { items: [
+    { orderId: 'done', orderStatus: 'DELIVERED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '31', productId: '6', name: 'A', quantity: 1, unitPrice: 1 }, { id: '32', productId: '7', name: 'B', quantity: 1, unitPrice: 1 }] },
+    { orderId: 'new', orderStatus: 'CONFIRMED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '33', productId: '6', name: 'A', quantity: 1, unitPrice: 1 }] },
+  ], total: 2, page: 1, limit: 100, totalPages: 1 };
+  const { reviewService } = loadTypeScript('src/services/review.service.ts', {
+    '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
+    '@/lib/api': { apiRequest: async () => response },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+  });
+  assert.deepEqual(await reviewService.reviewableItems('6'), [{ orderItemId: '31', orderId: 'done' }]);
+});
+
+test('guest and non-purchaser cannot obtain a reviewable order item', async () => {
+  let requests = 0;
+  const guest = loadTypeScript('src/services/review.service.ts', {
+    '@/config/env': { env: { useMockData: false } },
+    '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
+    '@/lib/api': { apiRequest: async () => { requests++; } },
+    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null },
+  }).reviewService;
+  assert.deepEqual(await guest.reviewableItems('6'), []);
+  assert.equal(requests, 0);
+
+  const buyer = loadTypeScript('src/services/review.service.ts', {
+    '@/config/env': { env: { useMockData: false } },
+    '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
+    '@/lib/api': { apiRequest: async () => ({ items: [{ orderId: 'new', orderStatus: 'CONFIRMED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '33', productId: '6', name: 'A', quantity: 1, unitPrice: 1 }] }], total: 1, page: 1, limit: 100, totalPages: 1 }) },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+  }).reviewService;
+  assert.deepEqual(await buyer.reviewableItems('6'), []);
+});
+
+test('invalid review rating never reaches the backend', async () => {
+  let requests = 0;
+  const { reviewService } = loadTypeScript('src/services/review.service.ts', {
+    '@/config/env': { env: { useMockData: false } },
+    '@/generated/api-validators': {},
+    '@/lib/api': { apiRequest: async () => { requests++; } },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+  });
+  for (const rating of [0, 6, 1.5, NaN]) await assert.rejects(reviewService.create('6', { orderItemId: '31', rating }));
+  assert.equal(requests, 0);
+});
+
+test('product image URLs only allow local assets and the configured marketplace media host', () => {
+  const { getSafeImageSrc } = loadTypeScript('src/lib/product-storage.ts');
+  assert.equal(getSafeImageSrc('/placeholder-product.svg'), '/placeholder-product.svg');
+  assert.equal(getSafeImageSrc('https://api.elchimarket.uz/media/products/phone.jpg'), 'https://api.elchimarket.uz/media/products/phone.jpg');
+  assert.equal(getSafeImageSrc('https://untrusted.example/track.jpg'), '/demo-product.svg');
+  assert.equal(getSafeImageSrc('javascript:alert(1)'), '/demo-product.svg');
+});
+
 test('null prices fall back to a valid sale price; zero stays zero', () => {
   const { normalizeApiProduct } = loadTypeScript('src/lib/normalize-product.ts');
   assert.equal(normalizeApiProduct({ ...product, price: null, salePrice: '250' }).price, 250);
@@ -72,6 +145,17 @@ test('repeated cart refreshes reuse product metadata instead of sending N+1 requ
   assert.equal(productRequests, 1);
 });
 
+test('favorites unwrap FavoriteDto.product and request every page', async () => {
+  const calls = [];
+  const favorite = (id) => ({ id: `favorite-${id}`, userId: null, sessionId: 'guest', productId: String(id), product: { ...product, id, name: `Product ${id}`, image: '/product.jpg', description: '', category: 'Test', rating: 0, reviews: 0 }, createdAt: '2026-09-15T10:00:00Z' });
+  const { favoritesService } = loadTypeScript('src/services/favorites.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options.params]); return options.params.page === 1 ? { items: [favorite(1)], total: 2, page: 1, limit: 100, totalPages: 2 } : { items: [favorite(2)], total: 2, page: 2, limit: 100, totalPages: 2 }; } },
+  });
+  const favorites = await favoritesService.list();
+  assert.deepEqual(favorites.map((item) => item.name), ['Product 1', 'Product 2']);
+  assert.deepEqual(calls, [['/favorites', { page: 1, limit: 100 }], ['/favorites', { page: 2, limit: 100 }]]);
+});
+
 test('cart items are grouped by seller and keep each seller subtotal', () => {
   const { groupCartItems } = loadTypeScript('src/lib/cart-groups.ts');
   const items = [
@@ -137,6 +221,57 @@ test('real login merges the current guest cart before saving the authenticated s
   assert.equal(authService.getSession().phone, '+998901234567');
 });
 
+test('buyer registration uses the backend contract and merges the guest cart before saving the session', async (t) => {
+  const calls = [];
+  const stored = new Map();
+  const originalStorage = globalThis.localStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: () => {} };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) } });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const { authService } = loadTypeScript('src/services/auth.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options]); return { accessToken: 'buyer-token', user: { id: '7', name: 'Ali', phone: '+998901234567' } }; } },
+    '@/lib/access-token': { getAccessToken: () => null },
+    '@/services/guest.service': { guestService: { mergeAfterAuth: async (token) => calls.push(['merge', token]) } },
+  });
+  const session = await authService.register({ name: ' Ali ', phone: '+998901234567', password: 'Secret123' });
+  assert.deepEqual(calls, [
+    ['/auth/register', { method: 'POST', body: { name: 'Ali', phone: '+998901234567', password: 'Secret123', role: 'BUYER' } }],
+    ['merge', 'buyer-token'],
+  ]);
+  assert.deepEqual({ userId: session.userId, name: session.name, phone: session.phone }, { userId: '7', name: 'Ali', phone: '+998901234567' });
+});
+
+test('password recovery and profile updates match backend request bodies', async (t) => {
+  const calls = [];
+  const stored = new Map([['elchi_auth_v1', JSON.stringify({ phone: '+998901234567', verifiedAt: 'now', authenticated: true })]]);
+  const originalStorage = globalThis.localStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: () => {} };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) } });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const { authService } = loadTypeScript('src/services/auth.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options.body]); return path === '/auth/profile' ? { id: '7', name: 'Vali', phone: '+998909876543' } : undefined; } },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer token' }), getAccessToken: () => 'token' },
+    '@/services/guest.service': { guestService: {} },
+  });
+  await authService.forgotPassword('+998901234567');
+  await authService.resetPassword('+998901234567', '123456', 'NewSecret123');
+  const session = await authService.updateProfile({ name: 'Vali', phone: '+998909876543' });
+  assert.deepEqual(calls, [
+    ['/auth/forgot-password', { phone: '+998901234567' }],
+    ['/auth/reset-password', { phone: '+998901234567', code: '123456', newPassword: 'NewSecret123' }],
+    ['/auth/profile', { name: 'Vali', phone: '+998909876543' }],
+  ]);
+  assert.equal(session.name, 'Vali');
+});
+
 test('clearing an order snapshot does not refetch and delete newly added items', async () => {
   const calls = [];
   const { cartService } = loadTypeScript('src/services/cart.service.ts', {
@@ -146,7 +281,7 @@ test('clearing an order snapshot does not refetch and delete newly added items',
   assert.deepEqual(calls, [['/cart/items/original', { method: 'DELETE' }]]);
 });
 
-test('checkout previews delivery, creates a backend order and confirms COD before saving it locally', async (t) => {
+test('guest checkout without an account previews delivery, creates an order and confirms COD', async (t) => {
   const stored = new Map();
   const calls = [];
   const originalStorage = globalThis.localStorage;
@@ -173,6 +308,55 @@ test('checkout previews delivery, creates a backend order and confirms COD befor
   assert.equal(calls[1][1].headers['Idempotency-Key'], 'request-1');
   assert.deepEqual(calls[1][1].body, { paymentMethod: 'cod', address });
   assert.equal((await orderService.list()).length, 1);
+});
+
+test('guest request headers contain a session id without authorization', async (t) => {
+  const stored = new Map();
+  const originalStorage = globalThis.localStorage;
+  const originalSessionStorage = globalThis.sessionStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = {};
+  const storage = { getItem: (key) => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
+  Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: storage });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: originalSessionStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const { sessionHeaders } = loadTypeScript('src/lib/access-token.ts');
+  const headers = sessionHeaders();
+  assert.equal('Authorization' in headers, false);
+  assert.match(headers['X-Session-Id'], /^[a-zA-Z0-9_-]+$/);
+});
+
+test('logout calls backend then clears tokens, profile session and rotates guest identity', async (t) => {
+  const calls = [];
+  const stored = new Map([['access_token', 'buyer-token'], ['elchi_auth_v1', '{"authenticated":true}'], ['guest_session_id', 'guest-before']]);
+  const originalStorage = globalThis.localStorage;
+  const originalSessionStorage = globalThis.sessionStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: (event) => calls.push(['event', event.type]) };
+  const storage = { getItem: (key) => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
+  Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: storage });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: originalSessionStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const access = loadTypeScript('src/lib/access-token.ts');
+  const { authService } = loadTypeScript('src/services/auth.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => calls.push(['request', path, options]) },
+    '@/lib/access-token': access,
+    '@/services/guest.service': { guestService: {} },
+  });
+  await authService.logout();
+  assert.equal(stored.has('access_token'), false);
+  assert.equal(stored.has('elchi_auth_v1'), false);
+  assert.notEqual(stored.get('guest_session_id'), 'guest-before');
+  assert.deepEqual(calls[0], ['request', '/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer buyer-token' } }]);
+  assert.deepEqual(calls.slice(1), [['event', 'elchi:auth-changed'], ['event', 'elchi:guest-merged']]);
 });
 
 test('an unconfirmed backend order is not reported as successful or removed from cart', async (t) => {
@@ -212,16 +396,55 @@ test('tracking adapter normalizes a mocked response and refreshes the saved orde
       calls.push([path, options]);
       return { orderId: 'order/42', orderStatus: 'in-transit', estimatedDeliveryAt: '2026-09-13T10:00:00Z', shipments: [{ shipmentId: 7, shopId: 3, shipmentStatus: 'out_for_delivery', trackingUrl: 'https://elchi.test/7' }] };
     } },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer-token' }), getAccessToken: () => 'buyer-token' },
     './cart.service': { cartService: {} },
   });
   const tracking = await orderService.track('order/42');
-  assert.deepEqual(calls, [['/orders/order%2F42/tracking', { method: 'GET' }]]);
+  assert.deepEqual(calls, [['/orders/order%2F42/tracking', { method: 'GET', headers: { Authorization: 'Bearer buyer-token' } }]]);
   assert.equal(tracking.status, 'Yo‘lda');
   assert.equal(tracking.packages[0].status, 'Yo‘lda');
   assert.equal(tracking.packages[0].id, '7');
   assert.equal(JSON.parse(stored.get('elchi_orders_v1'))[0].status, 'Yo‘lda');
   assert.equal(normalizeOrderStatus('delivered'), 'Yetkazildi');
   assert.equal(normalizeOrderStatus('cancelled'), 'Bekor qilindi');
+});
+
+test('authenticated buyer order history comes from backend and keeps unsynced local orders', async (t) => {
+  const stored = new Map([['elchi_orders_v1', JSON.stringify([{ id: 'local-2', createdAt: '2026-09-14T10:00:00Z', status: 'Qabul qilindi', customer: {}, items: [], subtotal: 20, delivery: 0, total: 20, payment: 'cash' }])]]);
+  const originalStorage = globalThis.localStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = {};
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value) } });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const calls = [];
+  const { orderService } = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options]); return { items: [{ orderId: 'remote-1', createdAt: '2026-09-15T10:00:00Z', orderStatus: 'DELIVERED', subtotal: 100, deliveryFee: 10, totalAmount: 110, items: [{ productId: '7', name: 'Telefon', quantity: 2, unitPrice: 50 }] }], total: 1, page: 1, limit: 20, totalPages: 1 }; } },
+    '@/lib/access-token': { getAccessToken: () => 'buyer-token', authHeaders: () => ({ Authorization: 'Bearer buyer-token' }) },
+    './cart.service': { cartService: {} },
+  });
+  const result = await orderService.listForCurrentBuyer();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], '/orders');
+  assert.deepEqual({ method: calls[0][1].method, headers: calls[0][1].headers, params: calls[0][1].params }, { method: 'GET', headers: { Authorization: 'Bearer buyer-token' }, params: { page: 1, limit: 20 } });
+  assert.equal(typeof calls[0][1].validate, 'function');
+  assert.deepEqual(result.orders.map((order) => order.id), ['remote-1', 'local-2']);
+  assert.equal(result.orders[0].status, 'Yetkazildi');
+  assert.equal(result.orders[0].items[0].product.name, 'Telefon');
+  assert.equal(result.error, undefined);
+});
+
+test('guest order history remains local and does not call buyer endpoint', async () => {
+  let requests = 0;
+  const { orderService } = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest: async () => { requests++; } },
+    '@/lib/access-token': { getAccessToken: () => null, authHeaders: () => ({}) },
+    './cart.service': { cartService: {} },
+  });
+  assert.deepEqual(await orderService.listForCurrentBuyer(), { orders: [] });
+  assert.equal(requests, 0);
 });
 
 test('tracking rejects an empty or oversized order id before calling backend', async () => {
@@ -273,7 +496,22 @@ test('catalog query keeps shareable filters and only accepts backend sort values
   });
   assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).sort, 'createdAt:desc');
   assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).page, 1);
+  assert.equal(parseCatalogQuery({ q: '  telefon  ', search: 'ignored' }).search, 'telefon');
   assert.equal(catalogHref('/katalog/telefonlar', { search: 'iphone 16', sort: 'price:asc', page: 3, limit: 20 }, { page: 2 }), '/katalog/telefonlar?search=iphone+16&sort=price%3Aasc&page=2#products');
+  assert.equal(catalogHref('/qidiruv', { search: 'iphone 16', minPrice: 100, sort: 'price:asc', page: 1, limit: 20 }), '/qidiruv?q=iphone+16&minPrice=100&sort=price%3Aasc#products');
+});
+
+test('search suggestions use the dedicated backend endpoint and reject malformed payloads', async () => {
+  const calls = [];
+  let response = { items: [{ productId: '6', title: 'Telefon', shopName: 'Do‘kon', price: 10000, imageUrl: null }] };
+  const { searchService } = loadTypeScript('src/services/search.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options.params]); return response; } },
+  });
+  assert.deepEqual(await searchService.suggest(' telefon '), [{ id: '6', name: 'Telefon', shopName: 'Do‘kon', price: 10000, image: undefined }]);
+  assert.deepEqual(calls, [['/storefront/search', { q: 'telefon', page: 1, limit: 6 }]]);
+  assert.deepEqual(await searchService.suggest('a'), []);
+  response = { wrong: [] };
+  await assert.rejects(searchService.suggest('telefon'), /takliflarini noto‘g‘ri/);
 });
 
 test('category service uses backend slugs and finds nested categories', async () => {

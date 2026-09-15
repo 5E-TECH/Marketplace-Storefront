@@ -1,49 +1,86 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { favoritesService } from "@/services/favorites.service";
 import type { ID, Product } from "@/types/commerce";
 
-type FavoritesContextValue = { products: Product[]; count: number; hydrated: boolean; loading: boolean; error: string | null; has: (id: ID) => boolean; toggle: (product: Product) => Promise<void>; refresh: () => Promise<void> };
+type FavoritesContextValue = {
+  products: Product[];
+  count: number;
+  hydrated: boolean;
+  loading: boolean;
+  error: string | null;
+  has: (id: ID) => boolean;
+  isPending: (id: ID) => boolean;
+  toggle: (product: Product) => Promise<void>;
+  refresh: () => Promise<void>;
+};
 const FavoritesContext = createContext<FavoritesContextValue | null>(null);
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  const productsRef = useRef(products);
+  const pendingRef = useRef(new Set<string>());
+  const mounted = useRef(true);
+  const commit = useCallback((next: Product[]) => { productsRef.current = next; setProducts(next); }, []);
+
   const refresh = useCallback(async () => {
-    setLoading(true); setError(null);
-    try { setProducts(await favoritesService.list()); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : "Sevimlilarni yuklab bo‘lmadi"); }
-    finally { setLoading(false); setHydrated(true); }
-  }, []);
+    setLoading(true);
+    setError(null);
+    try {
+      const remote = await favoritesService.list();
+      if (mounted.current) commit(remote);
+    } catch (caught) {
+      if (mounted.current) setError(caught instanceof Error ? caught.message : "Sevimlilarni yuklab bo‘lmadi");
+    } finally {
+      if (mounted.current) { setLoading(false); setHydrated(true); }
+    }
+  }, [commit]);
   useEffect(() => {
+    mounted.current = true;
     let active = true;
     const load = () => { if (active) void refresh(); };
     if ("requestIdleCallback" in window) {
       const idleId = window.requestIdleCallback(load, { timeout: 1_000 });
-      return () => { active = false; window.cancelIdleCallback(idleId); };
+      return () => { active = false; mounted.current = false; window.cancelIdleCallback(idleId); };
     }
     const timeoutId = setTimeout(load, 200);
-    return () => { active = false; clearTimeout(timeoutId); };
+    return () => { active = false; mounted.current = false; clearTimeout(timeoutId); };
   }, [refresh]);
   useEffect(() => {
     window.addEventListener("elchi:guest-merged", refresh);
     return () => window.removeEventListener("elchi:guest-merged", refresh);
   }, [refresh]);
+
   const has = useCallback((id: ID) => products.some((product) => String(product.id) === String(id)), [products]);
+  const isPending = useCallback((id: ID) => pendingIds.has(String(id)), [pendingIds]);
   const toggle = useCallback(async (product: Product) => {
-    if (loading) return;
-    const existed = products.some((item) => String(item.id) === String(product.id));
-    const previous = products;
-    setProducts(existed ? products.filter((item) => String(item.id) !== String(product.id)) : [product, ...products]);
-    setLoading(true); setError(null);
-    try { if (existed) await favoritesService.remove(product.id); else await favoritesService.add(product.id); }
-    catch (caught) { setProducts(previous); setError(caught instanceof Error ? caught.message : "Sevimlilar amalini bajarib bo‘lmadi"); }
-    finally { setLoading(false); }
-  }, [loading, products]);
-  const value = useMemo(() => ({ products, count: products.length, hydrated, loading, error, has, toggle, refresh }), [products, hydrated, loading, error, has, toggle, refresh]);
+    const id = String(product.id);
+    if (!hydrated || pendingRef.current.has(id)) return;
+    const previous = productsRef.current;
+    const existed = previous.some((item) => String(item.id) === id);
+    commit(existed ? previous.filter((item) => String(item.id) !== id) : [product, ...previous]);
+    pendingRef.current.add(id);
+    setPendingIds(new Set(pendingRef.current));
+    setError(null);
+    try {
+      if (existed) await favoritesService.remove(product.id);
+      else await favoritesService.add(product.id);
+    } catch (caught) {
+      if (mounted.current) {
+        commit(previous);
+        setError(caught instanceof Error ? caught.message : "Sevimlilar amalini bajarib bo‘lmadi");
+      }
+    } finally {
+      pendingRef.current.delete(id);
+      if (mounted.current) setPendingIds(new Set(pendingRef.current));
+    }
+  }, [commit, hydrated]);
+  const value = useMemo(() => ({ products, count: products.length, hydrated, loading, error, has, isPending, toggle, refresh }), [products, hydrated, loading, error, has, isPending, toggle, refresh]);
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }
 

@@ -16,9 +16,9 @@ export function CartItemRow({ item, loading, onUpdate, onRemove }: Props) {
   const oldTotal = item.product.oldPrice ? item.product.oldPrice * item.quantity : undefined;
   const isFavorite = favorites.has(item.productId);
   return <article className="cart-page-item" data-testid="cart-item">
-    <Link className="cart-item-image" href={`/product/${item.productId}`}><Image src={getSafeImageSrc(item.product.image)} alt={item.product.name} fill sizes="(max-width: 720px) 92px, 130px"/></Link>
+    <Link className="cart-item-image" href={`/product/${item.productId}`} prefetch={false}><Image src={getSafeImageSrc(item.product.image)} alt={item.product.name} fill sizes="(max-width: 720px) 92px, 130px"/></Link>
     <div className="cart-item-details">
-      <Link href={`/product/${item.productId}`}><h2>{item.product.name}</h2></Link>
+      <Link href={`/product/${item.productId}`} prefetch={false}><h2>{item.product.name}</h2></Link>
       {variant?.name && <small>Variant: {variant.name}</small>}
       {item.color && <span className="item-color">Rang <i style={{ background: item.color }}/></span>}
       <div className="cart-row-actions">

@@ -9,6 +9,7 @@
 .logout { min-height: 44px; display: flex; align-items: center; gap: 8px; margin-left: auto; padding: 0 16px; border: 1px solid var(--color-line); border-radius: 12px; background: #fff; font-weight: 700; cursor: pointer; }
 .logout svg { width: 18px; }
 .loginLayout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(380px, 1fr); gap: 22px; max-width: 960px; margin: 24px auto 0; }
+.authShell { display: grid; grid-template-columns: minmax(0, .85fr) minmax(380px, 1fr); gap: 22px; max-width: 960px; margin: 0 auto; }
 .loginIntro, .loginCard { min-width: 0; padding: 30px; border: 1px solid var(--color-line); border-radius: 22px; background: #fff; }
 .loginIntro { color: #fff; background: #17181b; }
 .loginIntro > span { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 15px; background: rgba(255,255,255,.1); color: #ff414c; }
@@ -30,7 +31,17 @@
 .password button svg { width: 18px; }
 .submit { width: 100%; margin-top: 2px; }
 .error { margin: 0; padding: 11px 13px; border-radius: 10px; background: #fff0f1; color: var(--color-brand); font-size: 12px; }
+.success { margin: 0; padding: 11px 13px; border-radius: 10px; background: #eefaf2; color: #16713a; font-size: 12px; }
 .note { color: var(--color-muted); font-size: 10px; line-height: 1.5; text-align: center; }
+.authLinks { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; font-weight: 700; }
+.authLinks a { color: var(--color-brand); }
+.guestActions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.guestActions .error { flex-basis: 100%; }
+.profileForm { display: grid; gap: 16px; margin-top: 22px; padding: 28px; border: 1px solid var(--color-line); border-radius: 20px; background: #fff; }
+.profileFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.profileForm label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; }
+.profileForm input { width: 100%; min-height: 50px; padding: 0 14px; border: 1px solid var(--color-line); border-radius: 12px; background: #fafafb; font-size: 14px; }
+.profileForm button { justify-self: start; }
 .links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 22px; }
 .links > a { min-height: 108px; display: flex; align-items: center; gap: 15px; padding: 20px; border: 1px solid var(--color-line); border-radius: 18px; background: #fff; transition: border-color .15s, box-shadow .15s, transform .15s; }
 .links > a:hover { border-color: #ddd; box-shadow: 0 10px 30px rgba(18,19,22,.07); transform: translateY(-2px); }
@@ -42,6 +53,6 @@
 .links > a > svg { width: 18px; margin-left: auto; color: #a8aab0; }
 .skeleton { height: 340px; border-radius: 24px; background: linear-gradient(90deg, #f3f3f4 25%, #fafafa 50%, #f3f3f4 75%); background-size: 200% 100%; animation: loading 1.1s infinite; }
 @keyframes loading { to { background-position: -200% 0; } }
-@media (max-width: 760px) { .page { padding-top: 32px; } .hero { align-items: flex-start; padding: 24px; } .loginLayout { grid-template-columns: 1fr; } .loginIntro { display: none; } .links { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .page { padding-top: 32px; } .hero { align-items: flex-start; padding: 24px; } .loginLayout, .authShell { grid-template-columns: 1fr; } .loginIntro { display: none; } .links, .profileFields { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .hero { flex-direction: column; gap: 16px; border-radius: 18px; } .avatar { width: 60px; height: 60px; } .logout { margin-left: 0; } .loginLayout { margin-top: 14px; } .loginCard { padding: 21px 16px; border-radius: 18px; } .links > a { min-height: 94px; padding: 16px; } }
 @media (prefers-reduced-motion: reduce) { .links > a { transition: none; } .skeleton { animation: none; } }

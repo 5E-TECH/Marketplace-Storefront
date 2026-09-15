@@ -1,0 +1,12 @@
+# Backend stackidagi Caddy konfiguratsiyasiga qo‘shiladi. Ikkala frontend
+# `marketplace_edge` Docker tarmog‘ida bo‘lishi kerak.
+{$STOREFRONT_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy storefront:3001
+}
+
+{$ADMIN_DOMAIN} {
+	header X-Robots-Tag "noindex, nofollow, noarchive"
+	encode zstd gzip
+	reverse_proxy frontend:8080
+}

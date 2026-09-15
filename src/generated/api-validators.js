@@ -808,9 +808,8 @@ validate12.errors = vErrors;
 return errors === 0;
 }
 
-export const validateCategoryTreeDto = validate14;
-const schema17 = {"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"slug":{"type":"string"},"parentId":{"anyOf":[{"type":"string"},{"type":"null"}]},"iconUrl":{"anyOf":[{"type":"string"},{"type":"null"}]},"sortOrder":{"type":"number"},"isActive":{"type":"boolean"},"children":{"type":"array","items":{"$ref":"#/components/schemas/CategoryTreeDto"}}},"required":["id","name","slug","parentId","iconUrl","sortOrder","isActive","children"]};
-const wrapper0 = {validate: validate14};
+export const validateStorefrontShopPageDto = validate14;
+const schema17 = {"type":"object","properties":{"shop":{"$ref":"#/components/schemas/SellerShopDto"},"products":{"$ref":"#/components/schemas/StorefrontProductsPageDto"}},"required":["shop","products"]};
 
 function validate14(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -818,15 +817,298 @@ let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
-if(((((((((data.id === undefined) && (missing0 = "id")) || ((data.name === undefined) && (missing0 = "name"))) || ((data.slug === undefined) && (missing0 = "slug"))) || ((data.parentId === undefined) && (missing0 = "parentId"))) || ((data.iconUrl === undefined) && (missing0 = "iconUrl"))) || ((data.sortOrder === undefined) && (missing0 = "sortOrder"))) || ((data.isActive === undefined) && (missing0 = "isActive"))) || ((data.children === undefined) && (missing0 = "children"))){
+if(((data.shop === undefined) && (missing0 = "shop")) || ((data.products === undefined) && (missing0 = "products"))){
 validate14.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.shop !== undefined){
+let data0 = data.shop;
+const _errs1 = errors;
+const _errs2 = errors;
+if(errors === _errs2){
+if(data0 && typeof data0 == "object" && !Array.isArray(data0)){
+let missing1;
+if(((((((((((((((data0.id === undefined) && (missing1 = "id")) || ((data0.ownerUserId === undefined) && (missing1 = "ownerUserId"))) || ((data0.name === undefined) && (missing1 = "name"))) || ((data0.slug === undefined) && (missing1 = "slug"))) || ((data0.status === undefined) && (missing1 = "status"))) || ((data0.description === undefined) && (missing1 = "description"))) || ((data0.logoUrl === undefined) && (missing1 = "logoUrl"))) || ((data0.bannerUrl === undefined) && (missing1 = "bannerUrl"))) || ((data0.phone === undefined) && (missing1 = "phone"))) || ((data0.regionId === undefined) && (missing1 = "regionId"))) || ((data0.districtId === undefined) && (missing1 = "districtId"))) || ((data0.address === undefined) && (missing1 = "address"))) || ((data0.rating === undefined) && (missing1 = "rating"))) || ((data0.ordersCount === undefined) && (missing1 = "ordersCount"))){
+validate14.errors = [{instancePath:instancePath+"/shop",schemaPath:"#/components/schemas/SellerShopDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
+return false;
+}
+else {
+if(data0.id !== undefined){
+const _errs4 = errors;
+if(typeof data0.id !== "string"){
+validate14.errors = [{instancePath:instancePath+"/shop/id",schemaPath:"#/components/schemas/SellerShopDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid2 = _errs4 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.ownerUserId !== undefined){
+const _errs6 = errors;
+if(typeof data0.ownerUserId !== "string"){
+validate14.errors = [{instancePath:instancePath+"/shop/ownerUserId",schemaPath:"#/components/schemas/SellerShopDto/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid2 = _errs6 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.name !== undefined){
+const _errs8 = errors;
+if(typeof data0.name !== "string"){
+validate14.errors = [{instancePath:instancePath+"/shop/name",schemaPath:"#/components/schemas/SellerShopDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid2 = _errs8 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.slug !== undefined){
+const _errs10 = errors;
+if(typeof data0.slug !== "string"){
+validate14.errors = [{instancePath:instancePath+"/shop/slug",schemaPath:"#/components/schemas/SellerShopDto/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid2 = _errs10 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.status !== undefined){
+let data5 = data0.status;
+const _errs12 = errors;
+if(typeof data5 !== "string"){
+validate14.errors = [{instancePath:instancePath+"/shop/status",schemaPath:"#/components/schemas/SellerShopDto/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+if(!((((data5 === "PENDING") || (data5 === "ACTIVE")) || (data5 === "SUSPENDED")) || (data5 === "REJECTED"))){
+validate14.errors = [{instancePath:instancePath+"/shop/status",schemaPath:"#/components/schemas/SellerShopDto/properties/status/enum",keyword:"enum",params:{allowedValues: schema13.properties.status.enum},message:"must be equal to one of the allowed values"}];
+return false;
+}
+var valid2 = _errs12 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.logoUrl !== undefined){
+let data6 = data0.logoUrl;
+const _errs14 = errors;
+const _errs15 = errors;
+let valid3 = false;
+const _errs16 = errors;
+if(typeof data6 !== "string"){
+const err0 = {instancePath:instancePath+"/shop/logoUrl",schemaPath:"#/components/schemas/SellerShopDto/properties/logoUrl/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+var _valid0 = _errs16 === errors;
+valid3 = valid3 || _valid0;
+if(!valid3){
+const _errs18 = errors;
+if(data6 !== null){
+const err1 = {instancePath:instancePath+"/shop/logoUrl",schemaPath:"#/components/schemas/SellerShopDto/properties/logoUrl/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+var _valid0 = _errs18 === errors;
+valid3 = valid3 || _valid0;
+}
+if(!valid3){
+const err2 = {instancePath:instancePath+"/shop/logoUrl",schemaPath:"#/components/schemas/SellerShopDto/properties/logoUrl/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+validate14.errors = vErrors;
+return false;
+}
+else {
+errors = _errs15;
+if(vErrors !== null){
+if(_errs15){
+vErrors.length = _errs15;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid2 = _errs14 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.bannerUrl !== undefined){
+let data7 = data0.bannerUrl;
+const _errs20 = errors;
+const _errs21 = errors;
+let valid4 = false;
+const _errs22 = errors;
+if(typeof data7 !== "string"){
+const err3 = {instancePath:instancePath+"/shop/bannerUrl",schemaPath:"#/components/schemas/SellerShopDto/properties/bannerUrl/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+var _valid1 = _errs22 === errors;
+valid4 = valid4 || _valid1;
+if(!valid4){
+const _errs24 = errors;
+if(data7 !== null){
+const err4 = {instancePath:instancePath+"/shop/bannerUrl",schemaPath:"#/components/schemas/SellerShopDto/properties/bannerUrl/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+var _valid1 = _errs24 === errors;
+valid4 = valid4 || _valid1;
+}
+if(!valid4){
+const err5 = {instancePath:instancePath+"/shop/bannerUrl",schemaPath:"#/components/schemas/SellerShopDto/properties/bannerUrl/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+validate14.errors = vErrors;
+return false;
+}
+else {
+errors = _errs21;
+if(vErrors !== null){
+if(_errs21){
+vErrors.length = _errs21;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid2 = _errs20 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.rating !== undefined){
+const _errs26 = errors;
+if(!(typeof data0.rating == "number")){
+validate14.errors = [{instancePath:instancePath+"/shop/rating",schemaPath:"#/components/schemas/SellerShopDto/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid2 = _errs26 === errors;
+}
+else {
+var valid2 = true;
+}
+if(valid2){
+if(data0.ordersCount !== undefined){
+const _errs28 = errors;
+if(!(typeof data0.ordersCount == "number")){
+validate14.errors = [{instancePath:instancePath+"/shop/ordersCount",schemaPath:"#/components/schemas/SellerShopDto/properties/ordersCount/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid2 = _errs28 === errors;
+}
+else {
+var valid2 = true;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+validate14.errors = [{instancePath:instancePath+"/shop",schemaPath:"#/components/schemas/SellerShopDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.products !== undefined){
+const _errs30 = errors;
+if(!(validate12(data.products, {instancePath:instancePath+"/products",parentData:data,parentDataProperty:"products",rootData}))){
+vErrors = vErrors === null ? validate12.errors : vErrors.concat(validate12.errors);
+errors = vErrors.length;
+}
+var valid0 = _errs30 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+else {
+validate14.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate14.errors = vErrors;
+return errors === 0;
+}
+
+export const validateCategoryTreeDto = validate16;
+const schema19 = {"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"slug":{"type":"string"},"parentId":{"anyOf":[{"type":"string"},{"type":"null"}]},"iconUrl":{"anyOf":[{"type":"string"},{"type":"null"}]},"sortOrder":{"type":"number"},"isActive":{"type":"boolean"},"children":{"type":"array","items":{"$ref":"#/components/schemas/CategoryTreeDto"}}},"required":["id","name","slug","parentId","iconUrl","sortOrder","isActive","children"]};
+const wrapper0 = {validate: validate16};
+
+function validate16(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if(((((((((data.id === undefined) && (missing0 = "id")) || ((data.name === undefined) && (missing0 = "name"))) || ((data.slug === undefined) && (missing0 = "slug"))) || ((data.parentId === undefined) && (missing0 = "parentId"))) || ((data.iconUrl === undefined) && (missing0 = "iconUrl"))) || ((data.sortOrder === undefined) && (missing0 = "sortOrder"))) || ((data.isActive === undefined) && (missing0 = "isActive"))) || ((data.children === undefined) && (missing0 = "children"))){
+validate16.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
 if(data.id !== undefined){
 const _errs1 = errors;
 if(typeof data.id !== "string"){
-validate14.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs1 === errors;
@@ -838,7 +1120,7 @@ if(valid0){
 if(data.name !== undefined){
 const _errs3 = errors;
 if(typeof data.name !== "string"){
-validate14.errors = [{instancePath:instancePath+"/name",schemaPath:"#/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/name",schemaPath:"#/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs3 === errors;
@@ -850,7 +1132,7 @@ if(valid0){
 if(data.slug !== undefined){
 const _errs5 = errors;
 if(typeof data.slug !== "string"){
-validate14.errors = [{instancePath:instancePath+"/slug",schemaPath:"#/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate16.errors = [{instancePath:instancePath+"/slug",schemaPath:"#/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs5 === errors;
@@ -901,7 +1183,7 @@ else {
 vErrors.push(err2);
 }
 errors++;
-validate14.errors = vErrors;
+validate16.errors = vErrors;
 return false;
 }
 else {
@@ -963,7 +1245,7 @@ else {
 vErrors.push(err5);
 }
 errors++;
-validate14.errors = vErrors;
+validate16.errors = vErrors;
 return false;
 }
 else {
@@ -986,7 +1268,7 @@ if(valid0){
 if(data.sortOrder !== undefined){
 const _errs19 = errors;
 if(!(typeof data.sortOrder == "number")){
-validate14.errors = [{instancePath:instancePath+"/sortOrder",schemaPath:"#/properties/sortOrder/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate16.errors = [{instancePath:instancePath+"/sortOrder",schemaPath:"#/properties/sortOrder/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs19 === errors;
@@ -998,7 +1280,7 @@ if(valid0){
 if(data.isActive !== undefined){
 const _errs21 = errors;
 if(typeof data.isActive !== "boolean"){
-validate14.errors = [{instancePath:instancePath+"/isActive",schemaPath:"#/properties/isActive/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate16.errors = [{instancePath:instancePath+"/isActive",schemaPath:"#/properties/isActive/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid0 = _errs21 === errors;
@@ -1027,7 +1309,7 @@ break;
 }
 }
 else {
-validate14.errors = [{instancePath:instancePath+"/children",schemaPath:"#/properties/children/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate16.errors = [{instancePath:instancePath+"/children",schemaPath:"#/properties/children/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1046,32 +1328,32 @@ var valid0 = true;
 }
 }
 else {
-validate14.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate16.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate14.errors = vErrors;
+validate16.errors = vErrors;
 return errors === 0;
 }
 
-export const validateProductDto = validate15;
-const schema18 = {"type":"object","properties":{"id":{"type":"string"},"shopId":{"type":"string"},"ownerUserId":{"type":"string"},"categoryId":{},"name":{"type":"string"},"slug":{"type":"string"},"description":{},"price":{"type":"number"},"oldPrice":{},"imageUrl":{},"images":{"type":"array","items":{"type":"string"}},"attributes":{},"hasVariants":{"type":"boolean"},"status":{"type":"string","enum":["DRAFT","ACTIVE","ARCHIVED","OUT_OF_STOCK"]},"isBlocked":{"type":"boolean"},"rating":{"type":"number"},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"}},"required":["id","shopId","ownerUserId","categoryId","name","slug","description","price","oldPrice","imageUrl","images","attributes","hasVariants","status","isBlocked","rating","createdAt","updatedAt"]};
+export const validateProductDto = validate17;
+const schema20 = {"type":"object","properties":{"id":{"type":"string"},"shopId":{"type":"string"},"ownerUserId":{"type":"string"},"categoryId":{},"name":{"type":"string"},"slug":{"type":"string"},"description":{},"price":{"type":"number"},"oldPrice":{},"imageUrl":{},"images":{"type":"array","items":{"type":"string"}},"attributes":{},"hasVariants":{"type":"boolean"},"status":{"type":"string","enum":["DRAFT","ACTIVE","ARCHIVED","OUT_OF_STOCK"]},"isBlocked":{"type":"boolean"},"rating":{"type":"number"},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"}},"required":["id","shopId","ownerUserId","categoryId","name","slug","description","price","oldPrice","imageUrl","images","attributes","hasVariants","status","isBlocked","rating","createdAt","updatedAt"]};
 
-function validate15(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate17(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
 if(((((((((((((((((((data.id === undefined) && (missing0 = "id")) || ((data.shopId === undefined) && (missing0 = "shopId"))) || ((data.ownerUserId === undefined) && (missing0 = "ownerUserId"))) || ((data.categoryId === undefined) && (missing0 = "categoryId"))) || ((data.name === undefined) && (missing0 = "name"))) || ((data.slug === undefined) && (missing0 = "slug"))) || ((data.description === undefined) && (missing0 = "description"))) || ((data.price === undefined) && (missing0 = "price"))) || ((data.oldPrice === undefined) && (missing0 = "oldPrice"))) || ((data.imageUrl === undefined) && (missing0 = "imageUrl"))) || ((data.images === undefined) && (missing0 = "images"))) || ((data.attributes === undefined) && (missing0 = "attributes"))) || ((data.hasVariants === undefined) && (missing0 = "hasVariants"))) || ((data.status === undefined) && (missing0 = "status"))) || ((data.isBlocked === undefined) && (missing0 = "isBlocked"))) || ((data.rating === undefined) && (missing0 = "rating"))) || ((data.createdAt === undefined) && (missing0 = "createdAt"))) || ((data.updatedAt === undefined) && (missing0 = "updatedAt"))){
-validate15.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+validate17.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
 if(data.id !== undefined){
 const _errs1 = errors;
 if(typeof data.id !== "string"){
-validate15.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs1 === errors;
@@ -1083,7 +1365,7 @@ if(valid0){
 if(data.shopId !== undefined){
 const _errs3 = errors;
 if(typeof data.shopId !== "string"){
-validate15.errors = [{instancePath:instancePath+"/shopId",schemaPath:"#/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/shopId",schemaPath:"#/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs3 === errors;
@@ -1095,7 +1377,7 @@ if(valid0){
 if(data.ownerUserId !== undefined){
 const _errs5 = errors;
 if(typeof data.ownerUserId !== "string"){
-validate15.errors = [{instancePath:instancePath+"/ownerUserId",schemaPath:"#/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/ownerUserId",schemaPath:"#/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs5 === errors;
@@ -1107,7 +1389,7 @@ if(valid0){
 if(data.name !== undefined){
 const _errs7 = errors;
 if(typeof data.name !== "string"){
-validate15.errors = [{instancePath:instancePath+"/name",schemaPath:"#/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/name",schemaPath:"#/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs7 === errors;
@@ -1119,7 +1401,7 @@ if(valid0){
 if(data.slug !== undefined){
 const _errs9 = errors;
 if(typeof data.slug !== "string"){
-validate15.errors = [{instancePath:instancePath+"/slug",schemaPath:"#/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/slug",schemaPath:"#/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs9 === errors;
@@ -1131,7 +1413,7 @@ if(valid0){
 if(data.price !== undefined){
 const _errs11 = errors;
 if(!(typeof data.price == "number")){
-validate15.errors = [{instancePath:instancePath+"/price",schemaPath:"#/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate17.errors = [{instancePath:instancePath+"/price",schemaPath:"#/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs11 === errors;
@@ -1150,7 +1432,7 @@ const len0 = data6.length;
 for(let i0=0; i0<len0; i0++){
 const _errs15 = errors;
 if(typeof data6[i0] !== "string"){
-validate15.errors = [{instancePath:instancePath+"/images/" + i0,schemaPath:"#/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/images/" + i0,schemaPath:"#/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid1 = _errs15 === errors;
@@ -1160,7 +1442,7 @@ break;
 }
 }
 else {
-validate15.errors = [{instancePath:instancePath+"/images",schemaPath:"#/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate17.errors = [{instancePath:instancePath+"/images",schemaPath:"#/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1173,7 +1455,7 @@ if(valid0){
 if(data.hasVariants !== undefined){
 const _errs17 = errors;
 if(typeof data.hasVariants !== "boolean"){
-validate15.errors = [{instancePath:instancePath+"/hasVariants",schemaPath:"#/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate17.errors = [{instancePath:instancePath+"/hasVariants",schemaPath:"#/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid0 = _errs17 === errors;
@@ -1186,11 +1468,11 @@ if(data.status !== undefined){
 let data9 = data.status;
 const _errs19 = errors;
 if(typeof data9 !== "string"){
-validate15.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 if(!((((data9 === "DRAFT") || (data9 === "ACTIVE")) || (data9 === "ARCHIVED")) || (data9 === "OUT_OF_STOCK"))){
-validate15.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema18.properties.status.enum},message:"must be equal to one of the allowed values"}];
+validate17.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema20.properties.status.enum},message:"must be equal to one of the allowed values"}];
 return false;
 }
 var valid0 = _errs19 === errors;
@@ -1202,7 +1484,7 @@ if(valid0){
 if(data.isBlocked !== undefined){
 const _errs21 = errors;
 if(typeof data.isBlocked !== "boolean"){
-validate15.errors = [{instancePath:instancePath+"/isBlocked",schemaPath:"#/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate17.errors = [{instancePath:instancePath+"/isBlocked",schemaPath:"#/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid0 = _errs21 === errors;
@@ -1214,7 +1496,7 @@ if(valid0){
 if(data.rating !== undefined){
 const _errs23 = errors;
 if(!(typeof data.rating == "number")){
-validate15.errors = [{instancePath:instancePath+"/rating",schemaPath:"#/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate17.errors = [{instancePath:instancePath+"/rating",schemaPath:"#/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs23 === errors;
@@ -1228,7 +1510,7 @@ const _errs25 = errors;
 if(errors === _errs25){
 if(errors === _errs25){
 if(!(typeof data.createdAt === "string")){
-validate15.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1244,7 +1526,7 @@ const _errs27 = errors;
 if(errors === _errs27){
 if(errors === _errs27){
 if(!(typeof data.updatedAt === "string")){
-validate15.errors = [{instancePath:instancePath+"/updatedAt",schemaPath:"#/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate17.errors = [{instancePath:instancePath+"/updatedAt",schemaPath:"#/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1269,25 +1551,25 @@ var valid0 = true;
 }
 }
 else {
-validate15.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate17.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate15.errors = vErrors;
+validate17.errors = vErrors;
 return errors === 0;
 }
 
-export const validateMyProductsPageDto = validate16;
-const schema19 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/ProductDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
+export const validateMyProductsPageDto = validate18;
+const schema21 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/ProductDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
 
-function validate16(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate18(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
 if((((((data.items === undefined) && (missing0 = "items")) || ((data.total === undefined) && (missing0 = "total"))) || ((data.page === undefined) && (missing0 = "page"))) || ((data.limit === undefined) && (missing0 = "limit"))) || ((data.totalPages === undefined) && (missing0 = "totalPages"))){
-validate16.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+validate18.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
@@ -1306,14 +1588,14 @@ if(errors === _errs4){
 if(data1 && typeof data1 == "object" && !Array.isArray(data1)){
 let missing1;
 if(((((((((((((((((((data1.id === undefined) && (missing1 = "id")) || ((data1.shopId === undefined) && (missing1 = "shopId"))) || ((data1.ownerUserId === undefined) && (missing1 = "ownerUserId"))) || ((data1.categoryId === undefined) && (missing1 = "categoryId"))) || ((data1.name === undefined) && (missing1 = "name"))) || ((data1.slug === undefined) && (missing1 = "slug"))) || ((data1.description === undefined) && (missing1 = "description"))) || ((data1.price === undefined) && (missing1 = "price"))) || ((data1.oldPrice === undefined) && (missing1 = "oldPrice"))) || ((data1.imageUrl === undefined) && (missing1 = "imageUrl"))) || ((data1.images === undefined) && (missing1 = "images"))) || ((data1.attributes === undefined) && (missing1 = "attributes"))) || ((data1.hasVariants === undefined) && (missing1 = "hasVariants"))) || ((data1.status === undefined) && (missing1 = "status"))) || ((data1.isBlocked === undefined) && (missing1 = "isBlocked"))) || ((data1.rating === undefined) && (missing1 = "rating"))) || ((data1.createdAt === undefined) && (missing1 = "createdAt"))) || ((data1.updatedAt === undefined) && (missing1 = "updatedAt"))){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
 return false;
 }
 else {
 if(data1.id !== undefined){
 const _errs6 = errors;
 if(typeof data1.id !== "string"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/ProductDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/ProductDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs6 === errors;
@@ -1325,7 +1607,7 @@ if(valid3){
 if(data1.shopId !== undefined){
 const _errs8 = errors;
 if(typeof data1.shopId !== "string"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/ProductDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/ProductDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs8 === errors;
@@ -1337,7 +1619,7 @@ if(valid3){
 if(data1.ownerUserId !== undefined){
 const _errs10 = errors;
 if(typeof data1.ownerUserId !== "string"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/ownerUserId",schemaPath:"#/components/schemas/ProductDto/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/ownerUserId",schemaPath:"#/components/schemas/ProductDto/properties/ownerUserId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs10 === errors;
@@ -1349,7 +1631,7 @@ if(valid3){
 if(data1.name !== undefined){
 const _errs12 = errors;
 if(typeof data1.name !== "string"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/name",schemaPath:"#/components/schemas/ProductDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/name",schemaPath:"#/components/schemas/ProductDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs12 === errors;
@@ -1361,7 +1643,7 @@ if(valid3){
 if(data1.slug !== undefined){
 const _errs14 = errors;
 if(typeof data1.slug !== "string"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/slug",schemaPath:"#/components/schemas/ProductDto/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/slug",schemaPath:"#/components/schemas/ProductDto/properties/slug/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid3 = _errs14 === errors;
@@ -1373,7 +1655,7 @@ if(valid3){
 if(data1.price !== undefined){
 const _errs16 = errors;
 if(!(typeof data1.price == "number")){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/price",schemaPath:"#/components/schemas/ProductDto/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/price",schemaPath:"#/components/schemas/ProductDto/properties/price/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid3 = _errs16 === errors;
@@ -1392,7 +1674,7 @@ const len1 = data8.length;
 for(let i1=0; i1<len1; i1++){
 const _errs20 = errors;
 if(typeof data8[i1] !== "string"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/images/" + i1,schemaPath:"#/components/schemas/ProductDto/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/images/" + i1,schemaPath:"#/components/schemas/ProductDto/properties/images/items/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid4 = _errs20 === errors;
@@ -1402,7 +1684,7 @@ break;
 }
 }
 else {
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/images",schemaPath:"#/components/schemas/ProductDto/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/images",schemaPath:"#/components/schemas/ProductDto/properties/images/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1415,7 +1697,7 @@ if(valid3){
 if(data1.hasVariants !== undefined){
 const _errs22 = errors;
 if(typeof data1.hasVariants !== "boolean"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/hasVariants",schemaPath:"#/components/schemas/ProductDto/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/hasVariants",schemaPath:"#/components/schemas/ProductDto/properties/hasVariants/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid3 = _errs22 === errors;
@@ -1428,11 +1710,11 @@ if(data1.status !== undefined){
 let data11 = data1.status;
 const _errs24 = errors;
 if(typeof data11 !== "string"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 if(!((((data11 === "DRAFT") || (data11 === "ACTIVE")) || (data11 === "ARCHIVED")) || (data11 === "OUT_OF_STOCK"))){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/enum",keyword:"enum",params:{allowedValues: schema18.properties.status.enum},message:"must be equal to one of the allowed values"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/status",schemaPath:"#/components/schemas/ProductDto/properties/status/enum",keyword:"enum",params:{allowedValues: schema20.properties.status.enum},message:"must be equal to one of the allowed values"}];
 return false;
 }
 var valid3 = _errs24 === errors;
@@ -1444,7 +1726,7 @@ if(valid3){
 if(data1.isBlocked !== undefined){
 const _errs26 = errors;
 if(typeof data1.isBlocked !== "boolean"){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/isBlocked",schemaPath:"#/components/schemas/ProductDto/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/isBlocked",schemaPath:"#/components/schemas/ProductDto/properties/isBlocked/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
 return false;
 }
 var valid3 = _errs26 === errors;
@@ -1456,7 +1738,7 @@ if(valid3){
 if(data1.rating !== undefined){
 const _errs28 = errors;
 if(!(typeof data1.rating == "number")){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/rating",schemaPath:"#/components/schemas/ProductDto/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/rating",schemaPath:"#/components/schemas/ProductDto/properties/rating/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid3 = _errs28 === errors;
@@ -1470,7 +1752,7 @@ const _errs30 = errors;
 if(errors === _errs30){
 if(errors === _errs30){
 if(!(typeof data1.createdAt === "string")){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/createdAt",schemaPath:"#/components/schemas/ProductDto/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/createdAt",schemaPath:"#/components/schemas/ProductDto/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1486,7 +1768,7 @@ const _errs32 = errors;
 if(errors === _errs32){
 if(errors === _errs32){
 if(!(typeof data1.updatedAt === "string")){
-validate16.errors = [{instancePath:instancePath+"/items/" + i0+"/updatedAt",schemaPath:"#/components/schemas/ProductDto/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/updatedAt",schemaPath:"#/components/schemas/ProductDto/properties/updatedAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1511,290 +1793,7 @@ var valid3 = true;
 }
 }
 else {
-validate16.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
-return false;
-}
-}
-var valid1 = _errs3 === errors;
-if(!valid1){
-break;
-}
-}
-}
-else {
-validate16.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
-return false;
-}
-}
-var valid0 = _errs1 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.total !== undefined){
-const _errs34 = errors;
-if(!(typeof data.total == "number")){
-validate16.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
-return false;
-}
-var valid0 = _errs34 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.page !== undefined){
-const _errs36 = errors;
-if(!(typeof data.page == "number")){
-validate16.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
-return false;
-}
-var valid0 = _errs36 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.limit !== undefined){
-const _errs38 = errors;
-if(!(typeof data.limit == "number")){
-validate16.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
-return false;
-}
-var valid0 = _errs38 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.totalPages !== undefined){
-const _errs40 = errors;
-if(!(typeof data.totalPages == "number")){
-validate16.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
-return false;
-}
-var valid0 = _errs40 === errors;
-}
-else {
-var valid0 = true;
-}
-}
-}
-}
-}
-}
-}
-else {
-validate16.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
-return false;
-}
-}
-validate16.errors = vErrors;
-return errors === 0;
-}
-
-export const validateProductVariantDto = validate17;
-
-function validate17(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
-let vErrors = null;
-let errors = 0;
-if(errors === 0){
-if(data && typeof data == "object" && !Array.isArray(data)){
-let missing0;
-if(((((((((((data.id === undefined) && (missing0 = "id")) || ((data.productId === undefined) && (missing0 = "productId"))) || ((data.sku === undefined) && (missing0 = "sku"))) || ((data.name === undefined) && (missing0 = "name"))) || ((data.attributes === undefined) && (missing0 = "attributes"))) || ((data.price === undefined) && (missing0 = "price"))) || ((data.oldPrice === undefined) && (missing0 = "oldPrice"))) || ((data.barcode === undefined) && (missing0 = "barcode"))) || ((data.imageUrl === undefined) && (missing0 = "imageUrl"))) || ((data.isActive === undefined) && (missing0 = "isActive"))){
-validate17.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
-return false;
-}
-else {
-if(data.id !== undefined){
-const _errs1 = errors;
-if(typeof data.id !== "string"){
-validate17.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid0 = _errs1 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.productId !== undefined){
-const _errs3 = errors;
-if(typeof data.productId !== "string"){
-validate17.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid0 = _errs3 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.sku !== undefined){
-const _errs5 = errors;
-if(typeof data.sku !== "string"){
-validate17.errors = [{instancePath:instancePath+"/sku",schemaPath:"#/properties/sku/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid0 = _errs5 === errors;
-}
-else {
-var valid0 = true;
-}
-if(valid0){
-if(data.isActive !== undefined){
-const _errs7 = errors;
-if(typeof data.isActive !== "boolean"){
-validate17.errors = [{instancePath:instancePath+"/isActive",schemaPath:"#/properties/isActive/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
-return false;
-}
-var valid0 = _errs7 === errors;
-}
-else {
-var valid0 = true;
-}
-}
-}
-}
-}
-}
-else {
-validate17.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
-return false;
-}
-}
-validate17.errors = vErrors;
-return errors === 0;
-}
-
-export const validateCartDto = validate18;
-const schema22 = {"type":"object","properties":{"id":{},"customerId":{},"sessionId":{},"items":{"type":"array","items":{"$ref":"#/components/schemas/CartItemDto"}},"totalAmount":{"type":"number"},"totalQuantity":{"type":"number"}},"required":["id","customerId","sessionId","items","totalAmount","totalQuantity"]};
-const schema23 = {"type":"object","properties":{"id":{"type":"string"},"productId":{"type":"string"},"variantId":{"type":"string"},"shopId":{"type":"string"},"quantity":{"type":"number"},"unitPriceSnapshot":{"type":"number"},"lineTotal":{"type":"number"}},"required":["id","productId","variantId","shopId","quantity","unitPriceSnapshot","lineTotal"]};
-
-function validate18(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
-let vErrors = null;
-let errors = 0;
-if(errors === 0){
-if(data && typeof data == "object" && !Array.isArray(data)){
-let missing0;
-if(((((((data.id === undefined) && (missing0 = "id")) || ((data.customerId === undefined) && (missing0 = "customerId"))) || ((data.sessionId === undefined) && (missing0 = "sessionId"))) || ((data.items === undefined) && (missing0 = "items"))) || ((data.totalAmount === undefined) && (missing0 = "totalAmount"))) || ((data.totalQuantity === undefined) && (missing0 = "totalQuantity"))){
-validate18.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
-return false;
-}
-else {
-if(data.items !== undefined){
-let data0 = data.items;
-const _errs1 = errors;
-if(errors === _errs1){
-if(Array.isArray(data0)){
-var valid1 = true;
-const len0 = data0.length;
-for(let i0=0; i0<len0; i0++){
-let data1 = data0[i0];
-const _errs3 = errors;
-const _errs4 = errors;
-if(errors === _errs4){
-if(data1 && typeof data1 == "object" && !Array.isArray(data1)){
-let missing1;
-if((((((((data1.id === undefined) && (missing1 = "id")) || ((data1.productId === undefined) && (missing1 = "productId"))) || ((data1.variantId === undefined) && (missing1 = "variantId"))) || ((data1.shopId === undefined) && (missing1 = "shopId"))) || ((data1.quantity === undefined) && (missing1 = "quantity"))) || ((data1.unitPriceSnapshot === undefined) && (missing1 = "unitPriceSnapshot"))) || ((data1.lineTotal === undefined) && (missing1 = "lineTotal"))){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
-return false;
-}
-else {
-if(data1.id !== undefined){
-const _errs6 = errors;
-if(typeof data1.id !== "string"){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/CartItemDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid3 = _errs6 === errors;
-}
-else {
-var valid3 = true;
-}
-if(valid3){
-if(data1.productId !== undefined){
-const _errs8 = errors;
-if(typeof data1.productId !== "string"){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/productId",schemaPath:"#/components/schemas/CartItemDto/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid3 = _errs8 === errors;
-}
-else {
-var valid3 = true;
-}
-if(valid3){
-if(data1.variantId !== undefined){
-const _errs10 = errors;
-if(typeof data1.variantId !== "string"){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/variantId",schemaPath:"#/components/schemas/CartItemDto/properties/variantId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid3 = _errs10 === errors;
-}
-else {
-var valid3 = true;
-}
-if(valid3){
-if(data1.shopId !== undefined){
-const _errs12 = errors;
-if(typeof data1.shopId !== "string"){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/CartItemDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
-return false;
-}
-var valid3 = _errs12 === errors;
-}
-else {
-var valid3 = true;
-}
-if(valid3){
-if(data1.quantity !== undefined){
-const _errs14 = errors;
-if(!(typeof data1.quantity == "number")){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/CartItemDto/properties/quantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
-return false;
-}
-var valid3 = _errs14 === errors;
-}
-else {
-var valid3 = true;
-}
-if(valid3){
-if(data1.unitPriceSnapshot !== undefined){
-const _errs16 = errors;
-if(!(typeof data1.unitPriceSnapshot == "number")){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPriceSnapshot",schemaPath:"#/components/schemas/CartItemDto/properties/unitPriceSnapshot/type",keyword:"type",params:{type: "number"},message:"must be number"}];
-return false;
-}
-var valid3 = _errs16 === errors;
-}
-else {
-var valid3 = true;
-}
-if(valid3){
-if(data1.lineTotal !== undefined){
-const _errs18 = errors;
-if(!(typeof data1.lineTotal == "number")){
-validate18.errors = [{instancePath:instancePath+"/items/" + i0+"/lineTotal",schemaPath:"#/components/schemas/CartItemDto/properties/lineTotal/type",keyword:"type",params:{type: "number"},message:"must be number"}];
-return false;
-}
-var valid3 = _errs18 === errors;
-}
-else {
-var valid3 = true;
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-validate18.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate18.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/ProductDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
@@ -1815,28 +1814,54 @@ else {
 var valid0 = true;
 }
 if(valid0){
-if(data.totalAmount !== undefined){
-const _errs20 = errors;
-if(!(typeof data.totalAmount == "number")){
-validate18.errors = [{instancePath:instancePath+"/totalAmount",schemaPath:"#/properties/totalAmount/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+if(data.total !== undefined){
+const _errs34 = errors;
+if(!(typeof data.total == "number")){
+validate18.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
-var valid0 = _errs20 === errors;
+var valid0 = _errs34 === errors;
 }
 else {
 var valid0 = true;
 }
 if(valid0){
-if(data.totalQuantity !== undefined){
-const _errs22 = errors;
-if(!(typeof data.totalQuantity == "number")){
-validate18.errors = [{instancePath:instancePath+"/totalQuantity",schemaPath:"#/properties/totalQuantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+if(data.page !== undefined){
+const _errs36 = errors;
+if(!(typeof data.page == "number")){
+validate18.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
-var valid0 = _errs22 === errors;
+var valid0 = _errs36 === errors;
 }
 else {
 var valid0 = true;
+}
+if(valid0){
+if(data.limit !== undefined){
+const _errs38 = errors;
+if(!(typeof data.limit == "number")){
+validate18.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid0 = _errs38 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.totalPages !== undefined){
+const _errs40 = errors;
+if(!(typeof data.totalPages == "number")){
+validate18.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid0 = _errs40 === errors;
+}
+else {
+var valid0 = true;
+}
+}
 }
 }
 }
@@ -1851,25 +1876,23 @@ validate18.errors = vErrors;
 return errors === 0;
 }
 
-export const validateFavoritesPageDto = validate19;
-const schema24 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/FavoriteDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
-const schema25 = {"type":"object","properties":{"id":{"type":"string"},"userId":{},"sessionId":{},"productId":{"type":"string"},"product":{"$ref":"#/components/schemas/StorefrontProductDto"},"createdAt":{"format":"date-time","type":"string"}},"required":["id","userId","sessionId","productId","product","createdAt"]};
+export const validateProductVariantDto = validate19;
 
-function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate19(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
-if(((((((data.id === undefined) && (missing0 = "id")) || ((data.userId === undefined) && (missing0 = "userId"))) || ((data.sessionId === undefined) && (missing0 = "sessionId"))) || ((data.productId === undefined) && (missing0 = "productId"))) || ((data.product === undefined) && (missing0 = "product"))) || ((data.createdAt === undefined) && (missing0 = "createdAt"))){
-validate20.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+if(((((((((((data.id === undefined) && (missing0 = "id")) || ((data.productId === undefined) && (missing0 = "productId"))) || ((data.sku === undefined) && (missing0 = "sku"))) || ((data.name === undefined) && (missing0 = "name"))) || ((data.attributes === undefined) && (missing0 = "attributes"))) || ((data.price === undefined) && (missing0 = "price"))) || ((data.oldPrice === undefined) && (missing0 = "oldPrice"))) || ((data.barcode === undefined) && (missing0 = "barcode"))) || ((data.imageUrl === undefined) && (missing0 = "imageUrl"))) || ((data.isActive === undefined) && (missing0 = "isActive"))){
+validate19.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
 if(data.id !== undefined){
 const _errs1 = errors;
 if(typeof data.id !== "string"){
-validate20.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate19.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs1 === errors;
@@ -1881,7 +1904,266 @@ if(valid0){
 if(data.productId !== undefined){
 const _errs3 = errors;
 if(typeof data.productId !== "string"){
-validate20.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate19.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs3 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.sku !== undefined){
+const _errs5 = errors;
+if(typeof data.sku !== "string"){
+validate19.errors = [{instancePath:instancePath+"/sku",schemaPath:"#/properties/sku/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs5 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.isActive !== undefined){
+const _errs7 = errors;
+if(typeof data.isActive !== "boolean"){
+validate19.errors = [{instancePath:instancePath+"/isActive",schemaPath:"#/properties/isActive/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+return false;
+}
+var valid0 = _errs7 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+}
+}
+else {
+validate19.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate19.errors = vErrors;
+return errors === 0;
+}
+
+export const validateCartDto = validate20;
+const schema24 = {"type":"object","properties":{"id":{},"customerId":{},"sessionId":{},"items":{"type":"array","items":{"$ref":"#/components/schemas/CartItemDto"}},"totalAmount":{"type":"number"},"totalQuantity":{"type":"number"}},"required":["id","customerId","sessionId","items","totalAmount","totalQuantity"]};
+const schema25 = {"type":"object","properties":{"id":{"type":"string"},"productId":{"type":"string"},"variantId":{"type":"string"},"shopId":{"type":"string"},"quantity":{"type":"number"},"unitPriceSnapshot":{"type":"number"},"lineTotal":{"type":"number"}},"required":["id","productId","variantId","shopId","quantity","unitPriceSnapshot","lineTotal"]};
+
+function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if(((((((data.id === undefined) && (missing0 = "id")) || ((data.customerId === undefined) && (missing0 = "customerId"))) || ((data.sessionId === undefined) && (missing0 = "sessionId"))) || ((data.items === undefined) && (missing0 = "items"))) || ((data.totalAmount === undefined) && (missing0 = "totalAmount"))) || ((data.totalQuantity === undefined) && (missing0 = "totalQuantity"))){
+validate20.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.items !== undefined){
+let data0 = data.items;
+const _errs1 = errors;
+if(errors === _errs1){
+if(Array.isArray(data0)){
+var valid1 = true;
+const len0 = data0.length;
+for(let i0=0; i0<len0; i0++){
+let data1 = data0[i0];
+const _errs3 = errors;
+const _errs4 = errors;
+if(errors === _errs4){
+if(data1 && typeof data1 == "object" && !Array.isArray(data1)){
+let missing1;
+if((((((((data1.id === undefined) && (missing1 = "id")) || ((data1.productId === undefined) && (missing1 = "productId"))) || ((data1.variantId === undefined) && (missing1 = "variantId"))) || ((data1.shopId === undefined) && (missing1 = "shopId"))) || ((data1.quantity === undefined) && (missing1 = "quantity"))) || ((data1.unitPriceSnapshot === undefined) && (missing1 = "unitPriceSnapshot"))) || ((data1.lineTotal === undefined) && (missing1 = "lineTotal"))){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
+return false;
+}
+else {
+if(data1.id !== undefined){
+const _errs6 = errors;
+if(typeof data1.id !== "string"){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/CartItemDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs6 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data1.productId !== undefined){
+const _errs8 = errors;
+if(typeof data1.productId !== "string"){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/productId",schemaPath:"#/components/schemas/CartItemDto/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs8 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data1.variantId !== undefined){
+const _errs10 = errors;
+if(typeof data1.variantId !== "string"){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/variantId",schemaPath:"#/components/schemas/CartItemDto/properties/variantId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs10 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data1.shopId !== undefined){
+const _errs12 = errors;
+if(typeof data1.shopId !== "string"){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/CartItemDto/properties/shopId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs12 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data1.quantity !== undefined){
+const _errs14 = errors;
+if(!(typeof data1.quantity == "number")){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/CartItemDto/properties/quantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid3 = _errs14 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data1.unitPriceSnapshot !== undefined){
+const _errs16 = errors;
+if(!(typeof data1.unitPriceSnapshot == "number")){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPriceSnapshot",schemaPath:"#/components/schemas/CartItemDto/properties/unitPriceSnapshot/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid3 = _errs16 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data1.lineTotal !== undefined){
+const _errs18 = errors;
+if(!(typeof data1.lineTotal == "number")){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/lineTotal",schemaPath:"#/components/schemas/CartItemDto/properties/lineTotal/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid3 = _errs18 === errors;
+}
+else {
+var valid3 = true;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+validate20.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+var valid1 = _errs3 === errors;
+if(!valid1){
+break;
+}
+}
+}
+else {
+validate20.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+return false;
+}
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.totalAmount !== undefined){
+const _errs20 = errors;
+if(!(typeof data.totalAmount == "number")){
+validate20.errors = [{instancePath:instancePath+"/totalAmount",schemaPath:"#/properties/totalAmount/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid0 = _errs20 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.totalQuantity !== undefined){
+const _errs22 = errors;
+if(!(typeof data.totalQuantity == "number")){
+validate20.errors = [{instancePath:instancePath+"/totalQuantity",schemaPath:"#/properties/totalQuantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid0 = _errs22 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+}
+else {
+validate20.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate20.errors = vErrors;
+return errors === 0;
+}
+
+export const validateFavoritesPageDto = validate21;
+const schema26 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/FavoriteDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
+const schema27 = {"type":"object","properties":{"id":{"type":"string"},"userId":{},"sessionId":{},"productId":{"type":"string"},"product":{"$ref":"#/components/schemas/StorefrontProductDto"},"createdAt":{"format":"date-time","type":"string"}},"required":["id","userId","sessionId","productId","product","createdAt"]};
+
+function validate22(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if(((((((data.id === undefined) && (missing0 = "id")) || ((data.userId === undefined) && (missing0 = "userId"))) || ((data.sessionId === undefined) && (missing0 = "sessionId"))) || ((data.productId === undefined) && (missing0 = "productId"))) || ((data.product === undefined) && (missing0 = "product"))) || ((data.createdAt === undefined) && (missing0 = "createdAt"))){
+validate22.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.id !== undefined){
+const _errs1 = errors;
+if(typeof data.id !== "string"){
+validate22.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.productId !== undefined){
+const _errs3 = errors;
+if(typeof data.productId !== "string"){
+validate22.errors = [{instancePath:instancePath+"/productId",schemaPath:"#/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid0 = _errs3 === errors;
@@ -1907,7 +2189,7 @@ const _errs6 = errors;
 if(errors === _errs6){
 if(errors === _errs6){
 if(!(typeof data.createdAt === "string")){
-validate20.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+validate22.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 }
@@ -1923,23 +2205,23 @@ var valid0 = true;
 }
 }
 else {
-validate20.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate22.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate20.errors = vErrors;
+validate22.errors = vErrors;
 return errors === 0;
 }
 
 
-function validate19(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+function validate21(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
 let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
 if((((((data.items === undefined) && (missing0 = "items")) || ((data.total === undefined) && (missing0 = "total"))) || ((data.page === undefined) && (missing0 = "page"))) || ((data.limit === undefined) && (missing0 = "limit"))) || ((data.totalPages === undefined) && (missing0 = "totalPages"))){
-validate19.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+validate21.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
 else {
@@ -1952,8 +2234,8 @@ var valid1 = true;
 const len0 = data0.length;
 for(let i0=0; i0<len0; i0++){
 const _errs3 = errors;
-if(!(validate20(data0[i0], {instancePath:instancePath+"/items/" + i0,parentData:data0,parentDataProperty:i0,rootData}))){
-vErrors = vErrors === null ? validate20.errors : vErrors.concat(validate20.errors);
+if(!(validate22(data0[i0], {instancePath:instancePath+"/items/" + i0,parentData:data0,parentDataProperty:i0,rootData}))){
+vErrors = vErrors === null ? validate22.errors : vErrors.concat(validate22.errors);
 errors = vErrors.length;
 }
 var valid1 = _errs3 === errors;
@@ -1963,7 +2245,7 @@ break;
 }
 }
 else {
-validate19.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+validate21.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
 return false;
 }
 }
@@ -1976,7 +2258,7 @@ if(valid0){
 if(data.total !== undefined){
 const _errs4 = errors;
 if(!(typeof data.total == "number")){
-validate19.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate21.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs4 === errors;
@@ -1988,7 +2270,7 @@ if(valid0){
 if(data.page !== undefined){
 const _errs6 = errors;
 if(!(typeof data.page == "number")){
-validate19.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate21.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs6 === errors;
@@ -2000,7 +2282,7 @@ if(valid0){
 if(data.limit !== undefined){
 const _errs8 = errors;
 if(!(typeof data.limit == "number")){
-validate19.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate21.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs8 === errors;
@@ -2012,7 +2294,7 @@ if(valid0){
 if(data.totalPages !== undefined){
 const _errs10 = errors;
 if(!(typeof data.totalPages == "number")){
-validate19.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate21.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs10 === errors;
@@ -2027,10 +2309,598 @@ var valid0 = true;
 }
 }
 else {
-validate19.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+validate21.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
 return false;
 }
 }
-validate19.errors = vErrors;
+validate21.errors = vErrors;
+return errors === 0;
+}
+
+export const validateBuyerOrdersPageDto = validate25;
+const schema28 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/BuyerOrderDto"}},"total":{"type":"integer","minimum":0},"page":{"type":"integer","minimum":1},"limit":{"type":"integer","minimum":1},"totalPages":{"type":"integer","minimum":0}},"required":["items","total","page","limit","totalPages"]};
+const schema29 = {"type":"object","properties":{"orderId":{"type":"string"},"createdAt":{"type":"string","format":"date-time"},"orderStatus":{"type":"string"},"subtotal":{"type":"number","minimum":0},"deliveryFee":{"type":"number","minimum":0},"totalAmount":{"type":"number","minimum":0},"items":{"type":"array","items":{"$ref":"#/components/schemas/BuyerOrderItemDto"}}},"required":["orderId","createdAt","orderStatus","subtotal","deliveryFee","totalAmount","items"]};
+const schema30 = {"type":"object","properties":{"id":{"type":"string"},"productId":{"type":"string"},"variantId":{"anyOf":[{"type":"string"},{"type":"null"}]},"shopId":{"anyOf":[{"type":"string"},{"type":"null"}]},"name":{"type":"string"},"quantity":{"type":"integer","minimum":1},"unitPrice":{"type":"number","minimum":0},"imageUrl":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["productId","name","quantity","unitPrice"]};
+
+function validate26(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if((((((((data.orderId === undefined) && (missing0 = "orderId")) || ((data.createdAt === undefined) && (missing0 = "createdAt"))) || ((data.orderStatus === undefined) && (missing0 = "orderStatus"))) || ((data.subtotal === undefined) && (missing0 = "subtotal"))) || ((data.deliveryFee === undefined) && (missing0 = "deliveryFee"))) || ((data.totalAmount === undefined) && (missing0 = "totalAmount"))) || ((data.items === undefined) && (missing0 = "items"))){
+validate26.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.orderId !== undefined){
+const _errs1 = errors;
+if(typeof data.orderId !== "string"){
+validate26.errors = [{instancePath:instancePath+"/orderId",schemaPath:"#/properties/orderId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.createdAt !== undefined){
+const _errs3 = errors;
+if(errors === _errs3){
+if(errors === _errs3){
+if(!(typeof data.createdAt === "string")){
+validate26.errors = [{instancePath:instancePath+"/createdAt",schemaPath:"#/properties/createdAt/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+}
+}
+var valid0 = _errs3 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.orderStatus !== undefined){
+const _errs5 = errors;
+if(typeof data.orderStatus !== "string"){
+validate26.errors = [{instancePath:instancePath+"/orderStatus",schemaPath:"#/properties/orderStatus/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs5 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.subtotal !== undefined){
+let data3 = data.subtotal;
+const _errs7 = errors;
+if(errors === _errs7){
+if(typeof data3 == "number"){
+if(data3 < 0 || isNaN(data3)){
+validate26.errors = [{instancePath:instancePath+"/subtotal",schemaPath:"#/properties/subtotal/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"}];
+return false;
+}
+}
+else {
+validate26.errors = [{instancePath:instancePath+"/subtotal",schemaPath:"#/properties/subtotal/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+}
+var valid0 = _errs7 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.deliveryFee !== undefined){
+let data4 = data.deliveryFee;
+const _errs9 = errors;
+if(errors === _errs9){
+if(typeof data4 == "number"){
+if(data4 < 0 || isNaN(data4)){
+validate26.errors = [{instancePath:instancePath+"/deliveryFee",schemaPath:"#/properties/deliveryFee/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"}];
+return false;
+}
+}
+else {
+validate26.errors = [{instancePath:instancePath+"/deliveryFee",schemaPath:"#/properties/deliveryFee/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+}
+var valid0 = _errs9 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.totalAmount !== undefined){
+let data5 = data.totalAmount;
+const _errs11 = errors;
+if(errors === _errs11){
+if(typeof data5 == "number"){
+if(data5 < 0 || isNaN(data5)){
+validate26.errors = [{instancePath:instancePath+"/totalAmount",schemaPath:"#/properties/totalAmount/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"}];
+return false;
+}
+}
+else {
+validate26.errors = [{instancePath:instancePath+"/totalAmount",schemaPath:"#/properties/totalAmount/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+}
+var valid0 = _errs11 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.items !== undefined){
+let data6 = data.items;
+const _errs13 = errors;
+if(errors === _errs13){
+if(Array.isArray(data6)){
+var valid1 = true;
+const len0 = data6.length;
+for(let i0=0; i0<len0; i0++){
+let data7 = data6[i0];
+const _errs15 = errors;
+const _errs16 = errors;
+if(errors === _errs16){
+if(data7 && typeof data7 == "object" && !Array.isArray(data7)){
+let missing1;
+if(((((data7.productId === undefined) && (missing1 = "productId")) || ((data7.name === undefined) && (missing1 = "name"))) || ((data7.quantity === undefined) && (missing1 = "quantity"))) || ((data7.unitPrice === undefined) && (missing1 = "unitPrice"))){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/BuyerOrderItemDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
+return false;
+}
+else {
+if(data7.id !== undefined){
+const _errs18 = errors;
+if(typeof data7.id !== "string"){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs18 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data7.productId !== undefined){
+const _errs20 = errors;
+if(typeof data7.productId !== "string"){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/productId",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs20 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data7.variantId !== undefined){
+let data10 = data7.variantId;
+const _errs22 = errors;
+const _errs23 = errors;
+let valid4 = false;
+const _errs24 = errors;
+if(typeof data10 !== "string"){
+const err0 = {instancePath:instancePath+"/items/" + i0+"/variantId",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/variantId/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+var _valid0 = _errs24 === errors;
+valid4 = valid4 || _valid0;
+if(!valid4){
+const _errs26 = errors;
+if(data10 !== null){
+const err1 = {instancePath:instancePath+"/items/" + i0+"/variantId",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/variantId/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+var _valid0 = _errs26 === errors;
+valid4 = valid4 || _valid0;
+}
+if(!valid4){
+const err2 = {instancePath:instancePath+"/items/" + i0+"/variantId",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/variantId/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+validate26.errors = vErrors;
+return false;
+}
+else {
+errors = _errs23;
+if(vErrors !== null){
+if(_errs23){
+vErrors.length = _errs23;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid3 = _errs22 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data7.shopId !== undefined){
+let data11 = data7.shopId;
+const _errs28 = errors;
+const _errs29 = errors;
+let valid5 = false;
+const _errs30 = errors;
+if(typeof data11 !== "string"){
+const err3 = {instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/shopId/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+var _valid1 = _errs30 === errors;
+valid5 = valid5 || _valid1;
+if(!valid5){
+const _errs32 = errors;
+if(data11 !== null){
+const err4 = {instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/shopId/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+var _valid1 = _errs32 === errors;
+valid5 = valid5 || _valid1;
+}
+if(!valid5){
+const err5 = {instancePath:instancePath+"/items/" + i0+"/shopId",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/shopId/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+validate26.errors = vErrors;
+return false;
+}
+else {
+errors = _errs29;
+if(vErrors !== null){
+if(_errs29){
+vErrors.length = _errs29;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid3 = _errs28 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data7.name !== undefined){
+const _errs34 = errors;
+if(typeof data7.name !== "string"){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/name",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs34 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data7.quantity !== undefined){
+let data13 = data7.quantity;
+const _errs36 = errors;
+if(!((typeof data13 == "number") && (!(data13 % 1) && !isNaN(data13)))){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/quantity/type",keyword:"type",params:{type: "integer"},message:"must be integer"}];
+return false;
+}
+if(errors === _errs36){
+if(typeof data13 == "number"){
+if(data13 < 1 || isNaN(data13)){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/quantity/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"}];
+return false;
+}
+}
+}
+var valid3 = _errs36 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data7.unitPrice !== undefined){
+let data14 = data7.unitPrice;
+const _errs38 = errors;
+if(errors === _errs38){
+if(typeof data14 == "number"){
+if(data14 < 0 || isNaN(data14)){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPrice",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/unitPrice/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"}];
+return false;
+}
+}
+else {
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPrice",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/unitPrice/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+}
+var valid3 = _errs38 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data7.imageUrl !== undefined){
+let data15 = data7.imageUrl;
+const _errs40 = errors;
+const _errs41 = errors;
+let valid6 = false;
+const _errs42 = errors;
+if(typeof data15 !== "string"){
+const err6 = {instancePath:instancePath+"/items/" + i0+"/imageUrl",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/imageUrl/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+var _valid2 = _errs42 === errors;
+valid6 = valid6 || _valid2;
+if(!valid6){
+const _errs44 = errors;
+if(data15 !== null){
+const err7 = {instancePath:instancePath+"/items/" + i0+"/imageUrl",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/imageUrl/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+var _valid2 = _errs44 === errors;
+valid6 = valid6 || _valid2;
+}
+if(!valid6){
+const err8 = {instancePath:instancePath+"/items/" + i0+"/imageUrl",schemaPath:"#/components/schemas/BuyerOrderItemDto/properties/imageUrl/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+validate26.errors = vErrors;
+return false;
+}
+else {
+errors = _errs41;
+if(vErrors !== null){
+if(_errs41){
+vErrors.length = _errs41;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid3 = _errs40 === errors;
+}
+else {
+var valid3 = true;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+validate26.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/BuyerOrderItemDto/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+var valid1 = _errs15 === errors;
+if(!valid1){
+break;
+}
+}
+}
+else {
+validate26.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+return false;
+}
+}
+var valid0 = _errs13 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+validate26.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate26.errors = vErrors;
+return errors === 0;
+}
+
+
+function validate25(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if((((((data.items === undefined) && (missing0 = "items")) || ((data.total === undefined) && (missing0 = "total"))) || ((data.page === undefined) && (missing0 = "page"))) || ((data.limit === undefined) && (missing0 = "limit"))) || ((data.totalPages === undefined) && (missing0 = "totalPages"))){
+validate25.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.items !== undefined){
+let data0 = data.items;
+const _errs1 = errors;
+if(errors === _errs1){
+if(Array.isArray(data0)){
+var valid1 = true;
+const len0 = data0.length;
+for(let i0=0; i0<len0; i0++){
+const _errs3 = errors;
+if(!(validate26(data0[i0], {instancePath:instancePath+"/items/" + i0,parentData:data0,parentDataProperty:i0,rootData}))){
+vErrors = vErrors === null ? validate26.errors : vErrors.concat(validate26.errors);
+errors = vErrors.length;
+}
+var valid1 = _errs3 === errors;
+if(!valid1){
+break;
+}
+}
+}
+else {
+validate25.errors = [{instancePath:instancePath+"/items",schemaPath:"#/properties/items/type",keyword:"type",params:{type: "array"},message:"must be array"}];
+return false;
+}
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.total !== undefined){
+let data2 = data.total;
+const _errs4 = errors;
+if(!((typeof data2 == "number") && (!(data2 % 1) && !isNaN(data2)))){
+validate25.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/type",keyword:"type",params:{type: "integer"},message:"must be integer"}];
+return false;
+}
+if(errors === _errs4){
+if(typeof data2 == "number"){
+if(data2 < 0 || isNaN(data2)){
+validate25.errors = [{instancePath:instancePath+"/total",schemaPath:"#/properties/total/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"}];
+return false;
+}
+}
+}
+var valid0 = _errs4 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.page !== undefined){
+let data3 = data.page;
+const _errs6 = errors;
+if(!((typeof data3 == "number") && (!(data3 % 1) && !isNaN(data3)))){
+validate25.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/type",keyword:"type",params:{type: "integer"},message:"must be integer"}];
+return false;
+}
+if(errors === _errs6){
+if(typeof data3 == "number"){
+if(data3 < 1 || isNaN(data3)){
+validate25.errors = [{instancePath:instancePath+"/page",schemaPath:"#/properties/page/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"}];
+return false;
+}
+}
+}
+var valid0 = _errs6 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.limit !== undefined){
+let data4 = data.limit;
+const _errs8 = errors;
+if(!((typeof data4 == "number") && (!(data4 % 1) && !isNaN(data4)))){
+validate25.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/type",keyword:"type",params:{type: "integer"},message:"must be integer"}];
+return false;
+}
+if(errors === _errs8){
+if(typeof data4 == "number"){
+if(data4 < 1 || isNaN(data4)){
+validate25.errors = [{instancePath:instancePath+"/limit",schemaPath:"#/properties/limit/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"}];
+return false;
+}
+}
+}
+var valid0 = _errs8 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.totalPages !== undefined){
+let data5 = data.totalPages;
+const _errs10 = errors;
+if(!((typeof data5 == "number") && (!(data5 % 1) && !isNaN(data5)))){
+validate25.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/type",keyword:"type",params:{type: "integer"},message:"must be integer"}];
+return false;
+}
+if(errors === _errs10){
+if(typeof data5 == "number"){
+if(data5 < 0 || isNaN(data5)){
+validate25.errors = [{instancePath:instancePath+"/totalPages",schemaPath:"#/properties/totalPages/minimum",keyword:"minimum",params:{comparison: ">=", limit: 0},message:"must be >= 0"}];
+return false;
+}
+}
+}
+var valid0 = _errs10 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+}
+}
+}
+else {
+validate25.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate25.errors = vErrors;
 return errors === 0;
 }

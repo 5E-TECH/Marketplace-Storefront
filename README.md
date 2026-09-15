@@ -24,19 +24,23 @@ npm run start:prod  # Production: 3002
 
 - `src/app`: sahifalar va backendga yo‘naltiruvchi API route’lar.
 - `src/components`: katalog, mahsulot, savatcha, checkout va profil interfeysi.
-- `src/providers`: umumiy savatcha va sevimlilar holati. Savatcha so‘rovlari ketma-ket bajariladi.
-- `src/services`: mahsulot, savatcha, sevimlilar, demo auth/buyurtma adapterlari.
+- `src/providers`: umumiy savatcha va sevimlilar holati. Savatcha miqdori UI’da darhol yangilanadi, tezkor o‘zgarishlar bitta backend so‘roviga birlashtiriladi.
+- `src/services`: mahsulot, savatcha, sevimlilar, auth va buyurtma adapterlari.
 - `src/lib`: HTTP client, token/guest session, DTO adapterlari va formatterlar.
 - `src/types`: frontend domain turlari va backend DTO’lari.
 - `tests`: narx, miqdor, buyurtma va HTTP xatolari bo‘yicha regression testlar.
 
 Katalog serverda yuklanadi va 30 soniyalik revalidation ishlatadi. Bu brauzerda dastlabki qo‘shimcha API so‘rovini olib tashlaydi va mahsulotlarni HTML ichida beradi. Katalog sahifalari qidiruv/filter parametrlarini saqlaydi. Shaxsiy savatcha va sevimlilar javoblari keshlanmaydi.
 
+Productionda ildiz domen Next.js SSR storefrontga, `admin.` subdomen esa alohida kabinet SPA’ga yo‘naltiriladi. Storefront sahifalari indekslanadi, admin kabinet esa `noindex` bilan yopiladi. Reverse-proxy namunasi va tekshiruvlar [DEPLOY.md](DEPLOY.md) ichida.
+
 ## Integratsiya holati
 
 Katalog, mahsulot detail, savatcha va sevimlilar backend API bilan ishlaydi. Endpointlar: [API_CONTRACT.md](API_CONTRACT.md).
 
 Checkout mehmon sessiyasi bilan ishlaydi: yetkazish narxini backenddan oladi, buyurtmani idempotent tarzda yaratadi va COD sifatida tasdiqlaydi. Tasdiqlangan buyurtmaning qisqa nusxasi shu brauzerda xaridor tarixi uchun saqlanadi. Karta orqali to‘lov hali yoqilmagan.
+
+Xaridor telefon va parol bilan ro‘yxatdan o‘tishi yoki kirishi, parolini tiklashi, profilidagi ism va telefonni yangilashi hamda logout qilishi mumkin. Login paytida mehmon savati backenddagi akkaunt savatiga birlashtiriladi. Kirgan xaridorning buyurtmalar tarixi backenddan olinadi; hali sync bo‘lmagan shu brauzerdagi buyurtma nusxalari ham yo‘qolmaydi.
 
 Obuna formasi, ijtimoiy tarmoq havolalari, manzillar boshqaruvi va marketingdagi reyting/yetkazish da’volari to‘liq biznes integratsiyasini kutmoqda. Statik kategoriya ID’lari backend kategoriyalari bilan moslashtirilishi kerak.
 

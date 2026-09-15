@@ -4,7 +4,7 @@ import { validateStorefrontProductsPageDto } from "@/generated/api-validators";
 import { ApiTestClient } from "./test-client";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "API tekshiruvi", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "API tekshiruvi", description: "Elchi Market storefront va backend API ulanishini tekshirish sahifasi.", alternates: { canonical: "/api-test" } };
 
 export default async function ApiTestPage() {
   let catalog;

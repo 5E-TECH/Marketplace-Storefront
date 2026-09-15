@@ -24,7 +24,7 @@ export function CheckoutContent() {
   const calculateDelivery = async () => {
     if (previewPending || pending) return;
     setPreviewPending(true); setError("");
-    try { setPreview(await orderService.preview(address)); }
+    try { await cart.flush(); setPreview(await orderService.preview(address)); }
     catch (caught) { setPreview(null); setError(caught instanceof Error ? caught.message : "Yetkazib berish narxini hisoblab bo‘lmadi"); }
     finally { setPreviewPending(false); }
   };
@@ -33,6 +33,7 @@ export function CheckoutContent() {
     if (pending || cart.loading) return;
     setPending(true); setError("");
     try {
+      await cart.flush();
       const delivery = preview ?? await orderService.preview(address);
       setPreview(delivery);
       const order = await orderService.create(address, idempotencyKey.current, delivery);

@@ -13,7 +13,7 @@ export function parseCatalogQuery(params: CatalogSearchParams, categoryId?: stri
   const rawSort = first(params.sort);
   const sort = allowedSorts.has(rawSort as ProductSort) ? rawSort as ProductSort : "createdAt:desc";
   return {
-    search: first(params.search)?.trim() || undefined,
+    search: first(params.q)?.trim() || first(params.search)?.trim() || undefined,
     categoryId,
     minPrice: finiteNumber(first(params.minPrice)),
     maxPrice: finiteNumber(first(params.maxPrice)),
@@ -26,7 +26,7 @@ export function parseCatalogQuery(params: CatalogSearchParams, categoryId?: stri
 export function catalogHref(basePath: string, query: ProductQuery, changes: Partial<ProductQuery> = {}) {
   const next = { ...query, ...changes };
   const params = new URLSearchParams();
-  if (next.search) params.set("search", next.search);
+  if (next.search) params.set(basePath === "/qidiruv" ? "q" : "search", next.search);
   if (next.minPrice !== undefined) params.set("minPrice", String(next.minPrice));
   if (next.maxPrice !== undefined) params.set("maxPrice", String(next.maxPrice));
   if (next.sort && next.sort !== "createdAt:desc") params.set("sort", next.sort);

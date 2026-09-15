@@ -4,10 +4,15 @@ import { proxyBackend } from "@/lib/backend-proxy";
 type Context = { params: Promise<{ path: string[] }> };
 // Only expose operations used by this storefront. Backend remains responsible for authorization.
 const routes: [RegExp, string[]][] = [
-  [/^\/auth\/login$/, ["POST"]],
+  [/^\/auth\/(?:login|register|forgot-password|reset-password|logout)$/, ["POST"]],
+  [/^\/auth\/me$/, ["GET"]],
+  [/^\/auth\/profile$/, ["PATCH"]],
   [/^\/categories$/, ["GET"]],
   [/^\/storefront\/products(?:\/[^/]+)?$/, ["GET"]],
+  [/^\/storefront\/products\/[^/]+\/reviews$/, ["GET", "POST"]],
+  [/^\/storefront\/search$/, ["GET"]],
   [/^\/storefront\/shops\/[^/]+\/products$/, ["GET"]],
+  [/^\/storefront\/shops\/[^/]+$/, ["GET"]],
   [/^\/products(?:\/[^/]+)?$/, ["GET", "POST", "PATCH", "DELETE"]],
   [/^\/products\/[^/]+\/variants(?:\/[^/]+)?$/, ["GET", "POST", "PATCH", "DELETE"]],
   [/^\/cart$/, ["GET"]],
@@ -17,6 +22,7 @@ const routes: [RegExp, string[]][] = [
   [/^\/checkout$/, ["POST"]],
   [/^\/checkout\/delivery-preview$/, ["POST"]],
   [/^\/checkout\/[^/]+\/confirm$/, ["POST"]],
+  [/^\/orders$/, ["GET"]],
   [/^\/orders\/[^/]+\/tracking$/, ["GET"]],
   [/^\/favorites$/, ["GET"]],
   [/^\/favorites\/[^/]+$/, ["POST", "DELETE"]],
