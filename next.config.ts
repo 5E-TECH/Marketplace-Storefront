@@ -1,13 +1,27 @@
 import type { NextConfig } from "next";
 
 const apiUrl = process.env.API_BASE_URL ?? process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
-const apiImagePattern = (() => {
+
+const toPattern = (value: string | undefined) => {
   try {
-    if (!apiUrl) return [];
-    const url = new URL(apiUrl);
+    if (!value) return [];
+    const url = new URL(value);
     return [{ protocol: url.protocol.slice(0, -1) as "http" | "https", hostname: url.hostname, port: url.port, pathname: "/**" }];
   } catch { return []; }
-})();
+};
+
+/**
+ * Mahsulot rasmlari MinIO'da turadi va BRAUZERGA `MINIO_PUBLIC_URL` orqali
+ * beriladi (masalan `https://api.elchimarket.uz/media/...`). `API_BASE_URL`
+ * esa ICHKI manzil (`http://api-gateway:3000`) — SSR shu orqali boradi.
+ * Ikkalasi boshqa host, shuning uchun faqat `API_BASE_URL` ni ruxsat berish
+ * yetarli emas edi: `next/image` yuklangan rasmlarni rad etardi va katalog
+ * bo'sh joy bilan chiqardi. `MEDIA_BASE_URL` shuning uchun alohida.
+ */
+const imagePatterns = [
+  ...toPattern(apiUrl),
+  ...toPattern(process.env.MEDIA_BASE_URL),
+];
 
 const nextConfig: NextConfig = {
     // `next build` ishlayotgan dev server manifestlarini buzmasligi uchun cache'lar ajratilgan.
@@ -18,9 +32,7 @@ const nextConfig: NextConfig = {
     reactStrictMode: true,
     allowedDevOrigins: ["192.168.1.69"],
     images: {
-      remotePatterns: [
-        ...apiImagePattern,
-      ],
+      remotePatterns: imagePatterns,
       formats: ["image/avif", "image/webp"],
     },
     poweredByHeader: false,
