@@ -48,17 +48,17 @@ export const reviewService = {
     }
     return normalizeReviews(await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "GET", params: { page, limit } }));
   },
-  async create(productId: string | number, input: { orderItemId: string; rating: number; comment?: string }): Promise<void> {
+  async create(productId: string | number, input: { orderItemId: string; rating: number; comment?: string }, demo = false): Promise<void> {
     const orderItemId = input.orderItemId.trim();
     const comment = input.comment?.trim();
     if (!orderItemId || orderItemId.length > 128) throw new Error("Buyurtma mahsuloti noto‘g‘ri");
     if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) throw new Error("1 dan 5 gacha baho tanlang");
-    if (String(productId).startsWith("demo-")) return;
+    if (demo) return;
     await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "POST", headers: authHeaders(), body: { orderItemId, rating: input.rating, ...(comment ? { comment } : {}) } });
   },
-  async reviewableItems(productId: string | number): Promise<ReviewableOrderItem[]> {
+  async reviewableItems(productId: string | number, demo = false): Promise<ReviewableOrderItem[]> {
     if (!getAccessToken()) return [];
-    if (String(productId).startsWith("demo-")) return [{ orderItemId: "demo-order-item", orderId: "demo-delivered-order" }];
+    if (demo) return [{ orderItemId: "demo-order-item", orderId: "demo-delivered-order" }];
     const first = await apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: 1, limit: 100 }, validate: validateBuyerOrdersPageDto });
     const pages = first.totalPages > 1 ? await Promise.all(Array.from({ length: first.totalPages - 1 }, (_, index) => apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: index + 2, limit: 100 }, validate: validateBuyerOrdersPageDto }))) : [];
     return [first, ...pages].flatMap((page) => page.items).flatMap((order) => {

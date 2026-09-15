@@ -218,13 +218,9 @@ try {
 
   await evaluate("localStorage.setItem('access_token', 'demo-buyer-token'); location.reload()");
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.review-form-card form'))"), "purchased buyer review form");
-  await evaluate(`(() => {
-    document.querySelector('.review-rating-input button[aria-label="5 yulduz"]').click();
-    const form = document.querySelector('.review-form-card form');
-    form.querySelector('textarea').value = 'Smoke test fikri';
-    form.querySelector('textarea').dispatchEvent(new Event('input', { bubbles: true }));
-    form.requestSubmit();
-  })()`);
+  await evaluate("document.querySelector('.review-rating-input button[aria-label=\"5 yulduz\"]').click()");
+  await until(() => evaluate("document.querySelector('.review-rating-input button[aria-label=\"5 yulduz\"]')?.getAttribute('aria-pressed') === 'true'"), "review rating selection");
+  await evaluate("document.querySelector('.review-form-card form').requestSubmit()");
   await until(() => evaluate("document.querySelector('.review-form-card .form-success')?.textContent.includes('qabul qilindi')"), "purchased buyer review submission");
   await evaluate("localStorage.removeItem('access_token')");
 

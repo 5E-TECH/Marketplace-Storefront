@@ -15,7 +15,7 @@ const dateLabel = (value: string) => {
   return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long", year: "numeric" }).format(date);
 };
 
-export function ProductReviews({ productId, reviews }: { productId: string | number; reviews: ProductReviewsResult }) {
+export function ProductReviews({ productId, reviews, demo = false }: { productId: string | number; reviews: ProductReviewsResult; demo?: boolean }) {
   const router = useRouter();
   const [authenticated, setAuthenticated] = useState(false);
   const [eligible, setEligible] = useState<ReviewableOrderItem[]>([]);
@@ -36,7 +36,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
       setAuthenticated(signedIn);
       if (!signedIn) { setEligibilityLoading(false); return; }
       try {
-        const items = await reviewService.reviewableItems(productId);
+        const items = await reviewService.reviewableItems(productId, demo);
         if (!active) return;
         setEligible(items);
         setSelectedItem(items[0]?.orderItemId ?? "");
@@ -46,7 +46,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
     };
     void load();
     return () => { active = false; };
-  }, [productId]);
+  }, [demo, productId]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -54,7 +54,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
     if (!selectedItem || score < 1) { setFormError("Baho tanlang"); return; }
     setSubmitting(true);
     try {
-      await reviewService.create(productId, { orderItemId: selectedItem, rating: score, comment });
+      await reviewService.create(productId, { orderItemId: selectedItem, rating: score, comment }, demo);
       setSubmitted(true);
       setEligible((items) => items.filter((item) => item.orderItemId !== selectedItem));
       setComment("");
