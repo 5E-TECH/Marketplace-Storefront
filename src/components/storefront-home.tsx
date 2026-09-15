@@ -1,28 +1,27 @@
 import Link from "next/link";
 import { catalogHref } from "@/lib/catalog-query";
+import { paginationItems } from "@/lib/pagination";
 import type { CatalogCategory, CatalogResult, ProductQuery, StorefrontShop } from "@/types/commerce";
-import { Benefits, CategoryGrid, Hero, Inspiration, Newsletter, Products } from "./home-sections";
+import { CategoryGrid, Hero, Products } from "./home-sections";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
 
 function CatalogPagination({ query, catalog, basePath }: { query: ProductQuery; catalog: CatalogResult; basePath: string }) {
   if (catalog.totalPages <= 1) return null;
+  const currentPage = Math.min(Math.max(catalog.page, 1), catalog.totalPages);
+  const items = paginationItems(catalog.totalPages, currentPage);
   return <nav className="catalog-pagination" aria-label="Katalog sahifalari">
-    {catalog.page > 1 ? <Link className="button button--secondary" href={catalogHref(basePath, query, { page: catalog.page - 1 })}>Oldingi sahifa</Link> : <span/>}
-    <b>{catalog.page} / {catalog.totalPages}</b>
-    {catalog.page < catalog.totalPages ? <Link className="button button--secondary" href={catalogHref(basePath, query, { page: catalog.page + 1 })}>Keyingi sahifa</Link> : <span/>}
+    {currentPage > 1 && <Link className="pagination-arrow" href={catalogHref(basePath, query, { page: currentPage - 1 })} rel="prev" aria-label="Oldingi sahifa">←</Link>}
+    <div className="pagination-pages">{items.map((item, index) => item === "ellipsis" ? <i aria-hidden key={`ellipsis-${index}`}>…</i> : <Link key={item} href={catalogHref(basePath, query, { page: item })} aria-current={item === currentPage ? "page" : undefined} aria-label={`${item}-sahifa`}>{item}</Link>)}</div>
+    {currentPage < catalog.totalPages && <Link className="pagination-arrow" href={catalogHref(basePath, query, { page: currentPage + 1 })} rel="next" aria-label="Keyingi sahifa">→</Link>}
   </nav>;
 }
 
-export function StorefrontHome({ query, catalog, categories }: { query: ProductQuery; catalog: CatalogResult; categories: CatalogCategory[] }) {
+export function StorefrontHome({ query, catalog }: { query: ProductQuery; catalog: CatalogResult }) {
   return <main>
     <Hero product={catalog.data[0]}/>
-    <CategoryGrid categories={categories} products={catalog.data}/>
     <Products products={catalog.data} total={catalog.total} query={query} basePath="/" apiError={catalog.error}/>
     <CatalogPagination query={query} catalog={catalog} basePath="/"/>
-    <Benefits/>
-    <Inspiration products={catalog.data}/>
-    <Newsletter/>
   </main>;
 }
 

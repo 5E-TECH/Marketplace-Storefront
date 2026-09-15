@@ -13,6 +13,7 @@ import { Price } from "./ui";
 
 export const ProductCard = memo(function ProductCard({ product }: { product: Product }) {
   const [activeImage, setActiveImage] = useState(0);
+  const [failedImage, setFailedImage] = useState("");
   const imageBounds = useRef<{ left: number; width: number } | null>(null);
   const variant = product.variants?.find((item) => item.stock === undefined || item.stock > 0);
   const cart = useCartActions();
@@ -27,11 +28,13 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
     const nextImage = Math.max(0, index);
     if (nextImage !== activeImage) setActiveImage(nextImage);
   };
+  const currentImage = product.images[activeImage] ?? product.image;
+  const imageSrc = failedImage === currentImage ? "/placeholder-product.svg" : getSafeImageSrc(currentImage);
   return <article className="product-card">
     <div className="product-image" onPointerEnter={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); imageBounds.current = { left: bounds.left, width: bounds.width }; }} onPointerMove={(event) => selectImage(event.clientX)} onPointerLeave={() => { imageBounds.current = null; setActiveImage(0); }}>
       {product.badge && <span className="badge">{product.badge}</span>}
       <Link href={`/product/${product.id}`} prefetch={false} className="product-image-link" aria-label={product.name}>
-        <Image key={product.images[activeImage]} src={getSafeImageSrc(product.images[activeImage])} alt={product.name} fill sizes="(max-width: 640px) 45vw, (max-width: 1000px) 30vw, 190px"/>
+        <Image key={currentImage} src={imageSrc} alt={product.name} fill sizes="(max-width: 640px) 45vw, (max-width: 860px) 30vw, (max-width: 1050px) 24vw, 240px" onError={() => setFailedImage(currentImage)}/>
       </Link>
       <button className={`favorite ${isFavorite ? "active" : ""}`} type="button" disabled={!favorites.hydrated || favorites.isPending(product.id)} onClick={(event) => { event.preventDefault(); event.stopPropagation(); void favorites.toggle(product); }} aria-label={isFavorite ? "Sevimlilardan olib tashlash" : "Sevimlilarga qo‘shish"}><Heart size={19} fill={isFavorite ? "currentColor" : "none"}/></button>
       <span className="hover-dots">{product.images.map((_, index) => <i className={index === activeImage ? "active" : ""} key={index}/>)}</span>

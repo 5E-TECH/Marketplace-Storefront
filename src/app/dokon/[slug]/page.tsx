@@ -7,7 +7,7 @@ import { productService } from "@/services/product.service";
 import { defaultOpenGraphImages } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<CatalogSearchParams> };
-const getShop = cache((slug: string) => productService.getShop(slug, { page: 1, limit: 20 }));
+const getShop = cache((slug: string) => productService.getShop(slug, { page: 1, limit: 10 }));
 
 export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
   const { slug } = await params;

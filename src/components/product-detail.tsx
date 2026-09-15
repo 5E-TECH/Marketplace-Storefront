@@ -14,7 +14,7 @@ import { Button, Price } from "./ui";
 import { ProductInformation } from "./product-information";
 import { ProductReviews } from "./product-reviews";
 
-export function ProductDetail({ product, reviews, reviewDemo = false }: { product: Product; reviews: ProductReviewsResult; reviewDemo?: boolean }) {
+export function ProductDetail({ product, reviews }: { product: Product; reviews: ProductReviewsResult }) {
   const [activeImage, setActiveImage] = useState(0);
   const [activeColor, setActiveColor] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -62,7 +62,7 @@ export function ProductDetail({ product, reviews, reviewDemo = false }: { produc
     </div>
 
     <ProductInformation product={product}/>
-    <ProductReviews productId={product.id} reviews={reviews} demo={reviewDemo}/>
+    <ProductReviews productId={product.id} reviews={reviews}/>
 
     <div className="mobile-buy-bar"><div><Price value={selectedPrice}/><small>Ertaga yetkazamiz</small></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> Savatchaga</Button></div>
   </>;

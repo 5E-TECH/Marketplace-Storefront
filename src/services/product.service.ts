@@ -1,5 +1,4 @@
 import { env } from "@/config/env";
-import { mockProducts } from "@/data/mock-products";
 import { ApiError, apiRequest } from "@/lib/api";
 import { validateStorefrontProductDto, validateStorefrontProductsPageDto, validateStorefrontShopPageDto } from "@/generated/api-validators";
 import type { CatalogResult, Product, ProductQuery, ShopResult, StorefrontShop } from "@/types/commerce";
@@ -7,22 +6,6 @@ import type { StorefrontProductDto, StorefrontProductsResponse, StorefrontShopPa
 
 const STOREFRONT_PRODUCTS_PATH = "/storefront/products";
 const STOREFRONT_SHOPS_PATH = "/storefront/shops";
-
-const demoCatalog = [...mockProducts, ...mockProducts.map((product, index) => ({
-  ...product,
-  id: `${product.id}-collection`,
-  name: `${product.name} ${index % 2 ? "Plus" : "2026"}`,
-  price: product.price + (index + 1) * 25_000,
-  oldPrice: product.oldPrice ? product.oldPrice + (index + 1) * 25_000 : undefined,
-  badge: index % 3 === 0 ? "Yangi" : product.badge,
-})), ...mockProducts.map((product, index) => ({
-  ...product,
-  id: `${product.id}-selection`,
-  name: `${product.name} ${index % 2 ? "Max" : "Select"}`,
-  price: product.price + (index + 1) * 40_000,
-  oldPrice: product.oldPrice ? product.oldPrice + (index + 1) * 40_000 : undefined,
-  badge: index % 2 === 0 ? "Yangi" : product.badge,
-}))];
 
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" ? value as Record<string, unknown> : {};
 const text = (...values: unknown[]) => String(values.find((value) => typeof value === "string" || typeof value === "number") ?? "");
@@ -98,25 +81,7 @@ const normalizeShop = (value: unknown): StorefrontShop => {
 export const productService = {
   async list(query: ProductQuery = {}): Promise<CatalogResult> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    if (env.useMockData) {
-      const search = query.search?.trim().toLocaleLowerCase("uz") ?? "";
-      const filtered = demoCatalog.filter((product) => {
-        const matchesSearch = !search || `${product.name} ${product.category} ${product.description}`.toLocaleLowerCase("uz").includes(search);
-        const matchesCategory = query.categoryId === undefined || String(product.categoryInfo?.id) === String(query.categoryId);
-        const matchesMin = query.minPrice === undefined || product.price >= query.minPrice;
-        const matchesMax = query.maxPrice === undefined || product.price <= query.maxPrice;
-        return matchesSearch && matchesCategory && matchesMin && matchesMax;
-      });
-      const [sortField, sortDirection] = query.sort?.split(":") ?? [];
-      const direction = sortDirection === "desc" ? -1 : 1;
-      if (sortField === "price") filtered.sort((a, b) => (a.price - b.price) * direction);
-      if (sortField === "name") filtered.sort((a, b) => a.name.localeCompare(b.name, "uz") * direction);
-      if (sortField === "createdAt") filtered.sort((a, b) => ((Date.parse(a.createdAt ?? "") || 0) - (Date.parse(b.createdAt ?? "") || 0)) * direction);
-      const start = (page - 1) * limit;
-      const data = filtered.slice(start, start + limit).map((product) => ({ ...product, images: [...new Set(product.images)] }));
-      return { data, total: filtered.length, page, limit, totalPages: Math.ceil(filtered.length / limit), source: "mock" };
-    }
+    const limit = query.limit ?? 10;
     if (!env.apiUrl) return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: "API_URL sozlanmagan" };
     let result: StorefrontProductsResponse;
     try {
@@ -135,7 +100,6 @@ export const productService = {
     return { data: items, total, page: responsePage, limit: responseLimit, totalPages, source: "api" };
   },
   async getById(id: string | number): Promise<Product | null> {
-    if (env.useMockData) return demoCatalog.find((product) => String(product.id) === String(id)) ?? null;
     if (!env.apiUrl) return null;
     try {
       const response = await apiRequest(`${STOREFRONT_PRODUCTS_PATH}/${encodeURIComponent(String(id))}`, { next: { revalidate: 30 }, validate: validateStorefrontProductDto });
@@ -148,12 +112,7 @@ export const productService = {
   },
   async listByShop(shopId: string | number, query: Omit<ProductQuery, "categoryId"> = {}): Promise<CatalogResult> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    if (env.useMockData) {
-      const products = demoCatalog.filter((product) => String(product.shop?.id) === String(shopId));
-      const start = (page - 1) * limit;
-      return { data: products.slice(start, start + limit), total: products.length, page, limit, totalPages: Math.ceil(products.length / limit), source: "mock" };
-    }
+    const limit = query.limit ?? 10;
     if (!env.apiUrl) return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: "API_URL sozlanmagan" };
     const path = `${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(String(shopId))}/products`;
     try {
@@ -170,17 +129,11 @@ export const productService = {
   },
   async getShop(slug: string, query: Omit<ProductQuery, "categoryId"> = {}): Promise<ShopResult | null> {
     if (!slug.trim() || slug.length > 160) return null;
-    if (env.useMockData) {
-      const first = demoCatalog.find((product) => product.shop?.slug === slug);
-      if (!first?.shop) return null;
-      const catalog = await this.listByShop(first.shop.id, query);
-      return { shop: { id: first.shop.id, name: first.shop.name, slug: first.shop.slug, logoUrl: first.shop.logoUrl, rating: 0 }, catalog };
-    }
     if (!env.apiUrl) return null;
     try {
-      const response = await apiRequest<StorefrontShopPageDto>(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: { search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page: query.page ?? 1, limit: query.limit ?? 20 }, next: { revalidate: 30 }, validate: validateStorefrontShopPageDto });
+      const response = await apiRequest<StorefrontShopPageDto>(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: { search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page: query.page ?? 1, limit: query.limit ?? 10 }, next: { revalidate: 30 }, validate: validateStorefrontShopPageDto });
       const items = response.products.items.map(normalizeProduct).filter((product) => product.id !== "" && product.name);
-      const limit = Math.max(1, number(response.products.limit, query.limit ?? 20));
+      const limit = Math.max(1, number(response.products.limit, query.limit ?? 10));
       const total = number(response.products.total, items.length);
       return { shop: normalizeShop(response.shop), catalog: { data: items, total, page: Math.max(1, number(response.products.page, query.page ?? 1)), limit, totalPages: Math.max(0, number(response.products.totalPages, Math.ceil(total / limit))), source: "api" } };
     } catch (error) {

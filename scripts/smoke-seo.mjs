@@ -51,7 +51,7 @@ assert.match(shop, /<h1>[^<]+<\/h1>/, "Do‘kon SSR HTML ichida nom bilan chiqis
 assert.match(shop, new RegExp(`<link rel="canonical" href="${canonicalBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/dokon/${shopSlug}"\\s*/?>`), "Do‘kon canonical manzili kerak");
 assert.match(shop, /<meta property="og:title" content="[^"]+"\s*\/?>/, "Do‘kon ulashish teglari kerak");
 
-const staticRoutes = ["/katalog", "/qidiruv", "/cart", "/checkout", "/favorites", "/login", "/register", "/forgot-password", "/profile", "/profile/orders", "/orders/seo-test", "/api-test", "/ui-kit"];
+const staticRoutes = ["/katalog", "/qidiruv", "/cart", "/checkout", "/favorites", "/login", "/register", "/forgot-password", "/profile", "/profile/orders", "/orders/seo-test", "/api-test"];
 const staticPages = await Promise.all(staticRoutes.map(async (route) => [route, await get(`${storefront}${route}`)]));
 for (const [route, html] of staticPages) assertIndexablePage(html, route);
 const metadataPairs = staticPages.map(([route, html]) => `${route}\u0000${html.match(/<title>([^<]+)<\/title>/)?.[1]}\u0000${metaContent(html, "description")}`);

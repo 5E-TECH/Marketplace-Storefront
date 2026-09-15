@@ -24,8 +24,6 @@ const readLocal = (): Order[] => {
 const validateAddress = (address: CheckoutAddress): void => {
   if (address.recipientName.trim().length < 2) throw new Error("Qabul qiluvchi ismini to‘liq kiriting");
   if (!/^\+998\d{9}$/.test(address.phone)) throw new Error("Telefon raqamini +998XXXXXXXXX formatida kiriting");
-  if (!address.regionId.trim()) throw new Error("Viloyatni tanlang");
-  if (!address.districtId.trim()) throw new Error("Tumanni tanlang");
   if (address.address.trim().length < 5) throw new Error("Ko‘cha, uy va xonadonni to‘liq kiriting");
 };
 
