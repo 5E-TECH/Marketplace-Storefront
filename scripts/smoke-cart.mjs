@@ -103,17 +103,33 @@ try {
   assert.equal(cartPatches.length, patchCountBefore, "Rapid clicks must update UI without an immediate request per click");
   await until(() => cartPatches.length === patchCountBefore + 1, "debounced cart synchronization");
   assert.equal(cartPatches.length, patchCountBefore + 1, "Four rapid clicks must be collapsed into one PATCH");
-  assert.equal(await evaluate("document.querySelector('.bag')?.getAttribute('href')"), "/cart");
-  await evaluate("document.querySelector('.bag').click()");
+  assert.equal(await evaluate("document.querySelector('.floating-cart')?.getAttribute('href')"), "/cart");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.floating-cart')).position"), "fixed");
+  await evaluate("document.querySelector('.floating-cart').click()");
   await until(() => evaluate("location.pathname === '/cart' && Boolean(document.querySelector('[data-testid=cart-item]'))"), "full cart page");
   assert.equal(await evaluate("document.querySelector('[data-testid=cart-item] .quantity b')?.textContent"), "5");
   assert.ok(await evaluate("Boolean(document.querySelector('.order-summary'))"));
   assert.ok(await evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"), "Mobile cart must not overflow horizontally");
+  await evaluate("document.querySelector('.order-summary a[href=\"/checkout\"]').click()");
+  await until(() => evaluate("location.pathname === '/checkout' && Boolean(document.querySelector('[name=region]'))"), "checkout address form");
+  await evaluate(`(() => {
+    const values = { recipientName: 'Test Xaridor', phone: '+998901234567', region: 'Toshkent shahri', district: 'Chilonzor tumani', street: 'Bunyodkor ko‘chasi 1' };
+    for (const [name, value] of Object.entries(values)) {
+      const field = document.querySelector('[name=' + name + ']');
+      const prototype = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(prototype, 'value').set.call(field, value);
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  })()`);
+  await until(() => evaluate("/Yetkazish avtomatik hisoblandi/.test(document.querySelector('.delivery-preview-status')?.textContent ?? '')"), "automatic delivery preview");
+  assert.equal(await evaluate("document.querySelector('[name=regionId], [name=districtId]')"), null, "Checkout must not expose technical IDs");
+  await send("Page.navigate", { url: `${base}/cart` });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('[data-testid=cart-item]'))"), "cart after delivery preview");
   await until(() => evaluate("!document.querySelector('[data-testid=cart-item] button[aria-label=\"O‘chirish\"]')?.disabled"), "cart actions ready");
   await evaluate("document.querySelector('[data-testid=cart-item] button[aria-label=\"O‘chirish\"]').click()");
   await until(() => evaluate("!document.querySelector('[data-testid=cart-item]')"), "cart cleanup");
   assert.deepEqual(exceptions, []);
-  console.log(`PASS: favorite TC1 add, TC2 list, TC3 remove${process.env.UI_AUTH_LIVE === "true" ? ", TC4 guest-to-account merge" : ""}; optimistic quantity; four rapid clicks -> one PATCH; no cart N+1; totals and cleanup.`);
+  console.log(`PASS: favorite TC1 add, TC2 list, TC3 remove${process.env.UI_AUTH_LIVE === "true" ? ", TC4 guest-to-account merge" : ""}; floating cart; optimistic quantity; four rapid clicks -> one PATCH; no cart N+1; automatic delivery preview without technical IDs; totals and cleanup.`);
 } finally {
   socket?.close();
   chrome.kill();

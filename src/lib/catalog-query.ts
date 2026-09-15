@@ -19,7 +19,7 @@ export function parseCatalogQuery(params: CatalogSearchParams, categoryId?: stri
     maxPrice: finiteNumber(first(params.maxPrice)),
     sort,
     page: Math.max(1, Math.floor(finiteNumber(first(params.page)) ?? 1)),
-    limit: 20,
+    limit: 10,
   };
 }
 

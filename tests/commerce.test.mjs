@@ -6,9 +6,9 @@ const product = { id: 1, name: 'Telefon', price: 100, colors: ['black'], images:
 
 test('catalog pagination exposes direct page links without client-side load more', () => {
   const { paginationItems } = loadTypeScript('src/lib/pagination.ts');
-  assert.deepEqual(paginationItems(7, 1), [1, 2, 3, 4, 5, 6, 7]);
-  assert.deepEqual(paginationItems(20, 10), [1, 'ellipsis', 9, 10, 11, 'ellipsis', 20]);
-  assert.deepEqual(paginationItems(20, 20), [1, 'ellipsis', 16, 17, 18, 19, 20]);
+  assert.deepEqual(paginationItems(5, 1), [1, 2, 3, 4, 5]);
+  assert.deepEqual(paginationItems(20, 10), [1, 'ellipsis', 10, 'ellipsis', 20]);
+  assert.deepEqual(paginationItems(20, 20), [1, 'ellipsis', 18, 19, 20]);
 });
 
 test('reviews normalize the live backend page contract', () => {
@@ -307,7 +307,7 @@ test('guest checkout without an account previews delivery, creates an order and 
     } },
     './cart.service': { cartService: { get: async () => ({ items: [{ id: 'a', product, quantity: 1, shopId: '3' }] }), clear: async () => ({ items: [] }) } },
   });
-  const address = { recipientName: 'Ali', phone: '+998901234567', address: 'Toshkent shahar', regionId: '10', districtId: '101' };
+  const address = { recipientName: 'Ali', phone: '+998901234567', address: 'Toshkent shahri, Chilonzor tumani, Bunyodkor ko‘chasi 1' };
   const order = await orderService.create(address, 'request-1');
   assert.equal(order.id, 'order-42');
   assert.equal(order.total, 120);
@@ -499,7 +499,7 @@ test('product outages are not reported as missing products', async () => {
 test('catalog query keeps shareable filters and only accepts backend sort values', () => {
   const { catalogHref, parseCatalogQuery } = loadTypeScript('src/lib/catalog-query.ts');
   assert.deepEqual(parseCatalogQuery({ search: '  iphone  ', sort: 'price:asc', page: '3', minPrice: '100' }, 'phones'), {
-    search: 'iphone', categoryId: 'phones', minPrice: 100, maxPrice: undefined, sort: 'price:asc', page: 3, limit: 20,
+    search: 'iphone', categoryId: 'phones', minPrice: 100, maxPrice: undefined, sort: 'price:asc', page: 3, limit: 10,
   });
   assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).sort, 'createdAt:desc');
   assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).page, 1);

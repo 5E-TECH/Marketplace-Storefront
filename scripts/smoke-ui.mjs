@@ -11,6 +11,7 @@ const homeHtml = await homeResponse.text();
 assert.equal(homeResponse.status, 200);
 assert.match(homeHtml, /class="product-card"/, "Product cards must be present in the SSR HTML");
 assert.match(homeHtml, /href="\/katalog\//, "SSR categories must use shareable slug URLs");
+assert.doesNotMatch(homeHtml, /class="category-grid"/, "Home categories must not repeat below the header navigation");
 assert.doesNotMatch(homeHtml, /Yana ko‘rsatish/, "Catalog must not paginate an API page again in the browser");
 assert.match(homeHtml, /class="pagination-pages"/, "SSR catalog must expose numbered pagination");
 const productPath = homeHtml.match(/href="(\/product\/[^"?#]+)"/)?.[1];
@@ -92,16 +93,19 @@ try {
       const root = document.documentElement;
       const header = document.querySelector("header.header");
       const footer = document.querySelector("body > footer");
+      const floatingCart = document.querySelector(".floating-cart");
       return {
         width: root.clientWidth,
         scrollWidth: root.scrollWidth,
         headerVisible: getComputedStyle(header).display !== "none",
         footerVisible: getComputedStyle(footer).display !== "none",
+        floatingCartVisible: floatingCart && getComputedStyle(floatingCart).position === "fixed",
       };
     })()`);
     assert.equal(result.width, 375, `${route}: viewport must be 375px`);
     assert.ok(result.scrollWidth <= result.width, `${route}: horizontal overflow (${result.scrollWidth}px > ${result.width}px)`);
     assert.ok(result.headerVisible && result.footerVisible, `${route}: header and footer must be visible`);
+    assert.equal(result.floatingCartVisible, true, `${route}: cart must remain fixed in the bottom-right corner`);
   }
 
   await send("Page.navigate", { url: `${base}${categoryPath}?sort=price%3Aasc` });

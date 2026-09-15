@@ -81,7 +81,7 @@ const normalizeShop = (value: unknown): StorefrontShop => {
 export const productService = {
   async list(query: ProductQuery = {}): Promise<CatalogResult> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     if (!env.apiUrl) return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: "API_URL sozlanmagan" };
     let result: StorefrontProductsResponse;
     try {
@@ -112,7 +112,7 @@ export const productService = {
   },
   async listByShop(shopId: string | number, query: Omit<ProductQuery, "categoryId"> = {}): Promise<CatalogResult> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 10;
     if (!env.apiUrl) return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: "API_URL sozlanmagan" };
     const path = `${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(String(shopId))}/products`;
     try {
@@ -131,9 +131,9 @@ export const productService = {
     if (!slug.trim() || slug.length > 160) return null;
     if (!env.apiUrl) return null;
     try {
-      const response = await apiRequest<StorefrontShopPageDto>(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: { search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page: query.page ?? 1, limit: query.limit ?? 20 }, next: { revalidate: 30 }, validate: validateStorefrontShopPageDto });
+      const response = await apiRequest<StorefrontShopPageDto>(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: { search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page: query.page ?? 1, limit: query.limit ?? 10 }, next: { revalidate: 30 }, validate: validateStorefrontShopPageDto });
       const items = response.products.items.map(normalizeProduct).filter((product) => product.id !== "" && product.name);
-      const limit = Math.max(1, number(response.products.limit, query.limit ?? 20));
+      const limit = Math.max(1, number(response.products.limit, query.limit ?? 10));
       const total = number(response.products.total, items.length);
       return { shop: normalizeShop(response.shop), catalog: { data: items, total, page: Math.max(1, number(response.products.page, query.page ?? 1)), limit, totalPages: Math.max(0, number(response.products.totalPages, Math.ceil(total / limit))), source: "api" } };
     } catch (error) {

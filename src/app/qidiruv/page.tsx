@@ -13,7 +13,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function SearchPage({ searchParams }: Props) {
   const query = parseCatalogQuery(await searchParams);
-  const catalog = query.search ? await productService.list(query) : { data: [], total: 0, page: 1, limit: 20, totalPages: 0, source: "api" as const };
+  const catalog = query.search ? await productService.list(query) : { data: [], total: 0, page: 1, limit: 10, totalPages: 0, source: "api" as const };
   const suggestions = query.search && !catalog.error && !catalog.data.length ? (await productService.list({ page: 1, limit: 4 })).data : [];
   return <SearchStorefront query={query} catalog={catalog} suggestions={suggestions}/>;
 }
