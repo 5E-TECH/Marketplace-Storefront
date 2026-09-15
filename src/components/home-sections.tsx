@@ -6,7 +6,7 @@ import { catalogHref } from "@/lib/catalog-query";
 import { getSafeImageSrc } from "@/lib/product-storage";
 import type { CatalogCategory, Product, ProductQuery, ProductSort } from "@/types/commerce";
 import { ProductGrid } from "./product-grid";
-import { Button, Container, SectionHeader } from "./ui";
+import { Container, SectionHeader } from "./ui";
 
 export function Hero({ product }: { product?: Product }) {
   if (!product) return null;
@@ -42,5 +42,3 @@ export function Inspiration({ products }: { products: Product[] }) {
   if (!items.length) return null;
   return <Container><section className="content-section"><SectionHeader title="Siz uchun g‘oyalar" link="Katalogga o‘tish"/><div className="inspiration-grid">{items.map((product) => <Link href={`/product/${product.id}`} prefetch={false} key={product.id} className="inspiration-card"><Image src={getSafeImageSrc(product.image)} alt={product.name} fill sizes="(max-width: 640px) 80vw, 25vw"/><div><h3>{product.name}</h3><p>{product.shop?.name ?? product.category}</p></div><span><ArrowRight/></span></Link>)}</div></section></Container>;
 }
-
-export function Newsletter() { return <Container><section className="newsletter"><div><span>FAQAT A’ZOLAR UCHUN</span><h2>Yaxshi takliflar sizni topsin.</h2><p>Yangi mahsulotlar va yopiq chegirmalarni birinchi bo‘lib oling.</p></div><form><input id="newsletter-email" name="email" type="email" required aria-label="Email manzil" placeholder="Email manzilingiz"/><Button type="submit">Obuna bo‘lish</Button></form></section></Container>; }

@@ -10,7 +10,7 @@ export default async function ApiTestPage() {
   let catalog;
   let error = "";
   try {
-    // Deliberately bypass USE_MOCK_DATA: this page verifies the configured backend.
+    // This page verifies the configured backend directly.
     catalog = await apiRequest("/storefront/products", { params: { page: 1, limit: 5 }, validate: validateStorefrontProductsPageDto });
   } catch (caught) {
     error = caught instanceof ApiError ? `${caught.kind} (${caught.status}): ${caught.message}` : "Katalog yuklanmadi";

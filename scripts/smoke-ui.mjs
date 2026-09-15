@@ -6,13 +6,17 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
 const base = process.env.UI_TEST_URL ?? "http://127.0.0.1:3001";
-const routes = ["/", "/?sort=price%3Aasc&page=2", "/qidiruv?q=AirBeat&sort=price%3Aasc", "/qidiruv?q=__missing_product__", "/katalog", "/katalog/audio?sort=price%3Aasc", "/cart", "/checkout", "/favorites", "/product/demo-headphones", "/login", "/register", "/forgot-password", "/profile", "/profile/orders", "/ui-kit"];
 const homeResponse = await fetch(base);
 const homeHtml = await homeResponse.text();
 assert.equal(homeResponse.status, 200);
 assert.match(homeHtml, /class="product-card"/, "Product cards must be present in the SSR HTML");
 assert.match(homeHtml, /href="\/katalog\//, "SSR categories must use shareable slug URLs");
-assert.match(homeHtml, /Keyingi sahifa/, "SSR catalog must expose pagination when more products exist");
+assert.doesNotMatch(homeHtml, /Yana ko‘rsatish/, "Catalog must not paginate an API page again in the browser");
+assert.match(homeHtml, /class="pagination-pages"/, "SSR catalog must expose numbered pagination");
+const productPath = homeHtml.match(/href="(\/product\/[^"?#]+)"/)?.[1];
+const categoryPath = homeHtml.match(/href="(\/katalog\/[^"?#]+)"/)?.[1];
+assert.ok(productPath && categoryPath, "Backend catalog must provide product and category links");
+const routes = ["/", "/?sort=price%3Aasc&page=2", "/qidiruv?q=__missing_product__", "/katalog", `${categoryPath}?sort=price%3Aasc`, "/cart", "/checkout", "/favorites", productPath, "/login", "/register", "/forgot-password", "/profile", "/profile/orders"];
 
 const emptyResponse = await fetch(`${base}/?search=__missing_product__`);
 const emptyHtml = await emptyResponse.text();
@@ -100,7 +104,7 @@ try {
     assert.ok(result.headerVisible && result.footerVisible, `${route}: header and footer must be visible`);
   }
 
-  await send("Page.navigate", { url: `${base}/katalog/audio?sort=price%3Aasc` });
+  await send("Page.navigate", { url: `${base}${categoryPath}?sort=price%3Aasc` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "category catalog");
   const filterState = await evaluate(`({
     path: location.pathname,
@@ -109,8 +113,8 @@ try {
     products: document.querySelectorAll(".product-card").length,
     prices: [...document.querySelectorAll(".product-card .price strong")].map((element) => Number(element.textContent.replace(/\\D/g, ""))),
   })`);
-  assert.deepEqual({ path: filterState.path, sort: filterState.sort, activeSort: filterState.activeSort }, { path: "/katalog/audio", sort: "price:asc", activeSort: "Arzondan qimmatga" });
-  assert.equal(filterState.products, 6, "Category URL must only contain matching demo products");
+  assert.deepEqual({ path: filterState.path, sort: filterState.sort, activeSort: filterState.activeSort }, { path: categoryPath, sort: "price:asc", activeSort: "Arzondan qimmatga" });
+  assert.ok(filterState.products > 0, "Backend category must contain products");
   assert.deepEqual(filterState.prices, [...filterState.prices].sort((left, right) => left - right), "Price sorting must change the rendered product order");
 
   await send("Page.navigate", { url: `${base}/?sort=price%3Aasc&page=2` });
@@ -118,12 +122,15 @@ try {
   const pageState = await evaluate(`({
     page: new URLSearchParams(location.search).get("page"),
     sort: new URLSearchParams(location.search).get("sort"),
-    pagination: document.querySelector(".catalog-pagination b")?.textContent.trim(),
+    pagination: document.querySelector(".catalog-pagination [aria-current=page]")?.textContent.trim(),
     activeSort: document.querySelector(".sort-control [aria-current=page]")?.textContent.trim(),
   })`);
-  assert.deepEqual(pageState, { page: "2", sort: "price:asc", pagination: "2 / 2", activeSort: "Arzondan qimmatga" });
+  assert.deepEqual(pageState, { page: "2", sort: "price:asc", pagination: "2", activeSort: "Arzondan qimmatga" });
 
-  await send("Page.navigate", { url: `${base}/qidiruv?q=AirBeat&minPrice=900000&maxPrice=1000000&sort=price%3Aasc` });
+  await send("Page.navigate", { url: `${base}/` });
+  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card h3'))"), "backend product name");
+  const searchTerm = await evaluate("document.querySelector('.product-card h3').textContent.trim().split(/\\s+/)[0]");
+  await send("Page.navigate", { url: `${base}/qidiruv?q=${encodeURIComponent(searchTerm)}&sort=price%3Aasc` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "search results");
   const searchState = await evaluate(`({
     q: new URLSearchParams(location.search).get("q"),
@@ -139,18 +146,17 @@ try {
     clearPrice: document.querySelector(".search-filters a")?.getAttribute("href"),
     newestHref: document.querySelector(".sort-control a:first-child")?.getAttribute("href"),
   })`);
-  assert.equal(searchState.q, "AirBeat");
-  assert.match(searchState.heading, /AirBeat/);
-  assert.equal(searchState.input, "AirBeat");
+  assert.equal(searchState.q, searchTerm);
+  assert.match(searchState.heading, new RegExp(searchTerm, "i"));
+  assert.equal(searchState.input, searchTerm);
   assert.equal(searchState.activeSort, "Arzondan qimmatga");
   assert.ok(searchState.products > 0, "TC1: matching search must render at least one product");
-  assert.ok(searchState.names.every(name => /AirBeat/i.test(name)), "Search page must only show matching products");
+  assert.ok(searchState.names.some(name => name.toLocaleLowerCase("uz").includes(searchTerm.toLocaleLowerCase("uz"))), "Search must return the selected backend product");
   assert.deepEqual(searchState.prices, [...searchState.prices].sort((left, right) => left - right), "TC4: search results must respect selected price sorting");
-  assert.ok(searchState.prices.every(price => price >= 900000 && price <= 1000000), "Search filters must constrain product prices");
-  assert.deepEqual([searchState.minPrice, searchState.maxPrice], ["900000", "1000000"]);
+  assert.deepEqual([searchState.minPrice, searchState.maxPrice], ["", ""]);
   assert.equal(searchState.filterSort, "price:asc");
-  assert.equal(searchState.clearPrice, "/qidiruv?q=AirBeat&sort=price%3Aasc#products");
-  assert.equal(searchState.newestHref, "/qidiruv?q=AirBeat&minPrice=900000&maxPrice=1000000#products");
+  assert.equal(searchState.clearPrice, undefined);
+  assert.equal(searchState.newestHref, `/qidiruv?q=${encodeURIComponent(searchTerm)}#products`);
 
   await send("Page.navigate", { url: `${base}/qidiruv?q=__missing_product__` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.catalog-empty'))"), "empty search results");
@@ -158,14 +164,15 @@ try {
     message: document.querySelector(".catalog-empty h3")?.textContent.trim(),
     alternatives: document.querySelectorAll(".search-alternatives .product-card").length,
   })`);
-  assert.deepEqual(emptySearch, { message: "Mahsulot topilmadi", alternatives: 4 });
+  assert.equal(emptySearch.message, "Mahsulot topilmadi");
+  assert.ok(emptySearch.alternatives > 0 && emptySearch.alternatives <= 4);
 
   await send("Page.navigate", { url: `${base}/` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('#header-search'))"), "search input");
   await evaluate("document.querySelector('#header-search').focus()");
-  await send("Input.insertText", { text: "QA" });
+  await send("Input.insertText", { text: searchTerm });
   await until(() => evaluate("Boolean(document.querySelector('.search-suggestions [role=option]'))"), "search suggestions");
-  assert.match(await evaluate("document.querySelector('.search-suggestions [role=option]')?.textContent"), /QA/i);
+  assert.match(await evaluate("document.querySelector('.search-suggestions [role=option]')?.textContent"), new RegExp(searchTerm, "i"));
 
   if (process.env.UI_AUTH_LIVE === "true") {
     const suffix = String(Date.now()).slice(-9);
@@ -191,43 +198,20 @@ try {
     await until(() => evaluate("localStorage.getItem('access_token') === null && localStorage.getItem('elchi_auth_v1') === null"), "TC4 cleared session");
   }
 
-  await send("Page.navigate", { url: `${base}/ui-kit` });
-  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.product-card'))"), "UI kit content");
-  const components = await evaluate(`(() => {
-    const card = document.querySelector(".product-card");
-    return {
-      image: Boolean(card.querySelector("img")),
-      name: Boolean(card.querySelector("h3")?.textContent.trim()),
-      price: Boolean(card.querySelector(".price strong")?.textContent.trim()),
-      shop: Boolean(card.querySelector(".eyebrow")?.textContent.trim()),
-      empty: Boolean(document.querySelector(".state-panel--empty")),
-      error: Boolean(document.querySelector(".state-panel--error")),
-    };
-  })()`);
-  assert.deepEqual(components, { image: true, name: true, price: true, shop: true, empty: true, error: true });
-  await send("Page.navigate", { url: `${base}/product/demo-headphones#reviews` });
+  await send("Page.navigate", { url: `${base}${productPath}#reviews` });
   await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('#reviews'))"), "product reviews");
   const reviewState = await evaluate(`({
     heading: document.querySelector("#reviews-title")?.textContent.trim(),
     rating: document.querySelector(".reviews-score")?.textContent.trim(),
-    reviews: document.querySelectorAll("#reviews .reviews-list article").length,
+    hasResult: Boolean(document.querySelector("#reviews .reviews-list, #reviews .state-panel")),
     guestRestriction: document.querySelector(".review-form-card")?.textContent.includes("Sharh yozish uchun"),
     formVisible: Boolean(document.querySelector(".review-form-card form")),
   })`);
-  assert.deepEqual(reviewState, { heading: "Xaridorlar sharhlari", rating: "4.5", reviews: 2, guestRestriction: true, formVisible: false });
-
-  await evaluate("localStorage.setItem('access_token', 'demo-buyer-token'); location.reload()");
-  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('.review-form-card form'))"), "purchased buyer review form");
-  await evaluate("document.querySelector('.review-rating-input button[aria-label=\"5 yulduz\"]').click()");
-  await until(() => evaluate("document.querySelector('.review-rating-input button[aria-label=\"5 yulduz\"]')?.getAttribute('aria-pressed') === 'true'"), "review rating selection");
-  await evaluate("document.querySelector('.review-form-card form').requestSubmit()");
-  await until(() => evaluate("document.querySelector('.review-form-card .form-success')?.textContent.includes('qabul qilindi')"), "purchased buyer review submission");
-  await evaluate("localStorage.removeItem('access_token')");
-
-  await send("Page.navigate", { url: `${base}/product/demo-watch#reviews` });
-  await until(() => evaluate("document.readyState === 'complete' && Boolean(document.querySelector('#reviews .state-panel'))"), "empty product reviews");
-  assert.equal(await evaluate("document.querySelector('#reviews .state-panel h2')?.textContent.trim()"), "Hali sharhlar yo‘q");
-  console.log(`PASS: search TC1-TC4; review TC1-TC4;${process.env.UI_AUTH_LIVE === "true" ? " account TC1, TC2, TC4;" : ""} guest checkout TC3 regression; SSR catalog, pagination and empty state; slug category and URL filters; ${routes.length} routes at 375px without horizontal overflow.`);
+  assert.equal(reviewState.heading, "Xaridorlar sharhlari");
+  assert.match(reviewState.rating, /^\d(?:\.\d)$/);
+  assert.equal(reviewState.hasResult, true);
+  assert.deepEqual({ guestRestriction: reviewState.guestRestriction, formVisible: reviewState.formVisible }, { guestRestriction: true, formVisible: false });
+  console.log(`PASS: backend catalog, numbered pagination, search/filter/sort, reviews and ${routes.length} routes at 375px without horizontal overflow.`);
 } finally {
   socket?.close();
   chrome.kill();

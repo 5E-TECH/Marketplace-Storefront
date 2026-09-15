@@ -12,7 +12,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Frontend: http://localhost:3001. `.env.local` ichida backend manzilini belgilang. `USE_MOCK_DATA=true` faqat katalog uchun demo mahsulotlarni yoqadi; savatcha va sevimlilar uchun backend kerak.
+Frontend: http://localhost:3001. `.env.local` ichida backend manzilini belgilang. Katalog, kategoriyalar va mahsulot sahifalari backend ma’lumotidan ishlaydi.
 
 ```sh
 npm run check       # TypeScript, ESLint, regression testlar, production build
@@ -66,7 +66,7 @@ const products = await apiRequest("/storefront/products", {
 
 `ApiError` ichida `status`, `message`, `kind` mavjud. `kind`: `network`, `timeout`, `aborted`, `not_found`, `http`, `invalid_response`, `configuration`. Timeout javob tanasini o‘qishni ham qamrab oladi. GET va mutatsiyalar avtomatik takrorlanmaydi. 204/205 bo‘sh javoblar mutatsiyalar uchun qabul qilinadi; katalog javobi sifatida xato beradi.
 
-`/api-test` sahifasi haqiqiy backenddan mahsulotlarni SSR va brauzerda alohida yuklaydi. Bu sahifa `USE_MOCK_DATA`ni chetlab o‘tadi: demo mahsulotlar muvaffaqiyat deb ko‘rsatilmaydi. Natija va xatolar sahifada ko‘rinadi.
+`/api-test` sahifasi haqiqiy backenddan mahsulotlarni SSR va brauzerda alohida yuklaydi. Natija va xatolar sahifada ko‘rinadi.
 
 OpenAPI manbasi, generatsiya buyruqlari va kontraktdagi noaniqliklar: [contract/README.md](contract/README.md).
 

@@ -4,6 +4,13 @@ import { loadTypeScript } from './load-typescript.mjs';
 
 const product = { id: 1, name: 'Telefon', price: 100, colors: ['black'], images: [] };
 
+test('catalog pagination exposes direct page links without client-side load more', () => {
+  const { paginationItems } = loadTypeScript('src/lib/pagination.ts');
+  assert.deepEqual(paginationItems(7, 1), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(paginationItems(20, 10), [1, 'ellipsis', 9, 10, 11, 'ellipsis', 20]);
+  assert.deepEqual(paginationItems(20, 20), [1, 'ellipsis', 16, 17, 18, 19, 20]);
+});
+
 test('reviews normalize the live backend page contract', () => {
   const { normalizeReviews } = loadTypeScript('src/services/review.service.ts', {
     '@/generated/api-validators': {}, '@/lib/api': {}, '@/lib/access-token': {},
@@ -40,7 +47,7 @@ test('review form eligibility includes only delivered matching order items', asy
 test('guest and non-purchaser cannot obtain a reviewable order item', async () => {
   let requests = 0;
   const guest = loadTypeScript('src/services/review.service.ts', {
-    '@/config/env': { env: { useMockData: false } },
+    '@/config/env': { env: {} },
     '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
     '@/lib/api': { apiRequest: async () => { requests++; } },
     '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null },
@@ -49,7 +56,7 @@ test('guest and non-purchaser cannot obtain a reviewable order item', async () =
   assert.equal(requests, 0);
 
   const buyer = loadTypeScript('src/services/review.service.ts', {
-    '@/config/env': { env: { useMockData: false } },
+    '@/config/env': { env: {} },
     '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
     '@/lib/api': { apiRequest: async () => ({ items: [{ orderId: 'new', orderStatus: 'CONFIRMED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '33', productId: '6', name: 'A', quantity: 1, unitPrice: 1 }] }], total: 1, page: 1, limit: 100, totalPages: 1 }) },
     '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
@@ -60,7 +67,7 @@ test('guest and non-purchaser cannot obtain a reviewable order item', async () =
 test('invalid review rating never reaches the backend', async () => {
   let requests = 0;
   const { reviewService } = loadTypeScript('src/services/review.service.ts', {
-    '@/config/env': { env: { useMockData: false } },
+    '@/config/env': { env: {} },
     '@/generated/api-validators': {},
     '@/lib/api': { apiRequest: async () => { requests++; } },
     '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
@@ -73,8 +80,8 @@ test('product image URLs only allow local assets and the configured marketplace 
   const { getSafeImageSrc } = loadTypeScript('src/lib/product-storage.ts');
   assert.equal(getSafeImageSrc('/placeholder-product.svg'), '/placeholder-product.svg');
   assert.equal(getSafeImageSrc('https://api.elchimarket.uz/media/products/phone.jpg'), 'https://api.elchimarket.uz/media/products/phone.jpg');
-  assert.equal(getSafeImageSrc('https://untrusted.example/track.jpg'), '/demo-product.svg');
-  assert.equal(getSafeImageSrc('javascript:alert(1)'), '/demo-product.svg');
+  assert.equal(getSafeImageSrc('https://untrusted.example/track.jpg'), '/placeholder-product.svg');
+  assert.equal(getSafeImageSrc('javascript:alert(1)'), '/placeholder-product.svg');
 });
 
 test('null prices fall back to a valid sale price; zero stays zero', () => {
@@ -481,7 +488,7 @@ test('product outages are not reported as missing products', async () => {
   class ApiError extends Error { constructor(status) { super('backend failure'); this.status = status; } }
   let status = 503;
   const { productService } = loadTypeScript('src/services/product.service.ts', {
-    '@/config/env': { env: { apiUrl: 'https://example.test', useMockData: false } },
+    '@/config/env': { env: { apiUrl: 'https://example.test' } },
     '@/lib/api': { ApiError, apiRequest: async () => { throw new ApiError(status); } },
   });
   await assert.rejects(productService.getById(1), { status: 503 });
@@ -519,7 +526,7 @@ test('category service uses backend slugs and finds nested categories', async ()
     { id: '7', name: 'Mobil telefonlar', slug: 'mobil-telefonlar', parentId: '1', iconUrl: null, sortOrder: 0, isActive: true, children: [] },
   ] }];
   const { categoryService, findCategoryBySlug } = loadTypeScript('src/services/category.service.ts', {
-    '@/config/env': { env: { apiUrl: 'https://example.test/api/v1', useMockData: false } },
+    '@/config/env': { env: { apiUrl: 'https://example.test/api/v1' } },
     '@/generated/api-validators': { validateCategoryTreeDto: () => true },
     '@/lib/api': { apiRequest: async () => response },
   });

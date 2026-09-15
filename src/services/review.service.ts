@@ -1,5 +1,4 @@
 import { validateBuyerOrdersPageDto } from "@/generated/api-validators";
-import { env } from "@/config/env";
 import { apiRequest } from "@/lib/api";
 import { authHeaders, getAccessToken } from "@/lib/access-token";
 import type { ProductReview, ProductReviewsResult, ReviewableOrderItem } from "@/types/commerce";
@@ -39,26 +38,17 @@ export const normalizeReviews = (response: unknown): ProductReviewsResult => {
 
 export const reviewService = {
   async list(productId: string | number, page = 1, limit = 5): Promise<ProductReviewsResult> {
-    if (env.useMockData && String(productId).startsWith("demo-")) {
-      const items: ProductReview[] = String(productId) === "demo-headphones" ? [
-        { id: "demo-review-1", rating: 5, comment: "Ovozi tiniq, quvvatni uzoq ushlaydi.", createdAt: "2026-09-10T09:00:00.000Z", authorName: "Aziza" },
-        { id: "demo-review-2", rating: 4, comment: "Quloqqa qulay joylashdi.", createdAt: "2026-09-08T12:00:00.000Z", authorName: "Sardor" },
-      ] : [];
-      return { items, rating: items.length ? 4.5 : 0, total: items.length, page, limit, totalPages: items.length ? 1 : 0 };
-    }
     return normalizeReviews(await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "GET", params: { page, limit } }));
   },
-  async create(productId: string | number, input: { orderItemId: string; rating: number; comment?: string }, demo = false): Promise<void> {
+  async create(productId: string | number, input: { orderItemId: string; rating: number; comment?: string }): Promise<void> {
     const orderItemId = input.orderItemId.trim();
     const comment = input.comment?.trim();
     if (!orderItemId || orderItemId.length > 128) throw new Error("Buyurtma mahsuloti noto‘g‘ri");
     if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) throw new Error("1 dan 5 gacha baho tanlang");
-    if (demo) return;
     await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "POST", headers: authHeaders(), body: { orderItemId, rating: input.rating, ...(comment ? { comment } : {}) } });
   },
-  async reviewableItems(productId: string | number, demo = false): Promise<ReviewableOrderItem[]> {
+  async reviewableItems(productId: string | number): Promise<ReviewableOrderItem[]> {
     if (!getAccessToken()) return [];
-    if (demo) return [{ orderItemId: "demo-order-item", orderId: "demo-delivered-order" }];
     const first = await apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: 1, limit: 100 }, validate: validateBuyerOrdersPageDto });
     const pages = first.totalPages > 1 ? await Promise.all(Array.from({ length: first.totalPages - 1 }, (_, index) => apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: index + 2, limit: 100 }, validate: validateBuyerOrdersPageDto }))) : [];
     return [first, ...pages].flatMap((page) => page.items).flatMap((order) => {
