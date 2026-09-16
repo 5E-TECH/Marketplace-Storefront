@@ -21,6 +21,6 @@ export const normalizeApiProduct = (input: unknown): Product | null => {
     oldPrice: number(product.oldPrice, product.originalPrice, product.compareAtPrice) || undefined,
     rating: number(product.rating, product.averageRating), reviews: number(product.reviews, product.reviewsCount, product.reviewCount),
     image, images: [...new Set([image, ...imageValues])],
-    description: text(product.description, product.shortDescription, "Mahsulot"), colors: colors.length ? colors : ["#17181a"],
+    description: text(product.description, product.shortDescription), colors,
   };
 };

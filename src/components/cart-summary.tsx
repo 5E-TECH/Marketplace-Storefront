@@ -10,7 +10,7 @@ export function CartSummary({ quantity, subtotal, originalTotal }: { quantity: n
     <p><span>Yetkazib berish</span><b>Manzil bo‘yicha</b></p>
     <hr/>
     <p className="order-total"><span>Mahsulotlar jami</span><Price value={subtotal}/></p>
-    <Link className="button button--primary" href="/checkout">Rasmiylashtirishga o‘tish</Link>
+    {quantity > 0 ? <Link className="button button--primary" href="/checkout">Rasmiylashtirishga o‘tish</Link> : <button className="button button--primary" disabled>Mahsulot tanlang</button>}
     <small>Yetkazib berish narxi va muddati manzil tanlangach hisoblanadi</small>
   </aside>;
 }

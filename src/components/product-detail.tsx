@@ -4,7 +4,6 @@ import { Check, ChevronRight, Clock3, Heart, Minus, Plus, ShieldCheck, ShoppingB
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { formatPrice } from "@/lib/format";
 import { getSafeImageSrc } from "@/lib/product-storage";
 import type { Product, ProductReviewsResult } from "@/types/commerce";
 import { useCart } from "@/providers/cart-provider";
@@ -22,12 +21,11 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
   const router = useRouter();
   const favorites = useFavorites();
   useEffect(() => { cartService.rememberProduct(product); }, [product]);
-  const selectedColor = product.colors[activeColor];
-  const selectedVariant = product.variants?.find((variant) => variant.color === selectedColor) ?? product.variants?.[activeColor];
+  const selectedVariant = product.variants?.find((variant) => variant.color === product.colors[activeColor]) ?? product.variants?.[activeColor] ?? product.variants?.[0];
+  const selectedColor = product.colors[activeColor] ?? selectedVariant?.color ?? "";
   const selectedPrice = selectedVariant?.price ?? product.price;
   const selectedOldPrice = selectedVariant?.oldPrice ?? product.oldPrice;
   const selectedProduct = selectedVariant ? { ...product, price: selectedPrice, oldPrice: selectedOldPrice } : product;
-  const monthly = Math.ceil(selectedPrice / 12 / 1000) * 1000;
   const buyNow = async () => {
     if (!selectedVariant) return;
     const added = await cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant.id });
@@ -43,27 +41,26 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
       </section>
 
       <section className="detail-summary">
-        <div className="detail-brand">{product.shop?.name ?? "ELCHI SELECT"} <span>Original</span></div>
+        {product.shop?.name && <div className="detail-brand">{product.shop.name}</div>}
         <h1>{product.name}</h1>
-        <div className="detail-rating"><span><Star fill="currentColor"/> {reviews.error ? product.rating : reviews.rating.toFixed(1)}</span><a href="#reviews">{reviews.error ? product.reviews : reviews.total} ta sharh</a></div>
-        <p className="detail-lead">{product.description}</p>
+        <div className="detail-rating">{(reviews.error ? product.rating : reviews.rating) > 0 && <span><Star fill="currentColor"/> {reviews.error ? product.rating : reviews.rating.toFixed(1)}</span>}<a href="#reviews">{(reviews.error ? product.reviews : reviews.total) > 0 ? `${reviews.error ? product.reviews : reviews.total} ta sharh` : "Hali sharh yo‘q"}</a></div>
+        {product.description && <p className="detail-lead">{product.description}</p>}
 
-        <div className="option-block"><div className="option-title"><b>Rang</b><span>{activeColor === 0 ? "Asosiy" : `Variant ${activeColor + 1}`}</span></div><div className="color-options">{product.colors.map((color, index) => <button className={activeColor === index ? "active" : ""} onClick={() => setActiveColor(index)} key={color} aria-label={`${index + 1}-rang`}><i style={{ background: color }}/>{activeColor === index && <Check/>}</button>)}</div></div>
+        {product.colors.length > 0 && <div className="option-block"><div className="option-title"><b>Rang</b><span>{selectedVariant?.name ?? selectedColor}</span></div><div className="color-options">{product.colors.map((color, index) => <button className={activeColor === index ? "active" : ""} onClick={() => setActiveColor(index)} key={color} aria-label={`${color} rang`}><i style={{ background: color }}/>{activeColor === index && <Check/>}</button>)}</div></div>}
 
         <div className="purchase-card">
           <div className="purchase-price"><Price value={selectedPrice} oldValue={selectedOldPrice}/>{selectedOldPrice && <span>{Math.round((1 - selectedPrice / selectedOldPrice) * 100)}% tejaysiz</span>}</div>
-          <button className="installment"><span><b>{formatPrice(monthly)} so‘m</b> × 12 oy</span><small>Foizsiz muddatli to‘lov</small><ChevronRight/></button>
           <div className="purchase-actions"><div className="quantity"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Kamaytirish"><Minus/></button><b>{quantity}</b><button onClick={() => setQuantity(quantity + 1)} aria-label="Ko‘paytirish"><Plus/></button></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> {!selectedVariant ? "Variant mavjud emas" : selectedVariant.stock === 0 ? "Sotuvda yo‘q" : "Savatchaga qo‘shish"}</Button><button className={`detail-heart ${favorites.has(product.id) ? "active" : ""}`} disabled={!favorites.hydrated || favorites.isPending(product.id)} onClick={() => void favorites.toggle(product)} aria-label={favorites.has(product.id) ? "Sevimlilardan olib tashlash" : "Sevimlilarga qo‘shish"}><Heart fill={favorites.has(product.id) ? "currentColor" : "none"}/></button></div>
           <button className="quick-buy" disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={buyNow}>Bir klikda xarid qilish</button>
         </div>
 
-        <div className="service-list"><div><span><Truck/></span><p><b>Ertaga yetkazib beramiz</b><small>Toshkent bo‘ylab kuryer yoki topshirish punktiga</small></p><ChevronRight/></div><div><span><ShieldCheck/></span><p><b>Xavfsiz to‘lov va kafolat</b><small>Karta, naqd yoki bo‘lib to‘lash mumkin</small></p><ChevronRight/></div><div><span><Clock3/></span><p><b>30 kun ichida qaytarish</b><small>Oson, tez va ortiqcha savollarsiz</small></p><ChevronRight/></div></div>
+        <div className="service-list"><div><span><Truck/></span><p><b>Manzil bo‘yicha yetkazib berish</b><small>Narx va muddat rasmiylashtirishda hisoblanadi</small></p><ChevronRight/></div><div><span><ShieldCheck/></span><p><b>Qabul qilganda to‘lash</b><small>Hozirgi checkout COD to‘lov usulini qo‘llaydi</small></p><ChevronRight/></div><div><span><Clock3/></span><p><b>Buyurtmani kuzatish</b><small>Holatini buyurtmalar sahifasida tekshirishingiz mumkin</small></p><ChevronRight/></div></div>
       </section>
     </div>
 
     <ProductInformation product={product}/>
     <ProductReviews productId={product.id} reviews={reviews}/>
 
-    <div className="mobile-buy-bar"><div><Price value={selectedPrice}/><small>Ertaga yetkazamiz</small></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> Savatchaga</Button></div>
+    <div className="mobile-buy-bar"><div><Price value={selectedPrice}/><small>Yetkazish manzil bo‘yicha</small></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> Savatchaga</Button></div>
   </>;
 }

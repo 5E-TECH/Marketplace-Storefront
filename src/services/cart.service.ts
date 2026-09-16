@@ -50,7 +50,7 @@ const normalizeCart = async (response: unknown): Promise<Cart> => {
     const rawShopId = item.shopId ?? product.shop?.id;
     const rawPrice = [item.unitPriceSnapshot, item.unitPrice, variant.price, product.price].find((value) => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0);
     const quantity = Number(item.quantity);
-    return { id: String(itemId), productId, variantId: typeof variantId === "string" || typeof variantId === "number" ? variantId : undefined, shopId: typeof rawShopId === "string" || typeof rawShopId === "number" ? rawShopId : "marketplace", product: { ...product, price: Number(rawPrice ?? 0) }, quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1, color: String(item.color ?? variant.color ?? product.colors[0]) };
+    return { id: String(itemId), productId, variantId: typeof variantId === "string" || typeof variantId === "number" ? variantId : undefined, shopId: typeof rawShopId === "string" || typeof rawShopId === "number" ? rawShopId : "marketplace", product: { ...product, price: Number(rawPrice ?? 0) }, quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1, color: String(item.color ?? variant.color ?? product.colors[0] ?? "") };
   }).filter((item): item is CartItem => item !== null);
   const cartId = data.id ?? data.cartId;
   return { id: typeof cartId === "string" ? cartId : undefined, items };
