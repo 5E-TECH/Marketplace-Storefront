@@ -7,6 +7,7 @@ import { getSafeImageSrc } from "@/lib/product-storage";
 import type { CatalogCategory, Product, ProductQuery, ProductSort } from "@/types/commerce";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
+import { CategoryIcon } from "./category-icon";
 
 export function Hero({ product }: { product?: Product }) {
   if (!product) return null;
@@ -24,10 +25,10 @@ const categoryIds = (category: CatalogCategory): string[] => [String(category.id
 export function CategoryGrid({ categories, products }: { categories: CatalogCategory[]; products: Product[] }) {
   const cards = categories.slice(0, 6).map((category) => ({ category, product: products.find((product) => categoryIds(category).includes(String(product.categoryInfo?.id))) }));
   if (!categories.length) return null;
-  return <Container><section className="category-grid" aria-label="Kategoriyalar">{cards.map(({ category, product }) => <Link href={`/katalog/${category.slug}`} className="category-card" key={category.id}>{product ? <Image src={getSafeImageSrc(product.image)} alt="" width={88} height={88}/> : <i className="category-card-icon" aria-hidden>{category.icon}</i>}<span><b>{category.name}</b><small>Mahsulotlarni ko‘rish</small></span><ArrowRight size={18}/></Link>)}</section></Container>;
+  return <Container><section className="category-grid" aria-label="Kategoriyalar">{cards.map(({ category, product }) => <Link href={`/katalog/${category.slug}`} className="category-card" key={category.id}>{product ? <Image src={getSafeImageSrc(product.image)} alt="" width={88} height={88}/> : <CategoryIcon className="category-card-icon" name={category.name} iconUrl={category.iconUrl}/>}<span><b>{category.name}</b><small>Mahsulotlarni ko‘rish</small></span><ArrowRight size={18}/></Link>)}</section></Container>;
 }
 
-const sorts: { value: ProductSort; label: string }[] = [{ value: "createdAt:desc", label: "Yangi kelganlar" }, { value: "price:asc", label: "Arzondan qimmatga" }];
+const sorts: { value: ProductSort; label: string }[] = [{ value: "createdAt:desc", label: "Yangi kelganlar" }, { value: "price:asc", label: "Arzondan qimmatga" }, { value: "price:desc", label: "Qimmatdan arzonga" }];
 
 export function Products({ products, total, query, basePath, title, apiError }: { products: Product[]; total: number; query: ProductQuery; basePath: string; title?: string; apiError?: string }) {
   const heading = title ?? (query.search ? `“${query.search}” bo‘yicha natijalar` : "Sotuvdagi mahsulotlar");

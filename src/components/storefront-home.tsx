@@ -1,10 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 import { catalogHref } from "@/lib/catalog-query";
+import { getSafeImageSrc } from "@/lib/product-storage";
 import { paginationItems } from "@/lib/pagination";
 import type { CatalogCategory, CatalogResult, ProductQuery, StorefrontShop } from "@/types/commerce";
 import { CategoryGrid, Hero, Products } from "./home-sections";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
+import { CategoryIcon } from "./category-icon";
 
 function CatalogPagination({ query, catalog, basePath }: { query: ProductQuery; catalog: CatalogResult; basePath: string }) {
   if (catalog.totalPages <= 1) return null;
@@ -29,8 +32,9 @@ export function CategoryStorefront({ category, categories, query, catalog }: { c
   const shownCategories = category.children.length ? category.children : categories;
   const basePath = `/katalog/${category.slug}`;
   return <main>
-    <Container><nav className="catalog-breadcrumbs" aria-label="Sahifa yo‘li"><Link href="/">Bosh sahifa</Link><span>/</span><Link href="/katalog">Katalog</Link><span>/</span><b>{category.name}</b></nav><header className="catalog-hero"><span>{category.icon}</span><div><small>KATEGORIYA</small><h1>{category.name}</h1><p>{catalog.total} ta mahsulot topildi</p></div></header></Container>
+    <Container><nav className="catalog-breadcrumbs" aria-label="Sahifa yo‘li"><Link href="/">Bosh sahifa</Link><span>/</span><Link href="/katalog">Katalog</Link><span>/</span><b>{category.name}</b></nav><header className="catalog-hero"><CategoryIcon name={category.name} iconUrl={category.iconUrl}/><div><small>KATEGORIYA</small><h1>{category.name}</h1><p>{catalog.total} ta mahsulot topildi</p></div></header></Container>
     <CategoryGrid categories={shownCategories} products={catalog.data}/>
+    <Container><form className="search-filters catalog-price-filters" action={basePath}><input type="hidden" name="sort" value={query.sort}/><label><span>Minimal narx</span><input name="minPrice" type="number" min="0" step="1000" defaultValue={query.minPrice} placeholder="0"/></label><label><span>Maksimal narx</span><input name="maxPrice" type="number" min="0" step="1000" defaultValue={query.maxPrice} placeholder="Masalan, 5000000"/></label><button className="button button--primary" type="submit">Narxni qo‘llash</button>{(query.minPrice !== undefined || query.maxPrice !== undefined) && <Link className="button button--secondary" href={basePath}>Tozalash</Link>}</form></Container>
     <Products products={catalog.data} total={catalog.total} query={query} basePath={basePath} title={`${category.name} mahsulotlari`} apiError={catalog.error}/>
     <CatalogPagination query={query} catalog={catalog} basePath={basePath}/>
   </main>;
@@ -44,5 +48,5 @@ export function SearchStorefront({ query, catalog, suggestions }: { query: Produ
 
 export function ShopStorefront({ shop, query, catalog }: { shop: StorefrontShop; query: ProductQuery; catalog: CatalogResult }) {
   const basePath = `/dokon/${encodeURIComponent(shop.slug)}`;
-  return <main><Container><nav className="catalog-breadcrumbs" aria-label="Sahifa yo‘li"><Link href="/">Bosh sahifa</Link><span>/</span><b>{shop.name}</b></nav><header className="catalog-hero shop-hero"><span>🏪</span><div><small>RASMIY DO‘KON</small><h1>{shop.name}</h1><p>{shop.description || shop.address || `${shop.name} mahsulotlari`}</p></div></header></Container><Products products={catalog.data} total={catalog.total} query={query} basePath={basePath} title={`${shop.name} mahsulotlari`} apiError={catalog.error}/><CatalogPagination query={query} catalog={catalog} basePath={basePath}/></main>;
+  return <main><Container><nav className="catalog-breadcrumbs" aria-label="Sahifa yo‘li"><Link href="/">Bosh sahifa</Link><span>/</span><b>{shop.name}</b></nav><header className="catalog-hero shop-hero">{shop.logoUrl ? <Image src={getSafeImageSrc(shop.logoUrl)} alt="" width={92} height={92}/> : <span>{shop.name.charAt(0).toLocaleUpperCase("uz")}</span>}<div><small>SOTUVCHI DO‘KONI</small><h1>{shop.name}</h1>{(shop.description || shop.address) && <p>{shop.description || shop.address}</p>}</div></header></Container><Products products={catalog.data} total={catalog.total} query={query} basePath={basePath} title={`${shop.name} mahsulotlari`} apiError={catalog.error}/><CatalogPagination query={query} catalog={catalog} basePath={basePath}/></main>;
 }

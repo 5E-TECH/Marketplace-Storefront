@@ -10,7 +10,7 @@ const normalizeCategory = (category: CategoryTreeDto): CatalogCategory => ({
   slug: category.slug,
   parentId: category.parentId,
   iconUrl: category.iconUrl ?? undefined,
-  icon: "🛍️",
+  icon: category.name.trim().charAt(0).toLocaleUpperCase("uz") || "K",
   children: category.children.filter((child) => child.isActive).map(normalizeCategory),
 });
 const validateCategoryTree = (value: unknown): value is CategoryTreeDto[] => Array.isArray(value) && value.every(validateCategoryTreeDto);
