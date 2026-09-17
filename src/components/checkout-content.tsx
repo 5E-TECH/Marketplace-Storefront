@@ -8,19 +8,22 @@ import { clearCartSelection, readCartSelection } from "@/lib/cart-selection";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
 import { orderService } from "@/services/order.service";
+import { locationService, type DistrictOption, type RegionOption } from "@/services/location.service";
 import type { CheckoutAddress, DeliveryPreview, Order } from "@/types/commerce";
 import { Button, Price } from "./ui";
 
-type CheckoutForm = { recipientName: string; phone: string; region: string; district: string; street: string };
+type CheckoutForm = { recipientName: string; phone: string; regionId: string; region: string; districtId: string; district: string; street: string };
 
-const emptyForm: CheckoutForm = { recipientName: "", phone: "+998", region: "", district: "", street: "" };
+const emptyForm: CheckoutForm = { recipientName: "", phone: "", regionId: "", region: "", districtId: "", district: "", street: "" };
 const newIdempotencyKey = () => typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const toAddress = (form: CheckoutForm): CheckoutAddress => ({
   recipientName: form.recipientName.trim(),
-  phone: form.phone,
+  phone: `+998${form.phone}`,
   address: [form.region, form.district, form.street].map((value) => value.trim()).filter(Boolean).join(", "),
+  regionId: form.regionId,
+  districtId: form.districtId,
 });
-const canPreview = (form: CheckoutForm) => form.recipientName.trim().length >= 2 && /^\+998\d{9}$/.test(form.phone) && form.region.trim().length >= 2 && form.district.trim().length >= 2 && form.street.trim().length >= 5;
+const canPreview = (form: CheckoutForm) => form.recipientName.trim().length >= 2 && /^\d{9}$/.test(form.phone) && Boolean(form.regionId) && Boolean(form.districtId) && form.street.trim().length >= 5;
 
 export function CheckoutContent() {
   const cart = useCart();
@@ -31,6 +34,14 @@ export function CheckoutContent() {
   const [pending, setPending] = useState(false);
   const [completed, setCompleted] = useState<Order | null>(null);
   const [error, setError] = useState("");
+  const [regions, setRegions] = useState<RegionOption[]>([]);
+  const [districts, setDistricts] = useState<DistrictOption[]>([]);
+  const [regionsPending, setRegionsPending] = useState(true);
+  const [districtsPending, setDistrictsPending] = useState(false);
+  const [regionsError, setRegionsError] = useState("");
+  const [districtsError, setDistrictsError] = useState("");
+  const [regionsReload, setRegionsReload] = useState(0);
+  const [districtsReload, setDistrictsReload] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectionReady, setSelectionReady] = useState(false);
   const idempotencyKey = useRef(newIdempotencyKey());
@@ -50,8 +61,29 @@ export function CheckoutContent() {
 
   useEffect(() => {
     const session = authService.getSession();
-    if (session) setForm((current) => ({ ...current, recipientName: current.recipientName || session.name || "", phone: session.phone }));
+    if (session) setForm((current) => ({ ...current, recipientName: current.recipientName || session.name || "", phone: session.phone.replace(/^\+?998/, "").replace(/\D/g, "").slice(0, 9) }));
   }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setRegionsPending(true);
+    locationService.regions(controller.signal)
+      .then((items) => { setRegions(items); setRegionsError(""); })
+      .catch((caught) => { if (!controller.signal.aborted) setRegionsError(caught instanceof Error ? caught.message : "Viloyatlarni yuklab bo‘lmadi"); })
+      .finally(() => { if (!controller.signal.aborted) setRegionsPending(false); });
+    return () => controller.abort();
+  }, [regionsReload]);
+
+  useEffect(() => {
+    if (!form.regionId) { setDistricts([]); setDistrictsPending(false); setDistrictsError(""); return; }
+    const controller = new AbortController();
+    setDistrictsPending(true);
+    locationService.districts(form.regionId, controller.signal)
+      .then((items) => { setDistricts(items); setDistrictsError(""); })
+      .catch((caught) => { if (!controller.signal.aborted) setDistrictsError(caught instanceof Error ? caught.message : "Tumanlarni yuklab bo‘lmadi"); })
+      .finally(() => { if (!controller.signal.aborted) setDistrictsPending(false); });
+    return () => controller.abort();
+  }, [form.regionId, districtsReload]);
 
   useEffect(() => {
     const requestId = ++previewRequest.current;
@@ -75,6 +107,16 @@ export function CheckoutContent() {
   const change = (field: keyof CheckoutForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
     setError("");
+  };
+  const changeRegion = (regionId: string) => {
+    const region = regions.find((item) => item.id === regionId);
+    setForm((current) => ({ ...current, regionId, region: region?.name ?? "", districtId: "", district: "" }));
+    setError(""); setDistrictsError("");
+  };
+  const changeDistrict = (districtId: string) => {
+    const district = districts.find((item) => item.id === districtId);
+    setForm((current) => ({ ...current, districtId, district: district?.name ?? "" }));
+    setError(""); setDistrictsError("");
   };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -121,12 +163,14 @@ export function CheckoutContent() {
   return <section className="checkout-page"><div className="page-heading"><div><span>BUYURTMA</span><h1>Buyurtmani rasmiylashtirish</h1></div></div><form onSubmit={submit} className="checkout-layout"><div className="checkout-forms">
     <fieldset><legend><MapPin/> Qabul qiluvchi va manzil</legend><div className="form-grid">
       <label><span>Ism-familiya</span><input name="recipientName" value={form.recipientName} onChange={(event) => change("recipientName", event.target.value)} required minLength={2} autoComplete="name" placeholder="Ism-familiyangiz"/></label>
-      <label><span>Telefon raqami</span><input name="phone" value={form.phone} onChange={(event) => change("phone", event.target.value.replace(/[^+\d]/g, "").slice(0, 13))} required pattern="\+998[0-9]{9}" inputMode="tel" autoComplete="tel" placeholder="+998 90 123 45 67"/></label>
-      <label><span>Viloyat yoki shahar</span><input name="region" value={form.region} onChange={(event) => change("region", event.target.value)} required minLength={2} autoComplete="address-level1" placeholder="Masalan, Toshkent shahri"/></label>
-      <label><span>Tuman</span><input name="district" value={form.district} onChange={(event) => change("district", event.target.value)} required minLength={2} autoComplete="address-level2" placeholder="Masalan, Chilonzor tumani"/></label>
+      <label><span>Telefon raqami</span><div className="phone-input"><b aria-hidden="true">+998</b><input name="phone" aria-label="Telefon raqami" value={form.phone} onChange={(event) => change("phone", event.target.value.replace(/\D/g, "").replace(/^998/, "").slice(0, 9))} required pattern="[0-9]{9}" inputMode="numeric" autoComplete="tel-national" maxLength={9} placeholder="90 123 45 67"/></div></label>
+      <label><span>Viloyat yoki shahar</span><select name="region" value={form.regionId} onChange={(event) => changeRegion(event.target.value)} required disabled={regionsPending} autoComplete="address-level1"><option value="" disabled>{regionsPending ? "Viloyatlar yuklanmoqda…" : "Viloyat yoki shaharni tanlang"}</option>{regions.map((region) => <option key={region.id} value={region.id}>{region.name}</option>)}</select></label>
+      <label><span>Tuman</span><select name="district" value={form.districtId} onChange={(event) => changeDistrict(event.target.value)} required disabled={!form.regionId || districtsPending} autoComplete="address-level2"><option value="" disabled>{districtsPending ? "Tumanlar yuklanmoqda…" : form.regionId ? "Tumanni tanlang" : "Avval viloyatni tanlang"}</option>{districts.map((district) => <option key={district.id} value={district.id}>{district.name}</option>)}</select></label>
       <label className="form-wide"><span>Ko‘cha, uy va xonadon</span><textarea name="street" value={form.street} onChange={(event) => change("street", event.target.value)} required minLength={5} autoComplete="street-address" placeholder="Ko‘cha, uy va xonadon raqami"/></label>
     </div><p className="delivery-preview-status" aria-live="polite">{previewPending ? "Yetkazish narxi hisoblanmoqda…" : preview ? `Yetkazish avtomatik hisoblandi: ${preview.deliveryFee.toLocaleString("uz-UZ")} so‘m` : selectedItems.length !== cart.items.length ? "Tanlangan mahsulotlar uchun yetkazish narxi buyurtma berishda hisoblanadi" : "Manzil to‘liq kiritilgach yetkazish narxi avtomatik hisoblanadi"}</p></fieldset>
     <fieldset><legend><WalletCards/> To‘lov usuli</legend><div className="payment-options payment-options--single"><label className="active"><input type="radio" checked readOnly/><span><b>Qabul qilganda to‘lash</b><small>Naqd yoki terminal orqali</small></span></label></div></fieldset>
+    {regionsError && <div className="form-error form-error--action" role="alert"><span>Viloyatlar ro‘yxatini yuklab bo‘lmadi. {regionsError}</span><button type="button" onClick={() => setRegionsReload((value) => value + 1)}>Qayta urinish</button></div>}
+    {districtsError && <div className="form-error form-error--action" role="alert"><span>Tumanlar ro‘yxatini yuklab bo‘lmadi. {districtsError}</span><button type="button" onClick={() => setDistrictsReload((value) => value + 1)}>Qayta urinish</button></div>}
     {error && <p className="form-error" role="alert">{error}</p>}
   </div><aside className="order-summary"><h2>Sizning buyurtmangiz</h2>{selectedItems.map((item) => <div className="checkout-line" key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<p><span>Mahsulotlar</span><Price value={selectedSubtotal}/></p><p><span>Yetkazish</span>{preview ? <Price value={preview.deliveryFee}/> : <b>{previewPending ? "Hisoblanmoqda…" : "Manzil bo‘yicha"}</b>}</p>{preview && <p><span>Posilkalar</span><b>{preview.packages.length || 1} ta</b></p>}<hr/><p className="order-total"><span>Jami</span><Price value={selectedSubtotal + (preview?.deliveryFee ?? 0)}/></p><Button disabled={pending || previewPending || cart.loading || !canPreview(form)} type="submit" loading={pending}><Truck/> Buyurtma berish</Button><small>Faqat savatchada belgilangan mahsulotlar buyurtma qilinadi. Yetkazish narxi manzil asosida hisoblanadi.</small></aside></form></section>;
 }

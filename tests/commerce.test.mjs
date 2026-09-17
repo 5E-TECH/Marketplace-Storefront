@@ -288,6 +288,16 @@ test('clearing an order snapshot does not refetch and delete newly added items',
   assert.deepEqual(calls, [['/cart/items/original', { method: 'DELETE' }]]);
 });
 
+test('checkout hududlari backend region va district endpointlaridan olinadi', async () => {
+  const calls = [];
+  const { locationService } = loadTypeScript('src/services/location.service.ts', {
+    '@/lib/api': { apiRequest: async (...args) => { calls.push(args); return []; } },
+  });
+  await locationService.regions();
+  await locationService.districts('region/1');
+  assert.deepEqual(calls.map(([path]) => path), ['/regions', '/regions/region%2F1/districts']);
+});
+
 test('guest checkout without an account previews delivery, creates an order and confirms COD', async (t) => {
   const stored = new Map();
   const calls = [];
