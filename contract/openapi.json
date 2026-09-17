@@ -5977,6 +5977,65 @@
           }
         ]
       }
+    },
+    "/api/v1/regions": {
+      "get": {
+        "operationId": "RegionsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Viloyatlar va shaharlar ro‘yxati",
+        "tags": [
+          "regions"
+        ]
+      }
+    },
+    "/api/v1/regions/{regionId}/districts": {
+      "get": {
+        "operationId": "RegionsController_findDistricts",
+        "parameters": [
+          {
+            "name": "regionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DistrictDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Viloyatga tegishli tumanlar ro‘yxati",
+        "tags": [
+          "regions"
+        ]
+      }
     }
   },
   "info": {
@@ -9131,6 +9190,40 @@
           "page",
           "limit",
           "totalPages"
+        ]
+      },
+      "RegionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "DistrictDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "regionId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "regionId",
+          "name"
         ]
       }
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingBag, Trash2, Truck } from "lucide-react";
+import { ShoppingCart, Trash2, Truck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { groupCartItems } from "@/lib/cart-groups";
@@ -46,7 +46,7 @@ export function CartContent() {
   };
   if (loading && !items.length) return <section className="page-empty" role="status">Savatcha yuklanmoqda...</section>;
   if (error && !items.length) return <section className="page-empty" role="alert">{error}</section>;
-  if (!items.length) return <section className="page-empty"><span><ShoppingBag/></span><h1>Savatchangiz bo‘sh</h1><p>Mahsulot yonidagi “+” tugmasini bosing — tanlovingiz shu yerda saqlanadi.</p><Link className="button button--primary" href="/#products">Xaridni boshlash</Link></section>;
+  if (!items.length) return <section className="page-empty"><span><ShoppingCart/></span><h1>Savatchangiz bo‘sh</h1><p>Mahsulot yonidagi “+” tugmasini bosing — tanlovingiz shu yerda saqlanadi.</p><Link className="button button--primary" href="/#products">Xaridni boshlash</Link></section>;
   return <section className="cart-page">
     {error && <p className="cart-error" role="alert">{error}</p>}
     <div className="page-heading"><div><span>SAVATCHA</span><h1>Savatingiz, <em>{quantity} mahsulot</em></h1></div></div>

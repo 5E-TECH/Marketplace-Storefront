@@ -1811,6 +1811,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Viloyatlar va shaharlar ro‘yxati */
+        get: operations["RegionsController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/regions/{regionId}/districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Viloyatga tegishli tumanlar ro‘yxati */
+        get: operations["RegionsController_findDistricts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3079,6 +3113,15 @@ export interface components {
             page: number;
             limit: number;
             totalPages: number;
+        };
+        RegionDto: {
+            id: string;
+            name: string;
+        };
+        DistrictDto: {
+            id: string;
+            regionId: string;
+            name: string;
         };
     };
     responses: never;
@@ -6482,6 +6525,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    RegionsController_findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionDto"][];
+                };
+            };
+        };
+    };
+    RegionsController_findDistricts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                regionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistrictDto"][];
+                };
             };
         };
     };

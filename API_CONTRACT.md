@@ -83,6 +83,13 @@ Akkauntga kirgan xaridorning barcha qurilmalardagi tarixi quyidagi endpointdan o
 
 OpenAPI checkout endpointlari storefrontga ulangan: delivery preview, idempotent order yaratish va COD confirm. `order.service.ts` localStorage’dan faqat tasdiqlangan buyurtmaning xaridor ko‘radigan qisqa tarix nusxasi sifatida foydalanadi.
 
+Checkout manzil tanlovi real backend ma’lumotidan ishlaydi:
+
+- `GET /regions` — viloyat va shaharlar (`id`, `name`);
+- `GET /regions/{regionId}/districts` — tanlangan hudud tumanlari (`id`, `regionId`, `name`).
+
+Storefront proxy ikkala GET yo‘lini ham ruxsat ro‘yxatiga kiritadi. Viloyat o‘zgarsa tuman tanlovi tozalanadi; `regionId` va `districtId` tanlanmaguncha checkout yuborilmaydi. Ro‘yxat so‘rovi ishlamasa forma xato va qayta urinish amalini ko‘rsatadi.
+
 ## Mahsulot sharhlari
 
 - `GET /storefront/products/{productId}/reviews?page=1&limit=5` sharhlar, `rating`, `total` va sahifalash ma’lumotini qaytaradi.
