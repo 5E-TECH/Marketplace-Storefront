@@ -9,6 +9,6 @@ export const metadata: Metadata = { title: "Onlayn marketplace", description: "T
 export default async function Home({ searchParams }: { searchParams: Promise<CatalogSearchParams> }) {
   const params = await searchParams;
   const query = parseCatalogQuery(params);
-  const catalog = await productService.list(query);
-  return <StorefrontHome query={query} catalog={catalog}/>;
+  const [catalog, featuredShops] = await Promise.all([productService.list(query), productService.featuredShops()]);
+  return <StorefrontHome query={query} catalog={catalog} featuredShops={featuredShops}/>;
 }

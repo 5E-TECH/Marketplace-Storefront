@@ -1845,6 +1845,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/storefront/shops/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StorefrontShopsController_featured"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3122,6 +3138,15 @@ export interface components {
             id: string;
             regionId: string;
             name: string;
+        };
+        FeaturedStorefrontShopDto: {
+            id: string;
+            name: string;
+            slug: string;
+            description?: string | null;
+            logoUrl?: string | null;
+            rating: number;
+            productCount: number;
         };
     };
     responses: never;
@@ -6564,6 +6589,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DistrictDto"][];
+                };
+            };
+        };
+    };
+    StorefrontShopsController_featured: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tavsiya etilgan do‘konlar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturedStorefrontShopDto"][];
                 };
             };
         };

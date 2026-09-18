@@ -1,8 +1,35 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import fs from 'node:fs';
 import { loadTypeScript } from './load-typescript.mjs';
 
 const product = { id: 1, name: 'Telefon', price: 100, colors: ['black'], images: [] };
+
+test('featured shops are normalized and API failure stays isolated', async () => {
+  const calls = [];
+  const baseMocks = { '@/config/env': { env: { apiUrl: 'https://api.test/api/v1' } }, '@/generated/api-validators': {} };
+  const service = loadTypeScript('src/services/product.service.ts', {
+    ...baseMocks,
+    '@/lib/api': { ApiError: class ApiError extends Error {}, apiRequest: async (path, options) => { calls.push([path, options]); return { items: [{ id: 7, name: 'Baraka', slug: 'baraka-market', logoUrl: '/media/baraka.png', description: 'Saralangan mahsulotlar', rating: '4.8', productsCount: 23 }] }; } },
+  }).productService;
+  assert.deepEqual(await service.featuredShops(), [{ id: 7, name: 'Baraka', slug: 'baraka-market', logoUrl: 'https://api.test/media/baraka.png', description: 'Saralangan mahsulotlar', bannerUrl: undefined, address: undefined, rating: 4.8, productCount: 23 }]);
+  assert.equal(calls[0][0], '/storefront/shops/featured');
+  assert.deepEqual(calls[0][1], { next: { revalidate: 30 } });
+
+  const unavailable = loadTypeScript('src/services/product.service.ts', {
+    ...baseMocks,
+    '@/lib/api': { ApiError: class ApiError extends Error {}, apiRequest: async () => { throw new Error('502'); } },
+  }).productService;
+  assert.deepEqual(await unavailable.featuredShops(), []);
+});
+
+test('featured shops block is conditional and links cards to the shop slug', () => {
+  const source = fs.readFileSync(new URL('../src/components/home-sections.tsx', import.meta.url), 'utf8');
+  assert.match(source, /if \(!shops\.length\) return null/);
+  assert.match(source, /Tavsiya etilgan do‘konlar/);
+  assert.match(source, /\/dokon\/\$\{encodeURIComponent\(shop\.slug\)\}/);
+  assert.match(source, /shop\.productCount/);
+});
 
 test('catalog pagination exposes direct page links without client-side load more', () => {
   const { paginationItems } = loadTypeScript('src/lib/pagination.ts');

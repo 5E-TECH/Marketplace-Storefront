@@ -69,16 +69,27 @@ export const normalizeProduct = (value: StorefrontProductDto): Product => {
   };
 };
 
-const normalizeShop = (value: unknown): StorefrontShop => {
+export const normalizeShop = (value: unknown): StorefrontShop => {
   const shop = object(value);
   const shopId = id(shop.id);
   const name = text(shop.name);
   const slug = text(shop.slug);
   if (shopId === "" || !name || !slug) throw new Error("Backend do‘kon ma’lumotini noto‘g‘ri qaytardi");
-  return { id: shopId, name, slug, description: text(shop.description) || undefined, logoUrl: imageUrl(shop.logoUrl) || undefined, bannerUrl: imageUrl(shop.bannerUrl) || undefined, address: text(shop.address) || undefined, rating: number(shop.rating) };
+  return { id: shopId, name, slug, description: text(shop.description) || undefined, logoUrl: imageUrl(shop.logoUrl) || undefined, bannerUrl: imageUrl(shop.bannerUrl) || undefined, address: text(shop.address) || undefined, rating: number(shop.rating), productCount: number(shop.productCount, shop.productsCount, shop.products_count, shop.totalProducts) };
 };
 
 export const productService = {
+  async featuredShops(): Promise<StorefrontShop[]> {
+    if (!env.apiUrl) return [];
+    try {
+      const response = await apiRequest<unknown>(`${STOREFRONT_SHOPS_PATH}/featured`, { next: { revalidate: 30 } });
+      const root = object(response);
+      const items = Array.isArray(response) ? response : Array.isArray(root.items) ? root.items : Array.isArray(root.shops) ? root.shops : [];
+      return items.flatMap((item) => { try { return [normalizeShop(item)]; } catch { return []; } });
+    } catch {
+      return [];
+    }
+  },
   async list(query: ProductQuery = {}): Promise<CatalogResult> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;

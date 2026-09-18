@@ -4,7 +4,7 @@ import { catalogHref } from "@/lib/catalog-query";
 import { getSafeImageSrc } from "@/lib/product-storage";
 import { paginationItems } from "@/lib/pagination";
 import type { CatalogCategory, CatalogResult, ProductQuery, StorefrontShop } from "@/types/commerce";
-import { CategoryGrid, Hero, Products } from "./home-sections";
+import { CategoryGrid, FeaturedShops, Hero, Products } from "./home-sections";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
 import { CategoryIcon } from "./category-icon";
@@ -20,9 +20,10 @@ function CatalogPagination({ query, catalog, basePath }: { query: ProductQuery; 
   </nav>;
 }
 
-export function StorefrontHome({ query, catalog }: { query: ProductQuery; catalog: CatalogResult }) {
+export function StorefrontHome({ query, catalog, featuredShops = [] }: { query: ProductQuery; catalog: CatalogResult; featuredShops?: StorefrontShop[] }) {
   return <main>
     <Hero product={catalog.data[0]}/>
+    <FeaturedShops shops={featuredShops}/>
     <Products products={catalog.data} total={catalog.total} query={query} basePath="/" apiError={catalog.error}/>
     <CatalogPagination query={query} catalog={catalog} basePath="/"/>
   </main>;
