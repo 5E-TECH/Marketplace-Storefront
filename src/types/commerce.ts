@@ -52,5 +52,5 @@ export type ProductReviewsResult = { items: ProductReview[]; rating: number; tot
 export type ReviewableOrderItem = { orderItemId: string; orderId: string };
 export type CatalogCategory = { id: ID; name: string; slug: string; parentId?: ID | null; iconUrl?: string; icon: string; children: CatalogCategory[] };
 export type CategoryResult = { data: CatalogCategory[]; source: "api" | "unavailable"; error?: string };
-export type StorefrontShop = { id: ID; name: string; slug: string; description?: string; logoUrl?: string; bannerUrl?: string; address?: string; rating: number };
+export type StorefrontShop = { id: ID; name: string; slug: string; description?: string; logoUrl?: string; bannerUrl?: string; address?: string; rating: number; productCount?: number };
 export type ShopResult = { shop: StorefrontShop; catalog: CatalogResult };

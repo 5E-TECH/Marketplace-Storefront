@@ -6036,6 +6036,30 @@
           "regions"
         ]
       }
+    },
+    "/api/v1/storefront/shops/featured": {
+      "get": {
+        "operationId": "StorefrontShopsController_featured",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tavsiya etilgan do‘konlar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeaturedStorefrontShopDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "storefront"
+        ]
+      }
     }
   },
   "info": {
@@ -9225,6 +9249,41 @@
           "regionId",
           "name"
         ]
+      },
+      "FeaturedStorefrontShopDto": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "rating",
+          "productCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "rating": {
+            "type": "number"
+          },
+          "productCount": {
+            "type": "number"
+          }
+        }
       }
     }
   }

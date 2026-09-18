@@ -1,10 +1,10 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Package, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { catalogHref } from "@/lib/catalog-query";
 import { getSafeImageSrc } from "@/lib/product-storage";
-import type { CatalogCategory, Product, ProductQuery, ProductSort } from "@/types/commerce";
+import type { CatalogCategory, Product, ProductQuery, ProductSort, StorefrontShop } from "@/types/commerce";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
 import { CategoryIcon } from "./category-icon";
@@ -26,6 +26,18 @@ export function CategoryGrid({ categories, products }: { categories: CatalogCate
   const cards = categories.slice(0, 6).map((category) => ({ category, product: products.find((product) => categoryIds(category).includes(String(product.categoryInfo?.id))) }));
   if (!categories.length) return null;
   return <Container><section className="category-grid" aria-label="Kategoriyalar">{cards.map(({ category, product }) => <Link href={`/katalog/${category.slug}`} className="category-card" key={category.id}>{product ? <Image src={getSafeImageSrc(product.image)} alt="" width={88} height={88}/> : <CategoryIcon className="category-card-icon" name={category.name} iconUrl={category.iconUrl}/>}<span><b>{category.name}</b><small>Mahsulotlarni ko‘rish</small></span><ArrowRight size={18}/></Link>)}</section></Container>;
+}
+
+export function FeaturedShops({ shops }: { shops: StorefrontShop[] }) {
+  if (!shops.length) return null;
+  return <Container><section className="featured-shops" aria-labelledby="featured-shops-title">
+    <div className="section-header"><div><span>TANLANGAN SOTUVCHILAR</span><h2 id="featured-shops-title">Tavsiya etilgan do‘konlar</h2></div></div>
+    <div className="featured-shops-grid">{shops.map((shop) => <Link className="featured-shop-card" href={`/dokon/${encodeURIComponent(shop.slug)}`} key={shop.id}>
+      <span className="featured-shop-logo">{shop.logoUrl ? <Image src={getSafeImageSrc(shop.logoUrl)} alt="" width={72} height={72}/> : shop.name.charAt(0).toLocaleUpperCase("uz")}</span>
+      <span className="featured-shop-copy"><b>{shop.name}</b>{shop.description && <small>{shop.description}</small>}<span className="featured-shop-meta"><span><Star size={14} fill="currentColor"/> {shop.rating.toLocaleString("uz-UZ", { maximumFractionDigits: 1 })}</span><span><Package size={14}/> {shop.productCount ?? 0} ta mahsulot</span></span></span>
+      <ArrowRight aria-hidden size={19}/>
+    </Link>)}</div>
+  </section></Container>;
 }
 
 const sorts: { value: ProductSort; label: string }[] = [{ value: "createdAt:desc", label: "Yangi kelganlar" }, { value: "price:asc", label: "Arzondan qimmatga" }, { value: "price:desc", label: "Qimmatdan arzonga" }];
