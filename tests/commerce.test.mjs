@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { loadTypeScript } from './load-typescript.mjs';
 
 const product = { id: 1, name: 'Telefon', price: 100, colors: ['black'], images: [] };
@@ -352,6 +354,67 @@ test('guest checkout without an account previews delivery, creates an order and 
   assert.equal(calls[1][1].headers['Idempotency-Key'], 'request-1');
   assert.deepEqual(calls[1][1].body, { paymentMethod: 'cod', address });
   assert.equal((await orderService.list()).length, 1);
+});
+
+test('online checkout stays pending, skips COD confirmation and requests a provider redirect', async (t) => {
+  const stored = new Map();
+  const calls = [];
+  const originalStorage = globalThis.localStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = { location: { origin: 'https://shop.test' } };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value) } });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const { orderService } = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => {
+      calls.push([path, options]);
+      if (path === '/checkout') return { orderId: 'online-1' };
+      if (path === '/payments') return { redirectUrl: 'https://checkout.payme.uz/order-1' };
+      if (path.includes('/tracking')) return { orderId: 'online-1', payment: { provider: 'PAYME', status: 'PAID' } };
+    } },
+    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null },
+    './cart.service': { cartService: { get: async () => ({ items: [{ id: 'a', product, quantity: 1, shopId: '3' }] }), clear: async () => ({ items: [] }) } },
+  });
+  const address = { recipientName: 'Ali', phone: '+998901234567', address: 'Toshkent shahri, Chilonzor tumani', regionId: '10', districtId: '101' };
+  const order = await orderService.create(address, 'online-request', { subtotal: 100, deliveryFee: 20, totalAmount: 120, packages: [] }, 'payme');
+  assert.equal(order.paymentStatus, 'PENDING');
+  assert.equal(order.paymentProvider, 'PAYME');
+  assert.deepEqual(calls.map(([path]) => path), ['/checkout']);
+  assert.deepEqual(calls[0][1].body, { paymentMethod: 'online', address });
+  assert.equal(await orderService.startPayment(order), 'https://checkout.payme.uz/order-1');
+  assert.equal(calls[1][1].body.returnUrl, 'https://shop.test/checkout/payment/return?orderId=online-1');
+  assert.deepEqual(await orderService.paymentStatus('online-1'), { status: 'PAID', provider: 'PAYME', reason: undefined });
+  assert.equal(JSON.parse(stored.get('elchi_orders_v1'))[0].paymentStatus, 'PAID');
+});
+
+test('TC1 paid result renders success, order number and order link', () => {
+  const Icon = (props) => React.createElement('i', props);
+  const { PaymentResultView } = loadTypeScript('src/components/payment-return-content.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'lucide-react': { CheckCircle2: Icon, CircleX: Icon, Clock3: Icon, RefreshCw: Icon, TriangleAlert: Icon },
+    '@/services/order.service': { orderService: {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: 'order/42', status: 'PAID', order: null, onCheck() {}, onRetry() {} }));
+  assert.match(html, /To‘lov muvaffaqiyatli/);
+  assert.match(html, /BUYURTMA #order\/42/);
+  assert.match(html, /href="\/orders\/order%2F42"[^>]*>Buyurtmaga qaytish<\/a>/);
+});
+
+test('TC2 cancelled result renders failure reason and retry action', () => {
+  const Icon = (props) => React.createElement('i', props);
+  const { PaymentResultView } = loadTypeScript('src/components/payment-return-content.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'lucide-react': { CheckCircle2: Icon, CircleX: Icon, Clock3: Icon, RefreshCw: Icon, TriangleAlert: Icon },
+    '@/services/order.service': { orderService: {} },
+  });
+  const order = { id: 'order-7', payment: 'card', paymentProvider: 'CLICK', paymentStatus: 'CANCELLED' };
+  const html = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: order.id, status: 'CANCELLED', order, reason: 'Foydalanuvchi to‘lovni bekor qildi', onCheck() {}, onRetry() {} }));
+  assert.match(html, /To‘lov bekor qilindi/);
+  assert.match(html, /Foydalanuvchi to‘lovni bekor qildi/);
+  assert.match(html, /<button[^>]*>Qayta to‘lash<\/button>/);
+  assert.match(html, /href="\/orders\/order-7"[^>]*>Buyurtmaga qaytish<\/a>/);
 });
 
 test('guest request headers contain a session id without authorization', async (t) => {

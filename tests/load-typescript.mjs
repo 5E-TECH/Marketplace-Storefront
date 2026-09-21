@@ -14,13 +14,13 @@ export function loadTypeScript(entry, mocks = {}, cache = new Map()) {
   const loadedModule = { exports: {} };
   cache.set(filename, loadedModule);
   const { outputText } = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   });
   const localRequire = (specifier) => {
     if (Object.hasOwn(mocks, specifier)) return mocks[specifier];
     if (specifier.startsWith('@/') || specifier.startsWith('.')) {
       const target = specifier.startsWith('@/') ? path.join(root, 'src', specifier.slice(2)) : path.resolve(path.dirname(filename), specifier);
-      return loadTypeScript((fs.existsSync(`${target}.ts`) ? `${target}.ts` : `${target}.js`), mocks, cache);
+      return loadTypeScript((fs.existsSync(`${target}.ts`) ? `${target}.ts` : fs.existsSync(`${target}.tsx`) ? `${target}.tsx` : `${target}.js`), mocks, cache);
     }
     return require(specifier);
   };

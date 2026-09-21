@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatPrice } from "@/lib/format";
 import { Price } from "./ui";
 
 export function CartSummary({ quantity, subtotal, originalTotal }: { quantity: number; subtotal: number; originalTotal: number }) {
@@ -6,7 +7,7 @@ export function CartSummary({ quantity, subtotal, originalTotal }: { quantity: n
   return <aside className="order-summary">
     <h2>Buyurtmangiz</h2>
     <p><span>Mahsulotlar ({quantity})</span><b><Price value={originalTotal}/></b></p>
-    {discount > 0 && <p className="summary-discount"><span>Chegirma</span><b>−{discount.toLocaleString("uz-UZ")} so‘m</b></p>}
+    {discount > 0 && <p className="summary-discount"><span>Chegirma</span><b>−{formatPrice(discount)} so‘m</b></p>}
     <p><span>Yetkazib berish</span><b>Manzil bo‘yicha</b></p>
     <hr/>
     <p className="order-total"><span>Mahsulotlar jami</span><Price value={subtotal}/></p>
