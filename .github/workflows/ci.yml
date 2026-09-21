@@ -115,8 +115,10 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude '.git/' \
-            --exclude '.env.production' \
-            --exclude '.env.production.bak*' \
+            # `.env.production*` — chunki bu repoda `.env.production.example`
+            # YO'Q, serverda esa BOR: `--delete` uni o'chirib yuborardi.
+            # (Kabinet repoda bu fayl bor, shuning uchun u yerda aniq ro'yxat.)
+            --exclude '.env.production*' \
             --exclude 'node_modules/' \
             --exclude '.next/' \
             --exclude '.next-dev/' \
