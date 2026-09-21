@@ -101,15 +101,27 @@ jobs:
 
       # `docker image prune -f` deploy oxirida eski (endi tegsiz) image'ni
       # o'chiradi — teg qo'yilmasa orqaga qaytish yo'li yo'qoladi.
+      # DIQQAT: masofaviy buyruq HEREDOC bilan yuboriladi, bir qatorli
+      # `'...'` bilan EMAS. Birinchi urinishda aynan shunday yozilgan edi va
+      # ichidagi o'zbekcha apostrof (`yo'q`) qatorni erta yopib, buyruqni
+      # buzgan. `continue-on-error: true` tufayli qadam jimgina "success"
+      # ko'rsatdi, teg esa qo'yilmadi — kabinet repoda 2026-09-21 deployda
+      # oldingi image shu sabab yo'qoldi. Bu faylda matnga apostrof yozmang.
       - name: Hozirgi image'ni orqaga qaytish uchun teglash
         continue-on-error: true
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
-              "$DEPLOY_USER@$DEPLOY_HOST" \
-              'docker image inspect marketplace-storefront:latest >/dev/null 2>&1 &&
-               docker tag marketplace-storefront:latest marketplace-storefront:rollback-previous &&
-               echo "Orqaga qaytish tegi: marketplace-storefront:rollback-previous" ||
-               echo "Oldingi image yo'q — birinchi deploy"'
+              "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<'REMOTE'
+          set -eu
+          if docker image inspect marketplace-storefront:latest >/dev/null 2>&1; then
+            docker tag marketplace-storefront:latest marketplace-storefront:rollback-previous
+            echo "Orqaga qaytish tegi qoyildi: marketplace-storefront:rollback-previous"
+            docker image inspect marketplace-storefront:rollback-previous \
+              --format 'Tasdiq: {{.Id}} {{.Created}}'
+          else
+            echo "Oldingi image topilmadi - birinchi deploy"
+          fi
+          REMOTE
 
       - name: Fayllarni serverga yuborish
         run: |
