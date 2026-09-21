@@ -125,11 +125,17 @@ jobs:
 
       - name: Fayllarni serverga yuborish
         run: |
+          # DIQQAT: bu yerga izoh YOZMANG. `\` bilan davom etadigan buyruq
+          # ichidagi `#` qolgan argumentlarni (jumladan manba va nishonni)
+          # kesib tashlaydi va rsync `exit 1` beradi — 2026-09-21 da aynan
+          # shu sabab deploy yiqildi. Izohlar buyruqdan OLDIN turadi.
+          #
+          # `.env.production*` (yulduzcha bilan): bu repoda
+          # `.env.production.example` YO'Q, serverda esa BOR — `--delete`
+          # uni o'chirib yuborardi. Kabinet repoda bu fayl bor, shuning
+          # uchun u yerda aniq ro'yxat ishlatiladi.
           rsync -az --delete \
             --exclude '.git/' \
-            # `.env.production*` — chunki bu repoda `.env.production.example`
-            # YO'Q, serverda esa BOR: `--delete` uni o'chirib yuborardi.
-            # (Kabinet repoda bu fayl bor, shuning uchun u yerda aniq ro'yxat.)
             --exclude '.env.production*' \
             --exclude 'node_modules/' \
             --exclude '.next/' \
