@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Clock3, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
+import { Check, Clock3, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -25,7 +25,9 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
   const selectedColor = product.colors[activeColor] ?? selectedVariant?.color ?? "";
   const selectedPrice = selectedVariant?.price ?? product.price;
   const selectedOldPrice = selectedVariant?.oldPrice ?? product.oldPrice;
+  const maxQuantity = selectedVariant?.stock;
   const selectedProduct = selectedVariant ? { ...product, price: selectedPrice, oldPrice: selectedOldPrice } : product;
+  useEffect(() => { if (maxQuantity !== undefined) setQuantity((current) => Math.min(Math.max(1, maxQuantity), current)); }, [maxQuantity]);
   const buyNow = async () => {
     if (!selectedVariant) return;
     const added = await cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant.id });
@@ -35,8 +37,8 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
 
   return <>
     <div className="detail-layout">
-      <section className="detail-gallery">
-        <div className="detail-thumbs">{product.images.map((image, index) => <button className={activeImage === index ? "active" : ""} onMouseEnter={() => setActiveImage(index)} onClick={() => setActiveImage(index)} key={image}><Image src={getSafeImageSrc(image)} alt="" fill sizes="72px"/></button>)}</div>
+      <section className={`detail-gallery${product.images.length > 1 ? "" : " detail-gallery--single"}`}>
+        {product.images.length > 1 && <div className="detail-thumbs">{product.images.map((image, index) => <button type="button" className={activeImage === index ? "active" : ""} onMouseEnter={() => setActiveImage(index)} onClick={() => setActiveImage(index)} key={image} aria-label={`${index + 1}-rasm`} aria-current={activeImage === index || undefined}><Image src={getSafeImageSrc(image)} alt="" fill sizes="72px"/></button>)}</div>}
         <div className="detail-main-image"><Image src={getSafeImageSrc(product.images[activeImage])} alt={product.name} fill priority sizes="(max-width: 800px) 100vw, 48vw"/><div className="mobile-image-count">{activeImage + 1} / {product.images.length}</div></div>
       </section>
 
@@ -49,12 +51,12 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
         {product.colors.length > 0 && <div className="option-block"><div className="option-title"><b>Rang</b><span>{selectedVariant?.name ?? selectedColor}</span></div><div className="color-options">{product.colors.map((color, index) => <button className={activeColor === index ? "active" : ""} onClick={() => setActiveColor(index)} key={color} aria-label={`${color} rang`}><i style={{ background: color }}/>{activeColor === index && <Check/>}</button>)}</div></div>}
 
         <div className="purchase-card">
-          <div className="purchase-price"><Price value={selectedPrice} oldValue={selectedOldPrice}/>{selectedOldPrice && <span>{Math.round((1 - selectedPrice / selectedOldPrice) * 100)}% tejaysiz</span>}</div>
-          <div className="purchase-actions"><div className="quantity"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Kamaytirish"><Minus/></button><b>{quantity}</b><button onClick={() => setQuantity(quantity + 1)} aria-label="Ko‘paytirish"><Plus/></button></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> {!selectedVariant ? "Variant mavjud emas" : selectedVariant.stock === 0 ? "Sotuvda yo‘q" : "Savatchaga qo‘shish"}</Button><button className={`detail-heart ${favorites.has(product.id) ? "active" : ""}`} disabled={!favorites.hydrated || favorites.isPending(product.id)} onClick={() => void favorites.toggle(product)} aria-label={favorites.has(product.id) ? "Sevimlilardan olib tashlash" : "Sevimlilarga qo‘shish"}><Heart fill={favorites.has(product.id) ? "currentColor" : "none"}/></button></div>
+          <div className="purchase-price"><Price value={selectedPrice} oldValue={selectedOldPrice}/>{selectedOldPrice && selectedOldPrice > selectedPrice && <span className="purchase-discount">{Math.round((1 - selectedPrice / selectedOldPrice) * 100)}% tejaysiz</span>}</div>
+          <div className="purchase-actions"><div className="quantity"><button disabled={quantity <= 1} onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Kamaytirish"><Minus/></button><b>{quantity}</b><button disabled={maxQuantity !== undefined && quantity >= maxQuantity} onClick={() => setQuantity((current) => maxQuantity === undefined ? current + 1 : Math.min(maxQuantity, current + 1))} aria-label="Ko‘paytirish"><Plus/></button></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> {!selectedVariant ? "Variant mavjud emas" : selectedVariant.stock === 0 ? "Sotuvda yo‘q" : "Savatchaga qo‘shish"}</Button><button className={`detail-heart ${favorites.has(product.id) ? "active" : ""}`} disabled={!favorites.hydrated || favorites.isPending(product.id)} onClick={() => void favorites.toggle(product)} aria-label={favorites.has(product.id) ? "Sevimlilardan olib tashlash" : "Sevimlilarga qo‘shish"}><Heart fill={favorites.has(product.id) ? "currentColor" : "none"}/></button></div>
           <button className="quick-buy" disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={buyNow}>Bir klikda xarid qilish</button>
         </div>
 
-        <div className="service-list"><div><span><Truck/></span><p><b>Manzil bo‘yicha yetkazib berish</b><small>Narx va muddat rasmiylashtirishda hisoblanadi</small></p><ChevronRight/></div><div><span><ShieldCheck/></span><p><b>Qabul qilganda to‘lash</b><small>Hozirgi checkout COD to‘lov usulini qo‘llaydi</small></p><ChevronRight/></div><div><span><Clock3/></span><p><b>Buyurtmani kuzatish</b><small>Holatini buyurtmalar sahifasida tekshirishingiz mumkin</small></p><ChevronRight/></div></div>
+        <div className="service-list"><div><span><Truck/></span><p><b>Manzil bo‘yicha yetkazib berish</b><small>Narx va muddat rasmiylashtirishda hisoblanadi</small></p></div><div><span><ShieldCheck/></span><p><b>Qabul qilganda to‘lash</b><small>Hozirgi checkout COD to‘lov usulini qo‘llaydi</small></p></div><div><span><Clock3/></span><p><b>Buyurtmani kuzatish</b><small>Holatini buyurtmalar sahifasida tekshirishingiz mumkin</small></p></div></div>
       </section>
     </div>
 

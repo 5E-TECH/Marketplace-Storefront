@@ -8,10 +8,10 @@ import { readCartSelection, saveCartSelection } from "@/lib/cart-selection";
 import { useCart } from "@/providers/cart-provider";
 import { CartItemRow } from "./cart-item-row";
 import { CartSummary } from "./cart-summary";
-import { Price } from "./ui";
+import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 
 export function CartContent() {
-  const { items, quantity, loading, error, update, remove, clear } = useCart();
+  const { items, quantity, loading, error, update, remove, clear, refresh } = useCart();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectionReady, setSelectionReady] = useState(false);
   useEffect(() => {
@@ -44,9 +44,9 @@ export function CartContent() {
     setSelectedIds(next);
     saveCartSelection(next);
   };
-  if (loading && !items.length) return <section className="page-empty" role="status">Savatcha yuklanmoqda...</section>;
-  if (error && !items.length) return <section className="page-empty" role="alert">{error}</section>;
-  if (!items.length) return <section className="page-empty"><span><ShoppingCart/></span><h1>Savatchangiz bo‘sh</h1><p>Mahsulot yonidagi “+” tugmasini bosing — tanlovingiz shu yerda saqlanadi.</p><Link className="button button--primary" href="/#products">Xaridni boshlash</Link></section>;
+  if (loading && !items.length) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
+  if (error && !items.length) return <StatePanel kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={error} action={<Button onClick={() => void refresh()}>Qayta urinish</Button>}/>;
+  if (!items.length) return <StatePanel icon={<ShoppingCart/>} title="Savatchangiz bo‘sh" description="Mahsulot yonidagi “+” tugmasini bosing — tanlovingiz shu yerda saqlanadi." action={<Link className="button button--primary" href="/#products">Xaridni boshlash</Link>}/>;
   return <section className="cart-page">
     {error && <p className="cart-error" role="alert">{error}</p>}
     <div className="page-heading"><div><span>SAVATCHA</span><h1>Savatingiz, <em>{quantity} mahsulot</em></h1></div></div>

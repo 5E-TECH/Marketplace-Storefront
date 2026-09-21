@@ -82,7 +82,8 @@ test('generic proxy explicitly allows checkout preview, create and confirm route
   await route.GET(getRequest, { params: Promise.resolve({ path: ['regions'] }) });
   await route.GET(getRequest, { params: Promise.resolve({ path: ['regions', '1', 'districts'] }) });
   await route.GET(getRequest, { params: Promise.resolve({ path: ['storefront', 'shops', 'featured'] }) });
-  assert.deepEqual(paths, ['/checkout/delivery-preview', '/checkout', '/checkout/order-1/confirm', '/regions', '/regions/1/districts', '/storefront/shops/featured']);
+  await route.POST(request, { params: Promise.resolve({ path: ['payments'] }) });
+  assert.deepEqual(paths, ['/checkout/delivery-preview', '/checkout', '/checkout/order-1/confirm', '/regions', '/regions/1/districts', '/storefront/shops/featured', '/payments']);
 });
 
 test('generic proxy allows the tracking route once backend implements its contract', async () => {

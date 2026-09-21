@@ -88,6 +88,17 @@ Checkout manzil tanlovi real backend ma’lumotidan ishlaydi:
 - `GET /regions` — viloyat va shaharlar (`id`, `name`);
 - `GET /regions/{regionId}/districts` — tanlangan hudud tumanlari (`id`, `regionId`, `name`).
 
+### Online to‘lov (frontend tayyor, backend integratsiyasi kerak)
+
+Checkout UI `cod`, `payme` va `click` usullarini tanlaydi. Online usulda `POST /checkout` ga `paymentMethod: "online"` yuboriladi; bunday buyurtma COD kabi `/confirm` orqali tasdiqlanmaydi. Frontend buyurtmani `PENDING` to‘lov holatida saqlaydi va quyidagi xaridor endpointlarini kutadi:
+
+- `POST /payments` — mavjud endpoint xaridor yoki ayni guest session uchun ham ishlashi kerak. So‘rov: `{ salesOrderId, provider: "PAYME" | "CLICK", amount, returnUrl }`. Backend `salesOrderId` egasini tekshirishi va summani buyurtmadan qayta hisoblab, client yuborgan `amount`ga ishonmasligi shart. Javobdagi mavjud payment maydonlariga qo‘shimcha xavfsiz `redirectUrl` qaytariladi. URL faqat sozlangan Payme/Click hostiga tegishli bo‘lishi kerak.
+- `GET /orders/{orderId}/tracking` — mavjud tracking javobiga `payment: { id, provider, amount, status, failureReason?, updatedAt? }` qo‘shiladi. Status: `PENDING`, `PAID`, `CANCELLED`, `FAILED`, `REFUNDED`. `FAILED` yoki `CANCELLED` holatida foydalanuvchiga ko‘rsatish mumkin bo‘lgan qisqa `failureReason` yuboriladi. Mavjud buyer/guest session himoyasi payment ma’lumotiga ham tatbiq qilinadi.
+
+Provider callbacklari brauzerga bog‘liq bo‘lmasligi kerak: Payme/Click callbackining imzosi backendda tekshiriladi, operatsiya idempotent yangilanadi va `PAID` bo‘lganda buyurtma ham atomar tarzda to‘langan deb belgilanadi. `returnUrl` faqat UI navigatsiyasi; frontend query parametridagi `success` qiymatiga ishonmaydi va har safar `GET /orders/{orderId}/tracking` orqali haqiqiy holatni oladi.
+
+Frontend qaytish manzili: `/checkout/payment/return?orderId=<id>`. To‘lov oynasi yopilsa yoki internet uzilsa, buyurtma local tarixda qoladi va `/orders/{orderId}` sahifasidagi “To‘lash” tugmasi `POST /payments` orqali yangi/yaroqli redirect URL so‘raydi. Backend bir buyurtma uchun faol paymentni qayta ishlatishi yoki eskisini xavfsiz bekor qilib yangisini yaratishi kerak; takroriy bosish ikki marta yechishga olib kelmasligi shart.
+
 Storefront proxy ikkala GET yo‘lini ham ruxsat ro‘yxatiga kiritadi. Viloyat o‘zgarsa tuman tanlovi tozalanadi; `regionId` va `districtId` tanlanmaguncha checkout yuborilmaydi. Ro‘yxat so‘rovi ishlamasa forma xato va qayta urinish amalini ko‘rsatadi.
 
 ## Mahsulot sharhlari

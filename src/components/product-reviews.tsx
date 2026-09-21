@@ -6,14 +6,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { getAccessToken } from "@/lib/access-token";
+import { formatLongDate } from "@/lib/format";
 import { reviewService } from "@/services/review.service";
 import type { ProductReviewsResult, ReviewableOrderItem } from "@/types/commerce";
 import { Button, StatePanel } from "./ui";
-
-const dateLabel = (value: string) => {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long", year: "numeric" }).format(date);
-};
 
 export function ProductReviews({ productId, reviews }: { productId: string | number; reviews: ProductReviewsResult }) {
   const router = useRouter();
@@ -73,7 +69,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
 
     {reviews.error ? <StatePanel kind="error" compact title="Sharhlarni yuklab bo‘lmadi" description={reviews.error}/> : reviews.items.length ? <div className="reviews-list">
       {reviews.items.map((review) => <article key={review.id}>
-        <header><b>{review.authorName}</b><time dateTime={review.createdAt}>{dateLabel(review.createdAt)}</time></header>
+        <header><b>{review.authorName}</b><time dateTime={review.createdAt}>{formatLongDate(review.createdAt)}</time></header>
         <div className="review-stars" aria-label={`${review.rating} yulduz`}>{Array.from({ length: 5 }, (_, index) => <Star key={index} fill={index < review.rating ? "currentColor" : "none"}/>)}</div>
         {review.comment && <p>{review.comment}</p>}
       </article>)}

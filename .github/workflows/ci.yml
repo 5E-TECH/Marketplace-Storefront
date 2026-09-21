@@ -1,9 +1,18 @@
 name: CI
 on:
   push:
+    # Ilgari filtr YO'Q edi — har bir shoxchaga push'da to'liq CI (jumladan
+    # docker build) ishga tushardi. Deploy baribir faqat `main`da bo'ladi.
+    branches: [main, dev]
   pull_request:
 permissions:
   contents: read
+
+# Ketma-ket ikki merge bo'lsa, ikkala deploy bitta katalogga rsync qilib
+# to'qnashardi. Kabinet va backend repolarida bu blok allaqachon bor.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -39,32 +48,89 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Secretlar bormi
-        id: guard
+      # ILGARI bu yerda JIM o'tkazib yuboradigan guard turardi: secret bo'lmasa
+      # `ready=false` qo'yilib, keyingi barcha qadamlar `if:` bilan tashlab
+      # ketilardi. Natijada run "success" ko'rinardi, lekin HECH NARSA
+      # chiqmasdi — storefront shu sababli 2026-09-15 dan 09-21 gacha eski
+      # kodda turgan va buni hech kim sezmagan. Endi yetishmayotgan secret
+      # AYNAN nomi bilan aytiladi va job QIZIL bo'ladi.
+      - name: Deploy secretlari tekshiruvi
         run: |
-          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_SSH_KEY" ]; then
-            echo "Deploy secretlari yo'q — deploy o'tkazib yuborildi." >&2
-            echo "Kerak: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY (base64), DEPLOY_KNOWN_HOSTS" >&2
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          missing=''
+          for key in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
+            eval "value=\${$key:-}"
+            [ -n "$value" ] || missing="$missing $key"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Deploy secretlari yo'q:$missing"
+            echo "Qo'shing: Settings → Secrets and variables → Actions" >&2
+            echo "  DEPLOY_HOST = server IP" >&2
+            echo "  DEPLOY_USER = deploy" >&2
+            echo "  DEPLOY_SSH_KEY = maxfiy kalitning base64 nusxasi (bir qatorli)" >&2
+            echo "  DEPLOY_KNOWN_HOSTS = ssh-keyscan -H <IP> chiqishi" >&2
+            exit 1
           fi
 
       - name: SSH konfiguratsiyasini tayyorlash
-        if: steps.guard.outputs.ready == 'true'
         run: |
           install -m 700 -d ~/.ssh
           printf '%s' "$DEPLOY_SSH_KEY" | base64 --decode > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+          # Kalit base64'dan to'g'ri ochilganini darhol tekshiramiz: secret'ga
+          # qator uzilishi tushsa yoki xom matn qo'yilsa, xato shu yerda
+          # tushunarli chiqadi, rsync ichida emas.
+          ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1 || {
+            echo "::error::DEPLOY_SSH_KEY buzuq — base64 emas yoki nusxalashda qator uzilishi tushgan"
+            exit 1
+          }
+
+      # Eng ko'p uchraydigan nosozlik: kalit serverdagi authorized_keys da yo'q.
+      - name: SSH ulanishini tekshirish
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+              -o BatchMode=yes -o ConnectTimeout=15 \
+              "$DEPLOY_USER@$DEPLOY_HOST" 'echo "SSH ulanishi OK: $(whoami)@$(hostname)"' || {
+            echo "::error::Serverga SSH ulanib bo'lmadi. Ehtimoliy sabablar:"
+            echo "  1) ochiq kalit /home/deploy/.ssh/authorized_keys ga qo'shilmagan" >&2
+            echo "  2) DEPLOY_USER noto'g'ri (kutilgani: deploy)" >&2
+            echo "  3) DEPLOY_KNOWN_HOSTS server kalitiga mos emas" >&2
+            exit 1
+          }
+
+      # `docker image prune -f` deploy oxirida eski (endi tegsiz) image'ni
+      # o'chiradi — teg qo'yilmasa orqaga qaytish yo'li yo'qoladi.
+      # DIQQAT: masofaviy buyruq HEREDOC bilan yuboriladi, bir qatorli
+      # `'...'` bilan EMAS. Birinchi urinishda aynan shunday yozilgan edi va
+      # ichidagi o'zbekcha apostrof (`yo'q`) qatorni erta yopib, buyruqni
+      # buzgan. `continue-on-error: true` tufayli qadam jimgina "success"
+      # ko'rsatdi, teg esa qo'yilmadi — kabinet repoda 2026-09-21 deployda
+      # oldingi image shu sabab yo'qoldi. Bu faylda matnga apostrof yozmang.
+      - name: Hozirgi image'ni orqaga qaytish uchun teglash
+        continue-on-error: true
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
+              "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<'REMOTE'
+          set -eu
+          if docker image inspect marketplace-storefront:latest >/dev/null 2>&1; then
+            docker tag marketplace-storefront:latest marketplace-storefront:rollback-previous
+            echo "Orqaga qaytish tegi qoyildi: marketplace-storefront:rollback-previous"
+            docker image inspect marketplace-storefront:rollback-previous \
+              --format 'Tasdiq: {{.Id}} {{.Created}}'
+          else
+            echo "Oldingi image topilmadi - birinchi deploy"
+          fi
+          REMOTE
 
       - name: Fayllarni serverga yuborish
-        if: steps.guard.outputs.ready == 'true'
         run: |
           rsync -az --delete \
             --exclude '.git/' \
-            --exclude '.env.production' \
+            # `.env.production*` — chunki bu repoda `.env.production.example`
+            # YO'Q, serverda esa BOR: `--delete` uni o'chirib yuborardi.
+            # (Kabinet repoda bu fayl bor, shuning uchun u yerda aniq ro'yxat.)
+            --exclude '.env.production*' \
             --exclude 'node_modules/' \
             --exclude '.next/' \
             --exclude '.next-dev/' \
@@ -74,7 +140,6 @@ jobs:
             ./ "$DEPLOY_USER@$DEPLOY_HOST:/home/deploy/marketplace-storefront/"
 
       - name: Konteynerni yangilash
-        if: steps.guard.outputs.ready == 'true'
         run: |
           # Keepalive shart: Next.js build uzoq davom etadi va shu paytda
           # SSH ulanishi jim turadi (backend deploy'ida aynan shu sabab
@@ -118,3 +183,19 @@ jobs:
 
           docker image prune -f
           REMOTE
+
+      # Konteyner ichidagi healthcheck faqat konteyner tirikligini bildiradi.
+      # Sayt HAQIQATAN tashqaridan ochilayotganini tunnel orqali tekshiramiz.
+      - name: Tashqaridan tekshirish
+        run: |
+          for attempt in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://elchimarket.uz/ || true)
+            if [ "$code" = "200" ]; then
+              echo "Storefront tashqaridan sog'lom ($code)"
+              exit 0
+            fi
+            echo "Kutilmoqda... ($attempt/10, oxirgi javob: $code)"
+            sleep 6
+          done
+          echo "::error::Storefront tashqaridan javob bermadi. Konteyner ko'tarilgan, lekin tunnel yo'lida muammo bor."
+          exit 1
