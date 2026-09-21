@@ -1,9 +1,18 @@
 name: CI
 on:
   push:
+    # Ilgari filtr YO'Q edi — har bir shoxchaga push'da to'liq CI (jumladan
+    # docker build) ishga tushardi. Deploy baribir faqat `main`da bo'ladi.
+    branches: [main, dev]
   pull_request:
 permissions:
   contents: read
+
+# Ketma-ket ikki merge bo'lsa, ikkala deploy bitta katalogga rsync qilib
+# to'qnashardi. Kabinet va backend repolarida bu blok allaqachon bor.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   check:
     runs-on: ubuntu-latest
