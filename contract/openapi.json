@@ -2317,6 +2317,7 @@
                 "PENDING",
                 "CONFIRMED",
                 "SHIPMENT_CREATED",
+                "RECEIVED",
                 "ON_THE_ROAD",
                 "DELIVERED",
                 "CANCELLED",
@@ -2496,6 +2497,73 @@
         ]
       }
     },
+    "/api/v1/seller/orders/{id}/label": {
+      "get": {
+        "operationId": "SellerOrdersController_label",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chop etishga tayyor PDF yorliq",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Buyurtmaning 100x60 mm Elchi QR yorlig‘ini olish",
+        "tags": [
+          "seller"
+        ]
+      }
+    },
+    "/api/v1/seller/orders/labels": {
+      "post": {
+        "operationId": "SellerOrdersController_labelsBatch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShippingLabelsBatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bir nechta Elchi QR yorlig‘ini bitta PDFda olish",
+        "tags": [
+          "seller"
+        ]
+      }
+    },
     "/api/v1/seller/orders/{id}/history": {
       "get": {
         "operationId": "SellerOrdersController_history",
@@ -2632,6 +2700,7 @@
                 "PENDING",
                 "CONFIRMED",
                 "SHIPMENT_CREATED",
+                "RECEIVED",
                 "ON_THE_ROAD",
                 "DELIVERED",
                 "CANCELLED",
@@ -3043,6 +3112,57 @@
           }
         },
         "summary": "Faol mahsulot tafsiloti",
+        "tags": [
+          "storefront"
+        ]
+      }
+    },
+    "/api/v1/storefront/banners": {
+      "get": {
+        "description": "Nofaol yoki muddati tugagan banner javobga tushmaydi. `sortOrder` bo‘yicha tartiblangan.",
+        "operationId": "StorefrontController_banners",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StorefrontBannerDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Bosh sahifa bannerlari (faol va muddati o‘tmaganlari)",
+        "tags": [
+          "storefront"
+        ]
+      }
+    },
+    "/api/v1/storefront/shops/featured": {
+      "get": {
+        "operationId": "StorefrontController_featuredShops",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeaturedShopDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Bosh sahifa uchun tavsiya etilgan faol do‘konlar",
         "tags": [
           "storefront"
         ]
@@ -3575,6 +3695,84 @@
         ]
       }
     },
+    "/api/v1/admin/shops/{id}/feature": {
+      "post": {
+        "operationId": "AdminShopsController_feature",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeatureShopDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Do‘konni bosh sahifada ko‘rsatish/yashirish",
+        "tags": [
+          "admin-shops"
+        ]
+      }
+    },
+    "/api/v1/admin/shops/{id}/tariffs": {
+      "patch": {
+        "operationId": "AdminShopsController_updateTariffs",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShopTariffsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Do‘konning Elchi yetkazish tariflarini sozlash/sinxronlash",
+        "tags": [
+          "admin-shops"
+        ]
+      }
+    },
     "/api/v1/admin/shops/{id}/approve": {
       "post": {
         "operationId": "AdminShopsController_approve",
@@ -3844,6 +4042,101 @@
         ]
       }
     },
+    "/api/v1/admin/users/{id}/role": {
+      "patch": {
+        "operationId": "AdminUsersController_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Yangilangan foydalanuvchi"
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Foydalanuvchi rolini o‘zgartirish",
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
+    "/api/v1/admin/users/{id}/impersonate": {
+      "post": {
+        "operationId": "AdminUsersController_impersonate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpersonationResultDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Foydalanuvchi nomidan 15 daqiqalik vaqtinchalik kirish",
+        "tags": [
+          "admin-users"
+        ]
+      }
+    },
     "/api/v1/admin/users/{id}/block": {
       "post": {
         "operationId": "AdminUsersController_block",
@@ -4078,6 +4371,211 @@
         ]
       }
     },
+    "/api/v1/admin/orders/{id}/label": {
+      "get": {
+        "operationId": "AdminOrdersController_label",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Seller-order Elchi QR yorlig‘ini PDF olish",
+        "tags": [
+          "admin-orders"
+        ]
+      }
+    },
+    "/api/v1/admin/orders/labels": {
+      "post": {
+        "operationId": "AdminOrdersController_labelsBatch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShippingLabelsBatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bir nechta seller-order yorlig‘ini bitta PDF olish",
+        "tags": [
+          "admin-orders"
+        ]
+      }
+    },
+    "/api/v1/admin/orders/{id}/cancel": {
+      "post": {
+        "description": "Faqat DRAFT/PENDING_PAYMENT buyurtma. Rezerv bo‘shatiladi va yakunlanmagan online to‘lov yozuvlari CANCELLED ga o‘tadi. Idempotent: allaqachon CANCELLED bo‘lsa `idempotent: true` qaytadi.",
+        "operationId": "AdminOrdersController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminOrderActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderActionResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Buyurtma holati bekor qilishga yo‘l qo‘ymaydi"
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Buyurtma topilmadi"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Buyurtmani majburiy bekor qilish",
+        "tags": [
+          "admin-orders"
+        ]
+      }
+    },
+    "/api/v1/admin/orders/{id}/refund": {
+      "post": {
+        "description": "Provayderda refund, ombor qaytimi va har sotuvchi ledgeri bitta oqimda bajariladi. Muvaffaqiyatdan keyin buyurtma REFUNDED, sub-buyurtmalar RETURNED va to‘lov holati (GET /orders, GET /orders/:id/tracking) REFUNDED bo‘ladi. Idempotent: takror chaqirilsa provayderga hech narsa yuborilmaydi va `idempotent: true` qaytadi. Hozircha faqat to‘liq summa: `amount` berilsa u buyurtma totaliga teng bo‘lishi kerak. COD buyurtma rad etiladi.",
+        "operationId": "AdminOrdersController_refund",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminOrderRefundDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderActionResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "COD buyurtma, qisman summa yoki refundga yaroqsiz holat"
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Buyurtma topilmadi"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "To‘langan buyurtmani to‘liq qaytarish",
+        "tags": [
+          "admin-orders"
+        ]
+      }
+    },
     "/api/v1/sellers/operators": {
       "post": {
         "operationId": "SellerOperatorsController_create",
@@ -4217,6 +4715,36 @@
             }
           }
         },
+        "tags": [
+          "cart"
+        ]
+      },
+      "delete": {
+        "description": "Idempotent: faol savat bo‘lmasa ham 200 va bo‘sh savat qaytaradi.",
+        "operationId": "CartController_clear",
+        "parameters": [
+          {
+            "name": "x-session-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Savatni bo‘shatish",
         "tags": [
           "cart"
         ]
@@ -4431,43 +4959,20 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Session-Id",
+            "in": "header",
+            "description": "Guest checkoutda ishlatilgan session identifikatori",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "201": {
             "description": ""
-          }
-        },
-        "summary": "COD buyurtmani tasdiqlash",
-        "tags": [
-          "checkout"
-        ]
-      }
-    },
-    "/api/v1/orders/{orderId}/tracking": {
-      "get": {
-        "operationId": "OrdersController_tracking",
-        "parameters": [
-          {
-            "name": "orderId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "x-session-id",
-            "required": false,
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Xaridor buyurtmasi va Elchi yetkazish holati"
           }
         },
         "security": [
@@ -4476,9 +4981,9 @@
           },
           {}
         ],
-        "summary": "Xaridor o‘z buyurtmasini kuzatishi",
+        "summary": "Buyer yoki guest uchun COD buyurtmani tasdiqlash",
         "tags": [
-          "orders"
+          "checkout"
         ]
       }
     },
@@ -5470,6 +5975,41 @@
       }
     },
     "/api/v1/admin/products": {
+      "post": {
+        "operationId": "AdminProductsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateProductDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin tanlangan do‘kon uchun yangi mahsulot yaratadi",
+        "tags": [
+          "admin-products"
+        ]
+      },
       "get": {
         "operationId": "AdminProductsController_list",
         "parameters": [
@@ -5617,6 +6157,45 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "admin-products"
+        ]
+      }
+    },
+    "/api/v1/admin/products/{id}/hide": {
+      "post": {
+        "operationId": "AdminProductsController_hide",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HideProductDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mahsulotni sabab bilan storefront va searchdan yashirish",
         "tags": [
           "admin-products"
         ]
@@ -5929,58 +6508,763 @@
         ]
       }
     },
-    "/api/v1/orders": {
+    "/api/v1/admin/settings": {
       "get": {
-        "operationId": "BuyerOrdersController_list",
-        "summary": "Xaridor buyurtmalari tarixi",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20
-            }
-          }
-        ],
+        "operationId": "AdminSettingsController_get",
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "Xaridor buyurtmalari",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BuyerOrdersPageDto"
+                  "$ref": "#/components/schemas/AdminSettingsDto"
                 }
               }
             }
           },
           "401": {
-            "description": "Access token kerak"
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Joriy platforma sozlamalari",
+        "tags": [
+          "admin-settings"
+        ]
+      },
+      "put": {
+        "operationId": "AdminSettingsController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSettingsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sozlama qiymati noto‘g‘ri"
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Platforma sozlamalarini yangilash",
+        "tags": [
+          "admin-settings"
+        ]
+      }
+    },
+    "/api/v1/admin/integration/geo/sync": {
+      "post": {
+        "operationId": "AdminIntegrationController_syncGeo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeoSyncResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Elchi viloyat/tuman keshini hozir sinxronlash",
+        "tags": [
+          "admin-integration"
+        ]
+      }
+    },
+    "/api/v1/admin/integration/markets/sync-tariffs": {
+      "post": {
+        "operationId": "AdminIntegrationController_syncMarketTariffs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketTariffSyncResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mavjud Elchi marketlari tariflarini catalog bilan sinxronlash",
+        "tags": [
+          "admin-integration"
+        ]
+      }
+    },
+    "/api/v1/admin/integration/shipments": {
+      "get": {
+        "operationId": "AdminIntegrationController_shipments",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "shopId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "15",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "CONFIRMED",
+                "SHIPMENT_CREATED",
+                "RECEIVED",
+                "ON_THE_ROAD",
+                "DELIVERED",
+                "CANCELLED",
+                "RETURNED"
+              ]
+            }
+          },
+          {
+            "name": "shipmentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "1251131",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-01T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-30T23:59:59.999Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ items, total, page, limit, totalPages }"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Elchi posilkalari holati va tracking ro‘yxati",
+        "tags": [
+          "admin-integration"
+        ]
+      }
+    },
+    "/api/v1/admin/integration/webhooks": {
+      "get": {
+        "operationId": "AdminIntegrationController_webhooks",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "eventId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "evt_123",
+              "type": "string"
+            }
+          },
+          {
+            "name": "shipmentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "1251131",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sellerOrderId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "9",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "CONFIRMED",
+                "SHIPMENT_CREATED",
+                "RECEIVED",
+                "ON_THE_ROAD",
+                "DELIVERED",
+                "CANCELLED",
+                "RETURNED"
+              ]
+            }
+          },
+          {
+            "name": "dateFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-01T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-30T23:59:59.999Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ items, total, page, limit, totalPages }"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Elchi webhook xabarlari tarixi",
+        "tags": [
+          "admin-integration"
+        ]
+      }
+    },
+    "/api/v1/admin/integration/shops/{id}/reprovision": {
+      "post": {
+        "operationId": "AdminIntegrationController_reprovision",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ shopId, elchiMarketId, status, reprovisioned, error }"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Do‘konni Elchi marketida idempotent qayta provision",
+        "tags": [
+          "admin-integration"
+        ]
+      }
+    },
+    "/api/v1/admin/content/banners": {
+      "get": {
+        "description": "`sortOrder` bo‘yicha tartiblangan. `isVisible` — shu daqiqada storefront’da ko‘rinayotgani.",
+        "operationId": "AdminContentController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BannerDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Barcha bannerlar (nofaol va muddati tugaganlari ham)",
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "post": {
+        "operationId": "AdminContentController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBannerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Maydon yoki muddat noto‘g‘ri"
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Banner qo‘shish",
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/api/v1/admin/content/banners/order": {
+      "patch": {
+        "description": "Butun ro‘yxat yangi `sortOrder` bilan yuboriladi. Bannerlardan biri topilmasa hech biri saqlanmaydi.",
+        "operationId": "AdminContentController_reorder",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderBannersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BannerDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Takroriy id yoki bo‘sh ro‘yxat"
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bannerlardan biri topilmadi"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bannerlar tartibini o‘zgartirish",
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/api/v1/admin/content/banners/{id}": {
+      "patch": {
+        "operationId": "AdminContentController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBannerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BannerDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Maydon yoki muddat noto‘g‘ri"
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Banner topilmadi"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bannerni tahrirlash (holat va muddat ham)",
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminContentController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteBannerResultDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Banner topilmadi"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bannerni o‘chirish",
+        "tags": [
+          "admin-content"
         ]
       }
     },
     "/api/v1/regions": {
       "get": {
-        "operationId": "RegionsController_findAll",
+        "operationId": "RegionsController_getRegions",
         "parameters": [],
         "responses": {
           "200": {
@@ -5997,7 +7281,7 @@
             }
           }
         },
-        "summary": "Viloyatlar va shaharlar ro‘yxati",
+        "summary": "Viloyatlar ro‘yxati (checkout va do‘kon manzili uchun)",
         "tags": [
           "regions"
         ]
@@ -6005,7 +7289,7 @@
     },
     "/api/v1/regions/{regionId}/districts": {
       "get": {
-        "operationId": "RegionsController_findDistricts",
+        "operationId": "RegionsController_getDistricts",
         "parameters": [
           {
             "name": "regionId",
@@ -6031,33 +7315,488 @@
             }
           }
         },
-        "summary": "Viloyatga tegishli tumanlar ro‘yxati",
+        "summary": "Tanlangan viloyat tumanlari ro‘yxati",
         "tags": [
           "regions"
         ]
       }
     },
-    "/api/v1/storefront/shops/featured": {
+    "/api/v1/orders": {
       "get": {
-        "operationId": "StorefrontShopsController_featured",
-        "parameters": [],
+        "operationId": "BuyerOrdersController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Tavsiya etilgan do‘konlar",
+            "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FeaturedStorefrontShopDto"
-                  }
+                  "$ref": "#/components/schemas/BuyerOrdersPageDto"
                 }
               }
             }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Xaridorning buyurtmalari",
         "tags": [
-          "storefront"
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}": {
+      "get": {
+        "operationId": "BuyerOrdersController_details",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Session-Id",
+            "in": "header",
+            "description": "Guest checkoutda ishlatilgan session identifikatori",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrderDetailsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Xaridor yoki guest buyurtmasining tafsilotlari",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/tracking": {
+      "get": {
+        "operationId": "BuyerOrdersController_tracking",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Session-Id",
+            "in": "header",
+            "description": "Guest checkoutda ishlatilgan session identifikatori",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerOrderTrackingDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Xaridor yoki guest buyurtmasi va posilkalarini kuzatish",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/refund": {
+      "post": {
+        "description": "To‘lanmagan buyurtma bekor qilinadi va rezerv bo‘shaydi; to‘langan, lekin posilka hali chiqmagan buyurtma to‘liq refund qilinadi. Posilka yo‘lga chiqqan bo‘lsa 400 qaytadi.",
+        "operationId": "BuyerOrdersController_refund",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Session-Id",
+            "in": "header",
+            "description": "Guest checkoutda ishlatilgan session identifikatori",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerOrderRefundDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderActionResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Buyurtma holati o‘z-o‘ziga qaytarishga yo‘l qo‘ymaydi"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Xaridor buyurtmasini qaytarish (to‘lanmagan bo‘lsa — bekor)",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/admin/inventory/stock": {
+      "get": {
+        "operationId": "AdminInventoryController_stock",
+        "parameters": [
+          {
+            "name": "warehouseId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "3",
+              "type": "string"
+            }
+          },
+          {
+            "name": "variantId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "88",
+              "type": "string"
+            }
+          },
+          {
+            "name": "productId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "12",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "iphone",
+              "type": "string"
+            }
+          },
+          {
+            "name": "lowOnly",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": false,
+              "example": false,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "shopId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "15",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStockPageDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Butun platformadagi sotuvchilar qoldig‘i",
+        "tags": [
+          "admin-inventory"
+        ]
+      }
+    },
+    "/api/v1/admin/inventory/movements": {
+      "get": {
+        "operationId": "AdminInventoryController_movements",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "shopId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "15",
+              "type": "string"
+            }
+          },
+          {
+            "name": "warehouseId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "3",
+              "type": "string"
+            }
+          },
+          {
+            "name": "variantId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "88",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "INBOUND",
+                "OUTBOUND",
+                "RESERVE",
+                "RELEASE",
+                "COMMIT",
+                "ADJUST",
+                "TRANSFER"
+              ]
+            }
+          },
+          {
+            "name": "dateFrom",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-01T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateTo",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-30T23:59:59.999Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStockMovementsPageDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Butun platformadagi qoldiq harakati jurnali",
+        "tags": [
+          "admin-inventory"
         ]
       }
     }
@@ -6571,6 +8310,20 @@
           "ordersCount": {
             "type": "number",
             "example": 0
+          },
+          "isFeatured": {
+            "type": "boolean",
+            "example": false
+          },
+          "tariffHome": {
+            "type": "number",
+            "example": 25000,
+            "description": "Uy manziliga yetkazish tarifi"
+          },
+          "tariffCenter": {
+            "type": "number",
+            "example": 15000,
+            "description": "Elchi markaziga yetkazish tarifi"
           }
         },
         "required": [
@@ -6587,7 +8340,10 @@
           "districtId",
           "address",
           "rating",
-          "ordersCount"
+          "ordersCount",
+          "isFeatured",
+          "tariffHome",
+          "tariffCenter"
         ]
       },
       "SellerShopResponseDto": {
@@ -6833,12 +8589,14 @@
           },
           "imageUrl": {
             "type": "object",
-            "example": "https://cdn.example.com/iphone.jpg"
+            "example": "https://cdn.example.com/iphone.jpg",
+            "description": "Asosiy rasm URL (yoki images massivida kamida bitta rasm bo‘lishi shart)"
           },
           "images": {
             "example": [
               "https://cdn.example.com/iphone-1.jpg"
             ],
+            "description": "Mahsulot rasmlari (agar imageUrl bo‘sh bo‘lsa, kamida bitta rasm talab qilinadi)",
             "type": "array",
             "items": {
               "type": "string"
@@ -7046,12 +8804,14 @@
           },
           "imageUrl": {
             "type": "object",
-            "example": "https://cdn.example.com/iphone.jpg"
+            "example": "https://cdn.example.com/iphone.jpg",
+            "description": "Asosiy rasm URL (yoki images massivida kamida bitta rasm bo‘lishi shart)"
           },
           "images": {
             "example": [
               "https://cdn.example.com/iphone-1.jpg"
             ],
+            "description": "Mahsulot rasmlari (agar imageUrl bo‘sh bo‘lsa, kamida bitta rasm talab qilinadi)",
             "type": "array",
             "items": {
               "type": "string"
@@ -7845,6 +9605,7 @@
               "PENDING",
               "CONFIRMED",
               "SHIPMENT_CREATED",
+              "RECEIVED",
               "ON_THE_ROAD",
               "DELIVERED",
               "CANCELLED",
@@ -7919,6 +9680,26 @@
           "totalPages"
         ]
       },
+      "ShippingLabelsBatchDto": {
+        "type": "object",
+        "properties": {
+          "orderIds": {
+            "example": [
+              "101",
+              "102"
+            ],
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "orderIds"
+        ]
+      },
       "CreateShipmentDto": {
         "type": "object",
         "properties": {
@@ -7937,6 +9718,7 @@
               "PENDING",
               "CONFIRMED",
               "SHIPMENT_CREATED",
+              "RECEIVED",
               "ON_THE_ROAD",
               "DELIVERED",
               "CANCELLED",
@@ -8081,6 +9863,146 @@
           "unreadCount",
           "page",
           "limit"
+        ]
+      },
+      "StorefrontBannerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "3"
+          },
+          "title": {
+            "type": "string",
+            "example": "50% chegirma"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://cdn.example.com/banners/autumn.jpg"
+          },
+          "linkUrl": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 10
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "imageUrl",
+          "linkUrl",
+          "sortOrder"
+        ]
+      },
+      "FeaturedShopDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "15"
+          },
+          "ownerUserId": {
+            "type": "string",
+            "example": "42"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ali Market"
+          },
+          "slug": {
+            "type": "string",
+            "example": "ali-market-1234567"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACTIVE",
+              "SUSPENDED",
+              "REJECTED"
+            ],
+            "example": "PENDING"
+          },
+          "description": {
+            "type": "object",
+            "example": "Maishiy texnika do‘koni",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "phone": {
+            "type": "object",
+            "example": "+998901234567",
+            "nullable": true
+          },
+          "regionId": {
+            "type": "object",
+            "example": "1",
+            "nullable": true
+          },
+          "districtId": {
+            "type": "object",
+            "example": "10",
+            "nullable": true
+          },
+          "address": {
+            "type": "object",
+            "example": "Toshkent shahri",
+            "nullable": true
+          },
+          "rating": {
+            "type": "number",
+            "example": 0
+          },
+          "ordersCount": {
+            "type": "number",
+            "example": 0
+          },
+          "isFeatured": {
+            "type": "boolean",
+            "example": true
+          },
+          "tariffHome": {
+            "type": "number",
+            "example": 25000,
+            "description": "Uy manziliga yetkazish tarifi"
+          },
+          "tariffCenter": {
+            "type": "number",
+            "example": 15000,
+            "description": "Elchi markaziga yetkazish tarifi"
+          }
+        },
+        "required": [
+          "id",
+          "ownerUserId",
+          "name",
+          "slug",
+          "status",
+          "description",
+          "logoUrl",
+          "bannerUrl",
+          "phone",
+          "regionId",
+          "districtId",
+          "address",
+          "rating",
+          "ordersCount",
+          "isFeatured",
+          "tariffHome",
+          "tariffCenter"
         ]
       },
       "StorefrontShopPageDto": {
@@ -8279,6 +10201,14 @@
               "REJECTED"
             ]
           },
+          "tariffHome": {
+            "type": "number",
+            "example": 25000
+          },
+          "tariffCenter": {
+            "type": "number",
+            "example": 15000
+          },
           "stats": {
             "$ref": "#/components/schemas/AdminShopDetailStatsDto"
           }
@@ -8288,7 +10218,40 @@
           "ownerUserId",
           "name",
           "status",
+          "tariffHome",
+          "tariffCenter",
           "stats"
+        ]
+      },
+      "FeatureShopDto": {
+        "type": "object",
+        "properties": {
+          "featured": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "featured"
+        ]
+      },
+      "UpdateShopTariffsDto": {
+        "type": "object",
+        "properties": {
+          "tariffHome": {
+            "type": "number",
+            "example": 25000,
+            "minimum": 1
+          },
+          "tariffCenter": {
+            "type": "number",
+            "example": 15000,
+            "minimum": 1
+          }
+        },
+        "required": [
+          "tariffHome",
+          "tariffCenter"
         ]
       },
       "RejectShopDto": {
@@ -8408,6 +10371,141 @@
           "orders",
           "gmv",
           "revenue"
+        ]
+      },
+      "UpdateUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "BUYER",
+              "SELLER",
+              "ADMIN",
+              "SUPERADMIN"
+            ],
+            "example": "SELLER"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "ImpersonatedUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "42"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ali Valiyev"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "SELLER",
+              "OPERATOR",
+              "BUYER",
+              "ADMIN",
+              "SUPERADMIN"
+            ],
+            "example": "SELLER"
+          },
+          "shopId": {
+            "type": "object",
+            "example": "15",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "shopId"
+        ]
+      },
+      "ImpersonationResultDto": {
+        "type": "object",
+        "properties": {
+          "impersonationToken": {
+            "type": "string",
+            "description": "15 daqiqalik, refresh qilib bo‘lmaydigan token"
+          },
+          "expiresIn": {
+            "type": "number",
+            "example": 900
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/ImpersonatedUserDto"
+          }
+        },
+        "required": [
+          "impersonationToken",
+          "expiresIn",
+          "expiresAt",
+          "user"
+        ]
+      },
+      "AdminOrderActionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Mahsulot mavjud emas"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "OrderActionResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "42"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CANCELLED",
+              "REFUNDED"
+            ],
+            "example": "REFUNDED"
+          },
+          "idempotent": {
+            "type": "boolean",
+            "example": false,
+            "description": "true — buyurtma allaqachon shu holatda edi va hech qanday yangi yon ta’sir bo‘lmadi (provayderga refund takror yuborilmaydi)."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "idempotent"
+        ]
+      },
+      "AdminOrderRefundDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Mahsulot mavjud emas"
+          },
+          "amount": {
+            "type": "number",
+            "example": 125000,
+            "description": "Hozir faqat to‘liq refund: summa order totaliga teng bo‘lishi kerak"
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "CreateOperatorDto": {
@@ -8597,6 +10695,15 @@
           "districtId": {
             "type": "string",
             "example": "101"
+          },
+          "whereDeliver": {
+            "type": "string",
+            "enum": [
+              "ADDRESS",
+              "CENTER"
+            ],
+            "default": "ADDRESS",
+            "description": "ADDRESS — uyga, CENTER — Elchi markaziga yetkazish"
           }
         },
         "required": [
@@ -8652,6 +10759,11 @@
           "amount": {
             "type": "number",
             "example": 125000
+          },
+          "returnUrl": {
+            "type": "string",
+            "example": "https://marketplace.example.com/orders/42/payment-result",
+            "description": "To‘lovdan keyin provayder brauzerni qaytaradigan sahifa. Origin CORS_ORIGINS ro‘yxatida bo‘lishi shart."
           }
         },
         "required": [
@@ -8682,17 +10794,23 @@
           "status": {
             "type": "string",
             "enum": [
-              "CREATED",
               "PENDING",
               "PAID",
               "CANCELLED",
               "FAILED",
               "REFUNDED"
-            ]
+            ],
+            "description": "Yangi to‘lov PENDING bilan qaytadi."
           },
           "createdAt": {
-            "format": "date-time",
-            "type": "string"
+            "type": "string",
+            "example": "2026-09-16T10:00:00.000Z"
+          },
+          "redirectUrl": {
+            "type": "string",
+            "example": "https://checkout.paycom.uz/<base64>",
+            "nullable": true,
+            "description": "Provayder to‘lov sahifasi. Provayder konfiguratsiyasi to‘liq bo‘lmasa yoki to‘lov yakunlangan bo‘lsa null."
           }
         },
         "required": [
@@ -8859,6 +10977,7 @@
             "type": "string",
             "enum": [
               "shipment_created",
+              "received",
               "on_the_road",
               "delivered",
               "sold",
@@ -8957,6 +11076,89 @@
         "required": [
           "orderItemId",
           "rating"
+        ]
+      },
+      "AdminCreateProductDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "iPhone 16 Pro"
+          },
+          "categoryId": {
+            "type": "object",
+            "example": "1",
+            "nullable": true
+          },
+          "description": {
+            "type": "object",
+            "example": "Titanium, 256 GB"
+          },
+          "price": {
+            "type": "number",
+            "example": 14999000,
+            "minimum": 0
+          },
+          "oldPrice": {
+            "type": "object",
+            "example": 15999000,
+            "minimum": 0,
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "object",
+            "example": "https://cdn.example.com/iphone.jpg",
+            "description": "Asosiy rasm URL (yoki images massivida kamida bitta rasm bo‘lishi shart)"
+          },
+          "images": {
+            "example": [
+              "https://cdn.example.com/iphone-1.jpg"
+            ],
+            "description": "Mahsulot rasmlari (agar imageUrl bo‘sh bo‘lsa, kamida bitta rasm talab qilinadi)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "example": {
+              "brand": "Apple",
+              "storage": "256 GB"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED",
+              "OUT_OF_STOCK"
+            ],
+            "default": "ACTIVE"
+          },
+          "shopId": {
+            "type": "string",
+            "example": "15",
+            "description": "Mahsulot biriktiriladigan do‘kon IDsi"
+          }
+        },
+        "required": [
+          "name",
+          "price",
+          "shopId"
+        ]
+      },
+      "HideProductDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Mahsulot rasmi yoki tavsifi qoidalarga zid"
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "AdminTeamMemberDto": {
@@ -9100,36 +11302,403 @@
           "role"
         ]
       },
-      "BuyerOrderItemDto": {
+      "AdminSettingsDto": {
+        "type": "object",
+        "properties": {
+          "commissionPercent": {
+            "type": "number",
+            "example": 5,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "minimumOrderAmount": {
+            "type": "number",
+            "example": 50000,
+            "minimum": 0
+          },
+          "supportPhone": {
+            "type": "string",
+            "example": "+998712000000",
+            "description": "Bo'sh yoki +998XXXXXXXXX"
+          },
+          "updatedBy": {
+            "type": "object",
+            "example": "17"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-09-08T12:00:00.000Z"
+          }
+        },
+        "required": [
+          "commissionPercent",
+          "minimumOrderAmount",
+          "supportPhone",
+          "updatedBy",
+          "updatedAt"
+        ]
+      },
+      "UpdateAdminSettingsDto": {
+        "type": "object",
+        "properties": {
+          "commissionPercent": {
+            "type": "number",
+            "example": 5,
+            "minimum": 0,
+            "maximum": 100
+          },
+          "minimumOrderAmount": {
+            "type": "number",
+            "example": 50000,
+            "minimum": 0
+          },
+          "supportPhone": {
+            "type": "string",
+            "example": "+998712000000",
+            "description": "Bo'sh yoki +998XXXXXXXXX"
+          }
+        },
+        "required": [
+          "commissionPercent",
+          "minimumOrderAmount",
+          "supportPhone"
+        ]
+      },
+      "GeoSyncResultDto": {
+        "type": "object",
+        "properties": {
+          "regions": {
+            "type": "number",
+            "example": 14
+          },
+          "districts": {
+            "type": "number",
+            "example": 181
+          },
+          "added": {
+            "type": "number",
+            "example": 2
+          },
+          "updated": {
+            "type": "number",
+            "example": 3
+          },
+          "deleted": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "regions",
+          "districts",
+          "added",
+          "updated",
+          "deleted"
+        ]
+      },
+      "MarketTariffSyncResultDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 7
+          },
+          "updated": {
+            "type": "number",
+            "example": 7
+          },
+          "failed": {
+            "type": "number",
+            "example": 0
+          }
+        },
+        "required": [
+          "total",
+          "updated",
+          "failed"
+        ]
+      },
+      "BannerDto": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
-          },
-          "productId": {
-            "type": "string"
-          },
-          "variantId": {
             "type": "string",
-            "nullable": true
+            "example": "3"
           },
-          "shopId": {
+          "title": {
             "type": "string",
-            "nullable": true
-          },
-          "name": {
-            "type": "string"
-          },
-          "quantity": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "unitPrice": {
-            "type": "number",
-            "minimum": 0
+            "example": "50% chegirma"
           },
           "imageUrl": {
             "type": "string",
+            "example": "https://cdn.example.com/banners/autumn.jpg"
+          },
+          "linkUrl": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 10
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "startsAt": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "endsAt": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "isVisible": {
+            "type": "boolean",
+            "example": true,
+            "description": "Shu daqiqada storefront’da ko‘rinayotgani — `isActive` va muddat birga."
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-09-22T10:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-09-22T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "imageUrl",
+          "linkUrl",
+          "sortOrder",
+          "isActive",
+          "startsAt",
+          "endsAt",
+          "isVisible",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateBannerDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "50% chegirma"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://cdn.example.com/banners/autumn.jpg",
+            "description": "`POST /files/upload` qaytargan manzil."
+          },
+          "linkUrl": {
+            "type": "object",
+            "example": "/storefront/products?categoryId=7",
+            "nullable": true,
+            "description": "Bannerga bosilganda ochiladigan sahifa."
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 10,
+            "default": 0
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true,
+            "default": true
+          },
+          "startsAt": {
+            "type": "object",
+            "example": "2026-09-25T00:00:00.000Z",
+            "nullable": true,
+            "description": "Shu vaqtgacha storefront’da ko‘rinmaydi; null — darhol."
+          },
+          "endsAt": {
+            "type": "object",
+            "example": "2026-10-01T00:00:00.000Z",
+            "nullable": true,
+            "description": "Shu vaqtdan keyin o‘zi yo‘qoladi; null — muddatsiz."
+          }
+        },
+        "required": [
+          "title",
+          "imageUrl"
+        ]
+      },
+      "ReorderBannerItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "3"
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 0
+          }
+        },
+        "required": [
+          "id",
+          "sortOrder"
+        ]
+      },
+      "ReorderBannersDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReorderBannerItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UpdateBannerDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "50% chegirma"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://cdn.example.com/banners/autumn.jpg",
+            "description": "`POST /files/upload` qaytargan manzil."
+          },
+          "linkUrl": {
+            "type": "object",
+            "example": "/storefront/products?categoryId=7",
+            "nullable": true,
+            "description": "Bannerga bosilganda ochiladigan sahifa."
+          },
+          "sortOrder": {
+            "type": "number",
+            "example": 10,
+            "default": 0
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true,
+            "default": true
+          },
+          "startsAt": {
+            "type": "object",
+            "example": "2026-09-25T00:00:00.000Z",
+            "nullable": true,
+            "description": "Shu vaqtgacha storefront’da ko‘rinmaydi; null — darhol."
+          },
+          "endsAt": {
+            "type": "object",
+            "example": "2026-10-01T00:00:00.000Z",
+            "nullable": true,
+            "description": "Shu vaqtdan keyin o‘zi yo‘qoladi; null — muddatsiz."
+          }
+        }
+      },
+      "DeleteBannerResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "3"
+          },
+          "deleted": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "id",
+          "deleted"
+        ]
+      },
+      "RegionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Viloyat IDsi (Elchi)",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "description": "Viloyat nomi",
+            "example": "Toshkent shahri"
+          },
+          "satoCode": {
+            "type": "string",
+            "description": "SOATO/SATO kodi",
+            "example": "1726266"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "satoCode"
+        ]
+      },
+      "DistrictDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Tuman IDsi (Elchi)",
+            "example": "10"
+          },
+          "regionId": {
+            "type": "string",
+            "description": "Viloyat IDsi (Elchi)",
+            "example": "1"
+          },
+          "name": {
+            "type": "string",
+            "description": "Tuman nomi",
+            "example": "Yunusobod tumani"
+          },
+          "satoCode": {
+            "type": "string",
+            "description": "SOATO/SATO kodi",
+            "example": "1726266"
+          }
+        },
+        "required": [
+          "id",
+          "regionId",
+          "name",
+          "satoCode"
+        ]
+      },
+      "BuyerOrderListItemProductDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "example": "7"
+          },
+          "name": {
+            "type": "string",
+            "example": "Mahsulot"
+          },
+          "quantity": {
+            "type": "number",
+            "example": 1
+          },
+          "unitPrice": {
+            "type": "number",
+            "example": 100000
+          },
+          "imageUrl": {
+            "type": "object",
+            "example": null,
             "nullable": true
           }
         },
@@ -9140,35 +11709,64 @@
           "unitPrice"
         ]
       },
-      "BuyerOrderDto": {
+      "BuyerOrderListItemDto": {
         "type": "object",
         "properties": {
           "orderId": {
-            "type": "string"
+            "type": "string",
+            "example": "42"
           },
           "createdAt": {
-            "type": "string",
-            "format": "date-time"
+            "type": "object",
+            "example": "2026-09-15T10:00:00.000Z"
           },
           "orderStatus": {
-            "type": "string"
+            "type": "string",
+            "example": "CONFIRMED"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "online",
+              "cod"
+            ],
+            "example": "cod"
+          },
+          "paymentProvider": {
+            "type": "string",
+            "example": "PAYME",
+            "nullable": true,
+            "description": "Online to‘lov provayderi; COD yoki to‘lovsiz buyurtmada null."
+          },
+          "paymentStatus": {
+            "type": "string",
+            "example": "PAID",
+            "nullable": true,
+            "enum": [
+              "PENDING",
+              "PAID",
+              "CANCELLED",
+              "FAILED",
+              "REFUNDED"
+            ],
+            "description": "COD buyurtmada yoki to‘lov hali boshlanmagan bo‘lsa null."
           },
           "subtotal": {
             "type": "number",
-            "minimum": 0
+            "example": 100000
           },
           "deliveryFee": {
             "type": "number",
-            "minimum": 0
+            "example": 15000
           },
           "totalAmount": {
             "type": "number",
-            "minimum": 0
+            "example": 115000
           },
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BuyerOrderItemDto"
+              "$ref": "#/components/schemas/BuyerOrderListItemProductDto"
             }
           }
         },
@@ -9176,6 +11774,7 @@
           "orderId",
           "createdAt",
           "orderStatus",
+          "paymentMethod",
           "subtotal",
           "deliveryFee",
           "totalAmount",
@@ -9188,24 +11787,24 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BuyerOrderDto"
+              "$ref": "#/components/schemas/BuyerOrderListItemDto"
             }
           },
           "total": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "example": 1
           },
           "page": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "example": 1
           },
           "limit": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "example": 20
           },
           "totalPages": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "example": 1
           }
         },
         "required": [
@@ -9216,74 +11815,496 @@
           "totalPages"
         ]
       },
-      "RegionDto": {
+      "BuyerOrderItemDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "example": "88"
+          },
+          "productName": {
+            "type": "string",
+            "example": "Telefon"
+          },
+          "variantId": {
+            "type": "string",
+            "example": "5"
+          },
+          "quantity": {
+            "type": "number",
+            "example": 2
+          },
+          "unitPrice": {
+            "type": "number",
+            "example": 225000
+          },
+          "lineTotal": {
+            "type": "number",
+            "example": 450000
+          }
+        },
+        "required": [
+          "productId",
+          "productName",
+          "variantId",
+          "quantity",
+          "unitPrice",
+          "lineTotal"
+        ]
+      },
+      "BuyerOrderShopDto": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "example": "31"
           },
-          "name": {
-            "type": "string"
+          "shopId": {
+            "type": "string",
+            "example": "15"
+          },
+          "subtotal": {
+            "type": "number",
+            "example": 450000
+          },
+          "deliveryFee": {
+            "type": "number",
+            "example": 25000
+          },
+          "status": {
+            "type": "string",
+            "example": "ON_THE_ROAD"
+          },
+          "elchiShipmentId": {
+            "type": "object",
+            "example": "987",
+            "nullable": true
+          },
+          "trackingUrl": {
+            "type": "object",
+            "example": "https://elchi.uz/track/987",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuyerOrderItemDto"
+            }
           }
         },
         "required": [
           "id",
-          "name"
+          "shopId",
+          "subtotal",
+          "deliveryFee",
+          "status",
+          "items"
         ]
       },
-      "DistrictDto": {
+      "BuyerOrderDetailsDto": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "example": "42"
           },
-          "regionId": {
-            "type": "string"
+          "buyerName": {
+            "type": "object",
+            "example": "Ali",
+            "nullable": true
           },
-          "name": {
-            "type": "string"
+          "status": {
+            "type": "string",
+            "example": "CONFIRMED"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "example": "cod"
+          },
+          "totalAmount": {
+            "type": "number",
+            "example": 475000
+          },
+          "deliveryFee": {
+            "type": "number",
+            "example": 25000
+          },
+          "deliveryAddress": {
+            "type": "object",
+            "example": "Toshkent, Amir Temur 1",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "object",
+            "example": "2026-09-14T10:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "object",
+            "example": "2026-09-14T10:30:00.000Z"
+          },
+          "sellerOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuyerOrderShopDto"
+            }
           }
         },
         "required": [
           "id",
-          "regionId",
-          "name"
+          "status",
+          "paymentMethod",
+          "totalAmount",
+          "deliveryFee",
+          "createdAt",
+          "updatedAt",
+          "sellerOrders"
         ]
       },
-      "FeaturedStorefrontShopDto": {
+      "BuyerOrderPaymentDto": {
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "slug",
-          "rating",
-          "productCount"
-        ],
         "properties": {
           "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          },
-          "description": {
             "type": "string",
+            "example": "7",
+            "description": "payment.id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "PAYME",
+              "CLICK"
+            ],
+            "example": "PAYME"
+          },
+          "amount": {
+            "type": "number",
+            "example": 125000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PAID",
+              "CANCELLED",
+              "FAILED",
+              "REFUNDED"
+            ],
+            "example": "PAID"
+          },
+          "failureReason": {
+            "type": "string",
+            "example": "Tranzaksiya vaqt tugashi sababli bekor qilindi",
+            "nullable": true,
+            "description": "Faqat CANCELLED/FAILED holatida to‘ladi."
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-09-16T10:05:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "amount",
+          "status",
+          "updatedAt"
+        ]
+      },
+      "BuyerShipmentTrackingDto": {
+        "type": "object",
+        "properties": {
+          "shipmentId": {
+            "type": "string",
+            "example": "7"
+          },
+          "shopId": {
+            "type": "string",
+            "example": "3"
+          },
+          "shopName": {
+            "type": "string",
+            "example": "Elchi do‘koni"
+          },
+          "shipmentStatus": {
+            "type": "string",
+            "example": "OUT_FOR_DELIVERY"
+          },
+          "trackingUrl": {
+            "type": "object",
+            "example": "https://elchi.uz/track/7",
             "nullable": true
           },
-          "logoUrl": {
+          "updatedAt": {
+            "type": "object",
+            "example": "2026-09-14T10:30:00.000Z"
+          }
+        },
+        "required": [
+          "shipmentId",
+          "shopId",
+          "shopName",
+          "shipmentStatus",
+          "updatedAt"
+        ]
+      },
+      "BuyerOrderTrackingDto": {
+        "type": "object",
+        "properties": {
+          "orderId": {
             "type": "string",
-            "nullable": true
+            "example": "42"
           },
-          "rating": {
-            "type": "number"
+          "orderStatus": {
+            "type": "string",
+            "example": "IN_TRANSIT"
           },
-          "productCount": {
-            "type": "number"
+          "estimatedDeliveryAt": {
+            "type": "object",
+            "example": "2026-09-16T12:00:00.000Z",
+            "nullable": true,
+            "description": "Yetkazish provayderi bergan taxminiy vaqt; mavjud bo‘lmasa null"
+          },
+          "updatedAt": {
+            "type": "object",
+            "example": "2026-09-14T10:30:00.000Z"
+          },
+          "payment": {
+            "nullable": true,
+            "description": "COD buyurtmada yoki to‘lov hali boshlanmagan bo‘lsa null.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuyerOrderPaymentDto"
+              }
+            ]
+          },
+          "shipments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuyerShipmentTrackingDto"
+            }
+          }
+        },
+        "required": [
+          "orderId",
+          "orderStatus",
+          "updatedAt",
+          "shipments"
+        ]
+      },
+      "BuyerOrderRefundDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Fikrimdan qaytdim",
+            "description": "Bo‘sh qoldirilsa standart sabab yoziladi."
           }
         }
+      },
+      "AdminStockItemDto": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "example": "88"
+          },
+          "productName": {
+            "type": "string",
+            "example": "iPhone 16 Pro"
+          },
+          "variantName": {
+            "type": "object",
+            "example": "Qora / 256 GB",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "example": "IPHONE-16-BLACK-256"
+          },
+          "warehouseId": {
+            "type": "string",
+            "example": "3"
+          },
+          "warehouseName": {
+            "type": "string",
+            "example": "Asosiy ombor"
+          },
+          "onHand": {
+            "type": "number",
+            "example": 15
+          },
+          "reserved": {
+            "type": "number",
+            "example": 3
+          },
+          "available": {
+            "type": "number",
+            "example": 12
+          },
+          "lowStockThreshold": {
+            "type": "number",
+            "example": 5
+          },
+          "shopId": {
+            "type": "string",
+            "example": "15"
+          }
+        },
+        "required": [
+          "variantId",
+          "productName",
+          "variantName",
+          "sku",
+          "warehouseId",
+          "warehouseName",
+          "onHand",
+          "reserved",
+          "available",
+          "lowStockThreshold",
+          "shopId"
+        ]
+      },
+      "AdminStockPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminStockItemDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 25
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          },
+          "totalPages": {
+            "type": "number",
+            "example": 2
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "totalPages"
+        ]
+      },
+      "AdminStockMovementItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "shopId": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string"
+          },
+          "warehouseId": {
+            "type": "string"
+          },
+          "warehouseName": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "INBOUND",
+              "OUTBOUND",
+              "RESERVE",
+              "RELEASE",
+              "COMMIT",
+              "ADJUST",
+              "TRANSFER"
+            ]
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "onHandAfter": {
+            "type": "number"
+          },
+          "reservedAfter": {
+            "type": "number"
+          },
+          "referenceType": {
+            "type": "object",
+            "nullable": true
+          },
+          "referenceId": {
+            "type": "object",
+            "nullable": true
+          },
+          "reason": {
+            "type": "object",
+            "nullable": true
+          },
+          "actorId": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "shopId",
+          "variantId",
+          "warehouseId",
+          "warehouseName",
+          "type",
+          "quantity",
+          "onHandAfter",
+          "reservedAfter",
+          "referenceType",
+          "referenceId",
+          "reason",
+          "actorId",
+          "createdAt"
+        ]
+      },
+      "AdminStockMovementsPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminStockMovementItemDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "totalPages"
+        ]
       }
     }
   }

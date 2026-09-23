@@ -4,7 +4,7 @@ import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { catalogHref } from "@/lib/catalog-query";
 import { getSafeImageSrc } from "@/lib/product-storage";
-import type { CatalogCategory, Product, ProductQuery, ProductSort, StorefrontShop } from "@/types/commerce";
+import type { Banner, CatalogCategory, Product, ProductQuery, ProductSort, StorefrontShop } from "@/types/commerce";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
 import { CategoryIcon } from "./category-icon";
@@ -17,6 +17,27 @@ export function Hero({ product }: { product?: Product }) {
       {(product.rating > 0 || product.reviews > 0) && <div className="hero-meta"><span>★ {product.rating} / 5 reyting</span><span>{product.reviews} ta sharh</span></div>}
     </div>
     <div className="hero-visual"><Image src={getSafeImageSrc(product.image)} alt={product.name} fill priority sizes="(max-width: 768px) 100vw, 52vw"/><div className="hero-product-label"><small>{product.shop?.name ?? "Marketplace"}</small><b>{formatPrice(product.price)} so‘m</b></div></div>
+  </section></Container>;
+}
+
+/**
+ * Bosh sahifa reklama bannerlari (C6.9). Backend faqat faol va muddati
+ * o'tmaganlarini qaytaradi, shu sabab bu yerda qo'shimcha filtr yo'q.
+ * Ro'yxat bo'sh bo'lsa butun blok chiqmaydi — bo'sh joy qolmasin.
+ */
+export function Banners({ banners }: { banners: Banner[] }) {
+  if (!banners.length) return null;
+  return <Container><section className="home-banners" aria-label="Aksiyalar va e'lonlar">
+    {banners.map((banner) => {
+      const visual = <>
+        <Image src={getSafeImageSrc(banner.imageUrl)} alt={banner.title} fill sizes="(max-width: 720px) 92vw, (max-width: 1050px) 46vw, 31vw"/>
+        <span className="home-banner-title">{banner.title}</span>
+      </>;
+      if (!banner.linkUrl) return <div className="home-banner" key={banner.id}>{visual}</div>;
+      return banner.linkUrl.startsWith("/")
+        ? <Link className="home-banner" href={banner.linkUrl} key={banner.id}>{visual}</Link>
+        : <a className="home-banner" href={banner.linkUrl} key={banner.id} target="_blank" rel="noopener noreferrer">{visual}</a>;
+    })}
   </section></Container>;
 }
 
