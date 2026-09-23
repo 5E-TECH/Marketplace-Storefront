@@ -57,3 +57,5 @@ export type CatalogCategory = { id: ID; name: string; slug: string; parentId?: I
 export type CategoryResult = { data: CatalogCategory[]; source: "api" | "unavailable"; error?: string };
 export type StorefrontShop = { id: ID; name: string; slug: string; description?: string; logoUrl?: string; bannerUrl?: string; address?: string; rating: number; productCount?: number };
 export type ShopResult = { shop: StorefrontShop; catalog: CatalogResult };
+export type Banner = { id: string; title: string; imageUrl: string; linkUrl?: string; sortOrder: number };
+export type BannerResult = { data: Banner[]; source: "api" | "unavailable"; error?: string };

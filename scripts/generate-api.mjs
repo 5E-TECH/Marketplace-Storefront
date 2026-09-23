@@ -23,7 +23,7 @@ function jsonSchema(value) {
   if (nullable && (schema.type || schema.allOf || schema.oneOf || schema.anyOf || schema.$ref)) return { anyOf: [schema, { type: 'null' }] };
   return schema;
 }
-const names = ['StorefrontProductDto', 'StorefrontProductsPageDto', 'StorefrontShopPageDto', 'CategoryTreeDto', 'ProductDto', 'MyProductsPageDto', 'ProductVariantDto', 'CartDto', 'FavoritesPageDto', 'BuyerOrdersPageDto'];
+const names = ['StorefrontProductDto', 'StorefrontProductsPageDto', 'StorefrontShopPageDto', 'CategoryTreeDto', 'ProductDto', 'MyProductsPageDto', 'ProductVariantDto', 'CartDto', 'FavoritesPageDto', 'BuyerOrdersPageDto', 'StorefrontBannerDto'];
 const ajv = new Ajv({ strict: false, validateFormats: false, code: { source: true, esm: true, lines: true } });
 ajv.addSchema({ $id: 'elchi', components: { schemas: jsonSchema(contract.components.schemas) } });
 const exports = {};
