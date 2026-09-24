@@ -65,7 +65,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
   const basePath = `/product/${encodeURIComponent(String(productId))}`;
   return <section className="reviews-section" id="reviews" aria-labelledby="reviews-title">
     <div className="reviews-heading">
-      <div><span className="reviews-score"><Star fill="currentColor" aria-hidden/> {reviews.rating.toFixed(1)}</span><div><h2 id="reviews-title">Xaridorlar sharhlari</h2><p>{reviews.total} ta sharh</p></div></div>
+      <div>{reviews.total > 0 && <span className="reviews-score"><Star fill="currentColor" aria-hidden/> {reviews.rating.toFixed(1)}</span>}<div><h2 id="reviews-title">Xaridorlar sharhlari</h2><p>{reviews.total > 0 ? `${reviews.total} ta sharh` : "Hali hech kim baho qo‘ymagan"}</p></div></div>
     </div>
 
     {reviews.error ? <StatePanel kind="error" compact title="Sharhlarni yuklab bo‘lmadi" description={reviews.error}/> : reviews.items.length ? <div className="reviews-list">
@@ -74,7 +74,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
         <div className="review-stars" aria-label={`${review.rating} yulduz`}>{Array.from({ length: 5 }, (_, index) => <Star key={index} fill={index < review.rating ? "currentColor" : "none"}/>)}</div>
         {review.comment && <p>{review.comment}</p>}
       </article>)}
-    </div> : <StatePanel compact title="Hali sharhlar yo‘q" description="Bu mahsulot haqida birinchi bo‘lib fikr qoldiring."/>}
+    </div> : <StatePanel compact title="Sharhlar hali yo‘q" description="Mahsulotni sotib olgan bo‘lsangiz, fikringizni yozing — boshqalarga tanlashda yordam beradi."/>}
 
     {!reviews.error && reviews.totalPages > 1 && <nav className="reviews-pagination" aria-label="Sharhlar sahifalari">
       {reviews.page > 1 ? <Link className="button button--secondary" href={`${basePath}?reviewPage=${reviews.page - 1}#reviews`}>← Oldingi</Link> : <span/>}

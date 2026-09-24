@@ -207,12 +207,15 @@ try {
   const reviewState = await evaluate(`({
     heading: document.querySelector("#reviews-title")?.textContent.trim(),
     rating: document.querySelector(".reviews-score")?.textContent.trim(),
+    summary: document.querySelector(".reviews-heading p")?.textContent.trim(),
     hasResult: Boolean(document.querySelector("#reviews .reviews-list, #reviews .state-panel")),
     guestRestriction: document.querySelector(".review-form-card")?.textContent.includes("Sharh yozish uchun"),
     formVisible: Boolean(document.querySelector(".review-form-card form")),
   })`);
   assert.equal(reviewState.heading, "Xaridorlar sharhlari");
-  assert.match(reviewState.rating, /^\d(?:\.\d)$/);
+  // Sharh yo'q mahsulotda "0.0" ko'rsatilmaydi — o'rniga matn chiqadi.
+  if (reviewState.rating) assert.match(reviewState.rating, /^\d(?:\.\d)$/);
+  else assert.equal(reviewState.summary, "Hali hech kim baho qo‘ymagan");
   assert.equal(reviewState.hasResult, true);
   assert.deepEqual({ guestRestriction: reviewState.guestRestriction, formVisible: reviewState.formVisible }, { guestRestriction: true, formVisible: false });
   console.log(`PASS: backend catalog, numbered pagination, search/filter/sort, reviews and ${routes.length} routes at 375px without horizontal overflow.`);

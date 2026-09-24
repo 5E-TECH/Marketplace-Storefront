@@ -50,12 +50,13 @@ const orderIdFrom = (response: unknown): string => {
   return String(value);
 };
 
+// Backend enumlari: SalesOrder (DRAFT…REFUNDED), sotuvchi qismi (PENDING…RETURNED) va Elchi tracking holatlari.
 const statusMap: Record<string, OrderStatus> = {
-  NEW: "Qabul qilindi", PENDING: "Qabul qilindi", CREATED: "Qabul qilindi", CONFIRMED: "Qabul qilindi", ACCEPTED: "Qabul qilindi", PENDING_PAYMENT: "Qabul qilindi", DRAFT: "Qabul qilindi",
-  PROCESSING: "Yig‘ilmoqda", PREPARING: "Yig‘ilmoqda", PACKING: "Yig‘ilmoqda", ASSEMBLING: "Yig‘ilmoqda", SHIPMENT_CREATED: "Yig‘ilmoqda", READY_FOR_PICKUP: "Yig‘ilmoqda",
-  IN_TRANSIT: "Yo‘lda", ON_THE_ROAD: "Yo‘lda", SHIPPING: "Yo‘lda", OUT_FOR_DELIVERY: "Yo‘lda",
-  DELIVERED: "Yetkazildi", COMPLETED: "Yetkazildi",
-  CANCELLED: "Bekor qilindi", CANCELED: "Bekor qilindi", REJECTED: "Bekor qilindi",
+  DRAFT: "Qabul qilindi", PENDING_PAYMENT: "Qabul qilindi", PAID: "Qabul qilindi", PENDING: "Qabul qilindi", CONFIRMED: "Qabul qilindi",
+  SHIPMENT_CREATED: "Yig‘ilmoqda",
+  RECEIVED: "Yo‘lda", ON_THE_ROAD: "Yo‘lda", IN_TRANSIT: "Yo‘lda", OUT_FOR_DELIVERY: "Yo‘lda", PARTIALLY_FULFILLED: "Yo‘lda",
+  DELIVERED: "Yetkazildi", FULFILLED: "Yetkazildi", COMPLETED: "Yetkazildi",
+  CANCELLED: "Bekor qilindi",
   RETURNED: "Qaytarildi", REFUNDED: "Qaytarildi",
 };
 export const normalizeOrderStatus = (value: unknown): OrderStatus => {
@@ -93,13 +94,15 @@ const normalizeBuyerOrder = (value: unknown, index: number): Order => {
   const paymentData = object(item.payment);
   const paymentMethod = String(item.paymentMethod ?? paymentData.provider ?? "").toUpperCase();
   const rawPaymentStatus = String(item.paymentStatus ?? paymentData.status ?? "").toUpperCase();
+  const provider = String(item.paymentProvider ?? paymentData.provider ?? paymentMethod).toUpperCase();
   const online = paymentMethod === "ONLINE" || paymentMethod === "PAYME" || paymentMethod === "CLICK";
   const paymentStatus = ["PENDING", "PAID", "CANCELLED", "FAILED", "REFUNDED"].includes(rawPaymentStatus) ? rawPaymentStatus as PaymentStatus : online ? "PENDING" : undefined;
   return {
     id, createdAt, status: normalizeOrderStatus(item.orderStatus ?? item.status),
     customer: { name: "", phone: "", address: "" }, items,
     subtotal: money(item.subtotal, "subtotal"), delivery: money(item.deliveryFee ?? item.delivery, "deliveryFee"), total: money(item.totalAmount ?? item.total, "totalAmount"), payment: online ? "card" : "cash",
-    paymentProvider: paymentMethod === "PAYME" || paymentMethod === "CLICK" ? paymentMethod : undefined,
+    // Kontraktda paymentMethod faqat "online" | "cod"; provayder alohida maydonda keladi.
+    paymentProvider: provider === "PAYME" || provider === "CLICK" ? provider : undefined,
     paymentStatus,
   };
 };

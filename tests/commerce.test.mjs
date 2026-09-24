@@ -16,7 +16,7 @@ test('featured shops are normalized and API failure stays isolated', async () =>
   }).productService;
   assert.deepEqual(await service.featuredShops(), [{ id: 7, name: 'Baraka', slug: 'baraka-market', logoUrl: 'https://api.test/media/baraka.png', description: 'Saralangan mahsulotlar', bannerUrl: undefined, address: undefined, rating: 4.8, productCount: 23 }]);
   assert.equal(calls[0][0], '/storefront/shops/featured');
-  assert.deepEqual(calls[0][1], { next: { revalidate: 30 } });
+  assert.deepEqual(calls[0][1], { next: { revalidate: 30 }, timeoutMs: 3000 });
 
   const unavailable = loadTypeScript('src/services/product.service.ts', {
     ...baseMocks,

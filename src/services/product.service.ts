@@ -1,8 +1,8 @@
 import { env } from "@/config/env";
 import { ApiError, apiRequest } from "@/lib/api";
-import { validateStorefrontProductDto, validateStorefrontProductsPageDto, validateStorefrontShopPageDto } from "@/generated/api-validators";
+import { validateStorefrontProductDto } from "@/generated/api-validators";
 import type { CatalogResult, Product, ProductQuery, ShopResult, StorefrontShop } from "@/types/commerce";
-import type { StorefrontProductDto, StorefrontProductsResponse, StorefrontShopPageDto } from "@/types/storefront-api";
+import type { StorefrontProductDto } from "@/types/storefront-api";
 import { errorMessage } from "@/lib/errors";
 
 const STOREFRONT_PRODUCTS_PATH = "/storefront/products";
@@ -40,7 +40,8 @@ export const normalizeProduct = (value: StorefrontProductDto): Product => {
   const image = imageUrl(raw.image) || imageUrl(raw.thumbnail) || imageUrl(raw.cover) || imageUrl(raw.imageUrl) || images[0] || "/placeholder-product.svg";
   const category = object(raw.category);
   const shop = object(raw.shop);
-  const rawVariants = Array.isArray(value.variants) ? value.variants.map(object) : [];
+  // O'chirilgan variant savatchaga tushmasin — backend ularni ham qaytaradi.
+  const rawVariants = Array.isArray(value.variants) ? value.variants.map(object).filter((variant) => variant.isActive !== false) : [];
   const variants = rawVariants.map((variant) => ({ id: id(variant.id), name: text(variant.name) || undefined, sku: text(variant.sku) || undefined, price: number(variant.price, raw.price), oldPrice: number(variant.oldPrice) || undefined, stock: typeof variant.stock === "number" ? variant.stock : undefined, color: text(variant.color, object(variant.attributes).color) || undefined, size: text(variant.size, object(variant.attributes).size) || undefined, image: imageUrl(variant.imageUrl) || (Array.isArray(variant.images) ? variant.images : []).map(imageUrl).find(Boolean), attributes: Object.fromEntries(Object.entries(object(variant.attributes)).filter((entry): entry is [string, string | number | boolean] => ["string", "number", "boolean"].includes(typeof entry[1]))) }));
   const variantImages = rawVariants.flatMap((variant) => [imageUrl(variant.imageUrl), ...(Array.isArray(variant.images) ? variant.images : []).map(imageUrl)]).filter(Boolean);
   const allImages = [...new Set([...images, ...variantImages])];
@@ -76,14 +77,33 @@ export const normalizeShop = (value: unknown): StorefrontShop => {
   const name = text(shop.name);
   const slug = text(shop.slug);
   if (shopId === "" || !name || !slug) throw new Error("Backend do‘kon ma’lumotini noto‘g‘ri qaytardi");
-  return { id: shopId, name, slug, description: text(shop.description) || undefined, logoUrl: imageUrl(shop.logoUrl) || undefined, bannerUrl: imageUrl(shop.bannerUrl) || undefined, address: text(shop.address) || undefined, rating: number(shop.rating), productCount: number(shop.productCount, shop.productsCount, shop.products_count, shop.totalProducts) };
+  return { id: shopId, name, slug, description: text(shop.description) || undefined, logoUrl: imageUrl(shop.logoUrl) || undefined, bannerUrl: imageUrl(shop.bannerUrl) || undefined, address: text(shop.address) || undefined, rating: number(shop.rating), productCount: [shop.productCount, shop.productsCount, shop.totalProducts].some((value) => typeof value === "number") ? number(shop.productCount, shop.productsCount, shop.totalProducts) : undefined };
 };
+
+type ProductPage = { items: unknown[]; total?: unknown; page?: unknown; limit?: unknown; totalPages?: unknown };
+const isProductPage = (value: unknown): value is ProductPage => Array.isArray(object(value).items);
+const isShopPage = (value: unknown): value is { shop: unknown; products: ProductPage } => Boolean(object(value).shop) && isProductPage(object(value).products);
+
+/**
+ * Sahifa konverti tekshiriladi, mahsulotlar esa bittalab: sxemaga mos kelmagan
+ * bitta yozuv butun katalogni bo'shatib qo'ymasin, faqat o'zi tushib qolsin.
+ */
+function toCatalog(result: ProductPage, page: number, limit: number): CatalogResult {
+  const items = result.items.filter(validateStorefrontProductDto).map(normalizeProduct).filter((product) => product.id !== "" && product.name);
+  const total = number(result.total, items.length);
+  const responseLimit = Math.max(1, number(result.limit, limit));
+  return { data: items, total, page: Math.max(1, number(result.page, page)), limit: responseLimit, totalPages: Math.max(0, number(result.totalPages, Math.ceil(total / responseLimit))), source: "api" };
+}
+
+const unavailable = (page: number, limit: number, error: unknown, fallback: string): CatalogResult => ({ data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: errorMessage(error, fallback) });
+const listParams = (query: Omit<ProductQuery, "categoryId">, page: number, limit: number) => ({ search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page, limit });
 
 export const productService = {
   async featuredShops(): Promise<StorefrontShop[]> {
     if (!env.apiUrl) return [];
     try {
-      const response = await apiRequest<unknown>(`${STOREFRONT_SHOPS_PATH}/featured`, { next: { revalidate: 30 } });
+      // Ixtiyoriy blok: sekin javob butun bosh sahifani ushlab turmasin.
+      const response = await apiRequest<unknown>(`${STOREFRONT_SHOPS_PATH}/featured`, { next: { revalidate: 30 }, timeoutMs: 3000 });
       const root = object(response);
       const items = Array.isArray(response) ? response : Array.isArray(root.items) ? root.items : Array.isArray(root.shops) ? root.shops : [];
       return items.flatMap((item) => { try { return [normalizeShop(item)]; } catch { return []; } });
@@ -95,21 +115,12 @@ export const productService = {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     if (!env.apiUrl) return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: "API_URL sozlanmagan" };
-    let result: StorefrontProductsResponse;
     try {
-      const response = await apiRequest(STOREFRONT_PRODUCTS_PATH, { params: { search: query.search, categoryId: query.categoryId, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page, limit }, next: { revalidate: 30 }, validate: validateStorefrontProductsPageDto });
-      result = response;
+      const response = await apiRequest(STOREFRONT_PRODUCTS_PATH, { params: { ...listParams(query, page, limit), categoryId: query.categoryId }, next: { revalidate: 30 }, validate: isProductPage });
+      return toCatalog(response, page, limit);
     } catch (error) {
-      const reason = errorMessage(error, "Storefront API bilan aloqa yo‘q");
-      const message = `${env.apiUrl}${STOREFRONT_PRODUCTS_PATH} — ${reason}`;
-      return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: message };
+      return unavailable(page, limit, error, "Mahsulotlarni yuklab bo‘lmadi");
     }
-    const items = result.items.map(normalizeProduct).filter((product) => product.id !== "" && product.name);
-    const total = number(result.total, items.length);
-    const responsePage = Math.max(1, number(result.page, page));
-    const responseLimit = Math.max(1, number(result.limit, limit));
-    const totalPages = Math.max(0, number(result.totalPages, Math.ceil(total / responseLimit)));
-    return { data: items, total, page: responsePage, limit: responseLimit, totalPages, source: "api" };
   },
   async getById(id: string | number): Promise<Product | null> {
     if (!env.apiUrl) return null;
@@ -118,7 +129,7 @@ export const productService = {
       const product = normalizeProduct(response);
       return product.id !== "" && product.name ? product : null;
     } catch (error) {
-      if (error instanceof ApiError && error.status === 404) return null;
+      if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
       throw error;
     }
   },
@@ -128,26 +139,19 @@ export const productService = {
     if (!env.apiUrl) return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: "API_URL sozlanmagan" };
     const path = `${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(String(shopId))}/products`;
     try {
-      const response = await apiRequest(path, { params: { search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page, limit }, next: { revalidate: 30 }, validate: validateStorefrontProductsPageDto });
-      const result = response;
-      const items = result.items.map(normalizeProduct).filter((product) => product.id !== "" && product.name);
-      const total = number(result.total, items.length);
-      const responseLimit = Math.max(1, number(result.limit, limit));
-      return { data: items, total, page: Math.max(1, number(result.page, page)), limit: responseLimit, totalPages: Math.max(0, number(result.totalPages, Math.ceil(total / responseLimit))), source: "api" };
+      return toCatalog(await apiRequest(path, { params: listParams(query, page, limit), next: { revalidate: 30 }, validate: isProductPage }), page, limit);
     } catch (error) {
-      const reason = errorMessage(error, "Do‘kon mahsulotlarini yuklab bo‘lmadi");
-      return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: `${env.apiUrl}${path} — ${reason}` };
+      return unavailable(page, limit, error, "Do‘kon mahsulotlarini yuklab bo‘lmadi");
     }
   },
   async getShop(slug: string, query: Omit<ProductQuery, "categoryId"> = {}): Promise<ShopResult | null> {
     if (!slug.trim() || slug.length > 160) return null;
     if (!env.apiUrl) return null;
     try {
-      const response = await apiRequest<StorefrontShopPageDto>(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: { search: query.search, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page: query.page ?? 1, limit: query.limit ?? 10 }, next: { revalidate: 30 }, validate: validateStorefrontShopPageDto });
-      const items = response.products.items.map(normalizeProduct).filter((product) => product.id !== "" && product.name);
-      const limit = Math.max(1, number(response.products.limit, query.limit ?? 10));
-      const total = number(response.products.total, items.length);
-      return { shop: normalizeShop(response.shop), catalog: { data: items, total, page: Math.max(1, number(response.products.page, query.page ?? 1)), limit, totalPages: Math.max(0, number(response.products.totalPages, Math.ceil(total / limit))), source: "api" } };
+      const page = query.page ?? 1;
+      const limit = query.limit ?? 10;
+      const response = await apiRequest(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: listParams(query, page, limit), next: { revalidate: 30 }, validate: isShopPage });
+      return { shop: normalizeShop(response.shop), catalog: toCatalog(response.products, page, limit) };
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return null;
       throw error;

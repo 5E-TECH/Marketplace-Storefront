@@ -24,7 +24,7 @@ export function CatalogOverlay({ categories, open, onClose }: { categories: Cata
     <button className="catalog-backdrop" type="button" onClick={onClose} aria-label="Katalogni yopish"/>
     <div className="catalog-mega" id="catalog-menu">
       <Container>
-        <div className="catalog-mega-head"><div><span>BARCHA TOIFALAR</span><h2>Mahsulotlar katalogi</h2></div><Link href="/katalog" onClick={onClose}>Barcha kategoriyalar →</Link></div>
+        <div className="catalog-mega-head"><div><h2>Mahsulotlar katalogi</h2></div><Link href="/katalog" onClick={onClose}>Barcha kategoriyalar →</Link></div>
         <div className="catalog-mega-grid">{categories.map((category) => <section key={category.id}>
           <Link className="catalog-category-title" href={`/katalog/${category.slug}`} onClick={onClose}><i><CategoryIcon name={category.name} iconUrl={category.iconUrl}/></i><b>{category.name}</b></Link>
           {category.children.map((child) => <Link href={`/katalog/${child.slug}`} onClick={onClose} key={child.id}>{child.name}</Link>)}

@@ -43,11 +43,12 @@ export function ProductInformation({ product }: { product: Product }) {
     </div>
     <div className="product-info-layout">
       <div className="product-info-body">
-        {tab === "description" && <div className="description-content"><h2>{product.name} haqida</h2><p>{product.description || "Sotuvchi bu mahsulot uchun tavsif kiritmagan."}</p></div>}
-        {tab === "specifications" && <div className="specification-table"><h2>Mahsulot xususiyatlari</h2>{specifications.length ? specifications.map(([name, value]) => <p key={name}><span>{name}</span><b>{value}</b></p>) : <p className="product-info-empty">Sotuvchi qo‘shimcha xususiyatlarni kiritmagan.</p>}</div>}
-        {tab === "delivery" && <div className="delivery-details"><h2>Yetkazib berish va to‘lov</h2><div><span><Truck/></span><p><b>Manzil bo‘yicha hisob-kitob</b><small>Narx va muddat checkoutda manzil to‘liq kiritilgach backend tomonidan hisoblanadi.</small></p></div><div><span><CreditCard/></span><p><b>Qabul qilganda to‘lash</b><small>Hozirgi checkout COD to‘lov usulini qo‘llaydi.</small></p></div><div><span><PackageCheck/></span><p><b>Buyurtma holati</b><small>Buyurtma yaratilgach uning joriy holatini kuzatish sahifasida tekshirish mumkin.</small></p></div></div>}
+        {/* Uchala bo'lim ham HTML'da bor — qidiruv tizimi ko'radi, foydalanuvchi faqat tanlanganini. */}
+        <div className="description-content" role="tabpanel" hidden={tab !== "description"}><h2>{product.name} haqida</h2><p>{product.description || "Sotuvchi bu mahsulot uchun tavsif kiritmagan."}</p></div>
+        <div className="specification-table" role="tabpanel" hidden={tab !== "specifications"}><h2>Mahsulot xususiyatlari</h2>{specifications.length ? specifications.map(([name, value]) => <p key={name}><span>{name}</span><b>{value}</b></p>) : <p className="product-info-empty">Sotuvchi qo‘shimcha xususiyatlarni kiritmagan.</p>}</div>
+        <div className="delivery-details" role="tabpanel" hidden={tab !== "delivery"}><h2>Yetkazib berish va to‘lov</h2><div><span><Truck/></span><p><b>Yetkazish narxi manzilga bog‘liq</b><small>Buyurtma berayotganda viloyat va tumanni tanlaysiz — narx va taxminiy muddat shu zahoti chiqadi.</small></p></div><div><span><CreditCard/></span><p><b>To‘lov qabul qilganda</b><small>Mahsulotni ko‘rib, keyin naqd yoki kuryerning terminali orqali to‘laysiz.</small></p></div><div><span><PackageCheck/></span><p><b>Buyurtmani kuzatish</b><small>Posilka qaysi bosqichdaligini “Buyurtmalarim” bo‘limida ko‘rib borasiz.</small></p></div></div>
       </div>
-      {product.shop && <aside className="seller-card"><div className="seller-title"><span><Store/></span><div><small>SOTUVCHI</small><h3>{product.shop.name}</h3></div></div>{product.shop.slug && <Link href={`/dokon/${encodeURIComponent(product.shop.slug)}`}>Do‘kon mahsulotlari <ChevronRight/></Link>}</aside>}
+      {product.shop && <aside className="seller-card"><div className="seller-title"><span><Store/></span><div><small>Sotuvchi</small><h3>{product.shop.name}</h3></div></div>{product.shop.slug && <Link href={`/dokon/${encodeURIComponent(product.shop.slug)}`}>Do‘kon mahsulotlari <ChevronRight/></Link>}</aside>}
     </div>
   </section>;
 }

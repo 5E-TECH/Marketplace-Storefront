@@ -58,13 +58,13 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
           <button className="quick-buy" disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={buyNow}>Bir klikda xarid qilish</button>
         </div>
 
-        <div className="service-list"><div><span><Truck/></span><p><b>Manzil bo‘yicha yetkazib berish</b><small>Narx va muddat rasmiylashtirishda hisoblanadi</small></p></div><div><span><ShieldCheck/></span><p><b>Qabul qilganda to‘lash</b><small>Hozirgi checkout COD to‘lov usulini qo‘llaydi</small></p></div><div><span><Clock3/></span><p><b>Buyurtmani kuzatish</b><small>Holatini buyurtmalar sahifasida tekshirishingiz mumkin</small></p></div></div>
+        <div className="service-list"><div><span><Truck/></span><p><b>O‘zbekiston bo‘ylab yetkazamiz</b><small>Narxi va muddatini manzilni yozganingizda ko‘rasiz</small></p></div><div><span><ShieldCheck/></span><p><b>Qo‘lingizga olganda to‘laysiz</b><small>Naqd yoki kuryerning terminali orqali</small></p></div><div><span><Clock3/></span><p><b>Buyurtma qayerdaligini ko‘rib turasiz</b><small>“Buyurtmalarim” bo‘limida har bir bosqich yoziladi</small></p></div></div>
       </section>
     </div>
 
     <ProductInformation product={product}/>
     <ProductReviews productId={product.id} reviews={reviews}/>
 
-    <div className="mobile-buy-bar"><div><Price value={selectedPrice}/><small>Yetkazish manzil bo‘yicha</small></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> Savatchaga</Button></div>
+    <div className="mobile-buy-bar"><div><Price value={selectedPrice}/><small>Yetkazish alohida hisoblanadi</small></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> Savatchaga</Button></div>
   </>;
 }

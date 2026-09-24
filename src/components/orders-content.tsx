@@ -46,8 +46,8 @@ export function OrdersContent() {
       : <Link className="button button--primary" href="/#products">Xarid qilish</Link>}/>;
 
   return <section className="orders-page">
-    <div className="page-heading"><div><span>BUYURTMALARIM</span><h1>Xaridlar tarixi</h1></div><button type="button" onClick={() => void retry()} disabled={reloading}><RefreshCw/> {reloading ? "Yangilanmoqda…" : "Yangilash"}</button></div>
-    {error && <div className="catalog-notice catalog-notice--error" role="alert"><span>ALOQA YO‘Q</span><p>{error} Shu brauzerda saqlangan buyurtmalar ko‘rsatilmoqda.</p></div>}
+    <div className="page-heading"><div><h1>Xaridlar tarixi</h1></div><button type="button" onClick={() => void retry()} disabled={reloading}><RefreshCw/> {reloading ? "Yangilanmoqda…" : "Yangilash"}</button></div>
+    {error && <div className="catalog-notice catalog-notice--error" role="alert"><p>{error} Shu brauzerda saqlangan buyurtmalar ko‘rsatilmoqda.</p></div>}
     <div className="orders-list">{orders.map((order) => <article key={order.id}>
       <header><div><small>Buyurtma</small><b>{order.id}</b></div><div><small>Sana</small><b>{formatDate(order.createdAt)}</b></div><span>{order.status}</span></header>
       <div>{order.items.slice(0, 3).map((item) => <Link href={`/product/${item.productId}`} key={item.id}>{item.product.name} <small>× {item.quantity}</small></Link>)}</div>

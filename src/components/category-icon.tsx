@@ -1,51 +1,49 @@
 import Image from "next/image";
-import {
-  Apple, Baby, Book, Car, Cpu, Dumbbell, Flower2, Footprints, Gamepad2, Gem, Guitar, Hammer, HeartPulse, Home, Laptop,
-  LayoutGrid, PawPrint, PenTool, Refrigerator, Shirt, ShoppingBasket, Smartphone, Sofa, Sparkles, Tv, Watch, Wrench,
-  type LucideIcon,
-} from "lucide-react";
 import { getSafeImageSrc } from "@/lib/product-storage";
 
-// Backend kategoriya ikonkasini bermaganda nomdagi kalit so'z bo'yicha tanlanadi.
+// Backend kategoriya rasmini (iconUrl) bermaganda nomdagi kalit so'z bo'yicha 3D ikonka tanlanadi.
+// Ikonkalar: Microsoft Fluent Emoji 3D (MIT) — public/category-icons/LICENSE.
 // Birinchi mos kelgan kalit so'z g'olib bo'ladi, shuning uchun aniqroqlari yuqorida turadi.
-const iconRules: [string[], LucideIcon][] = [
-  [["smartfon", "telefon", "mobil"], Smartphone],
-  [["noutbuk", "kompyuter", "komputer", "laptop"], Laptop],
-  [["televizor", "tv", "monitor"], Tv],
-  [["muzlatgich", "maishiy", "kir yuvish"], Refrigerator],
-  [["elektronika", "texnika", "gadjet"], Cpu],
-  [["soat", "aksessuar"], Watch],
-  [["zargarlik", "oltin", "kumush", "bijuteriya"], Gem],
-  [["poyabzal", "oyoq kiyim", "krossovka", "botinka"], Footprints],
-  [["kiyim", "kiyim-kechak", "moda", "tekstil"], Shirt],
-  [["kosmetika", "parfum", "atir", "go‘zallik", "parvarish"], Sparkles],
-  [["salomatlik", "sog‘liq", "dori", "tibbiy"], HeartPulse],
-  [["bola", "bolalar", "chaqaloq", "go‘dak"], Baby],
-  [["o‘yinchoq", "o‘yin", "konsol"], Gamepad2],
-  [["sport", "fitnes", "turizm"], Dumbbell],
-  [["mebel", "interyer"], Sofa],
-  [["uy", "ro‘zg‘or", "bog‘"], Home],
-  [["oziq", "ovqat", "ichimlik", "mahsulot"], Apple],
-  [["gul", "o‘simlik"], Flower2],
-  [["hayvon", "uy hayvon"], PawPrint],
-  [["kitob", "adabiyot"], Book],
-  [["kanselyariya", "ofis", "maktab"], PenTool],
-  [["musiqa", "cholg‘u", "asbob-uskuna"], Guitar],
-  [["avto", "mashina", "moto", "transport"], Car],
-  [["qurilish", "ta‘mir", "instrument"], Hammer],
-  [["jihoz", "uskuna", "asbob"], Wrench],
-  [["market", "supermarket", "savdo"], ShoppingBasket],
+const iconRules: [string[], string][] = [
+  [["smartfon", "telefon", "mobil"], "smartphone"],
+  [["noutbuk", "kompyuter", "komputer", "laptop"], "laptop"],
+  [["televizor", "tv", "monitor"], "tv"],
+  [["muzlatgich", "maishiy", "kir yuvish"], "appliance"],
+  [["elektronika", "texnika", "gadjet"], "electronics"],
+  [["soat", "aksessuar"], "watch"],
+  [["zargarlik", "oltin", "kumush", "bijuteriya"], "gem"],
+  [["poyabzal", "oyoq kiyim", "krossovka", "botinka"], "shoe"],
+  [["kiyim", "kiyim-kechak", "moda", "tekstil"], "shirt"],
+  [["kosmetika", "parfum", "atir", "go‘zallik", "parvarish"], "cosmetics"],
+  [["salomatlik", "sog‘liq", "dori", "tibbiy"], "health"],
+  [["bola", "bolalar", "chaqaloq", "go‘dak"], "baby"],
+  [["o‘yinchoq", "o‘yin", "konsol"], "toys"],
+  [["sport", "fitnes", "turizm"], "sport"],
+  [["mebel", "interyer"], "furniture"],
+  [["uy", "ro‘zg‘or", "bog‘"], "home"],
+  [["oziq", "ovqat", "ichimlik", "mahsulot"], "food"],
+  [["gul", "o‘simlik"], "plant"],
+  [["hayvon", "uy hayvon"], "pets"],
+  [["kitob", "adabiyot"], "books"],
+  [["kanselyariya", "ofis", "maktab"], "stationery"],
+  [["musiqa", "cholg‘u", "asbob-uskuna"], "music"],
+  [["avto", "mashina", "moto", "transport"], "auto"],
+  [["qurilish", "ta‘mir", "instrument"], "construction"],
+  [["jihoz", "uskuna", "asbob"], "tools"],
+  [["market", "supermarket", "savdo"], "market"],
 ];
 
-const normalize = (value: string) => value.toLocaleLowerCase("uz").replace(/[\u02bb\u02bc\u2018\u2019`']/g, "‘");
+const normalize = (value: string) => value.toLocaleLowerCase("uz").replace(/[ʻʼ‘’`']/g, "‘");
 
-export const categoryIconFor = (name: string): LucideIcon => {
+export const categoryIconFor = (name: string): string => {
   const key = normalize(name);
-  return iconRules.find(([words]) => words.some((word) => key.includes(normalize(word))))?.[1] ?? LayoutGrid;
+  const icon = iconRules.find(([words]) => words.some((word) => key.includes(normalize(word))))?.[1] ?? "default";
+  return `/category-icons/${icon}.webp`;
 };
 
+/** Kategoriya nomi yonida turadi — alt bo'sh, ekran o'quvchi nomni ikki marta o'qimasin. */
 export function CategoryIcon({ name, iconUrl, className }: { name: string; iconUrl?: string; className?: string }) {
-  if (iconUrl) return <Image className={className} src={getSafeImageSrc(iconUrl)} alt="" width={64} height={64}/>;
-  const Icon = categoryIconFor(name);
-  return <span className={className} aria-hidden><Icon/></span>;
+  const src = iconUrl ? getSafeImageSrc(iconUrl) : categoryIconFor(name);
+  // O'zimizdagi ikonkalar allaqachon kichik WebP — optimizatordan o'tkazish faqat kechiktiradi.
+  return <Image className={className} src={src} alt="" width={80} height={80} unoptimized={!iconUrl}/>;
 }

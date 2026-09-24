@@ -62,7 +62,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
     try { window.location.assign(await orderService.startPayment(target)); }
     catch { setError("To‘lov sahifasini hozir ochib bo‘lmadi. Birozdan keyin qayta urinib ko‘ring."); setPaymentPending(false); }
   };
-  return <section className="tracking-page"><div className="page-heading"><div><span>BUYURTMA HOLATI</span><h1>#{tracking.orderId}</h1></div><button onClick={() => void load()}><RefreshCw/> Yangilash</button></div>
+  return <section className="tracking-page"><div className="page-heading"><div><h1>#{tracking.orderId}</h1></div><button onClick={() => void load()}><RefreshCw/> Yangilash</button></div>
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="tracking-card"><div className="tracking-status"><Truck/><div><small>Hozirgi holat</small><h2>{tracking.status}</h2>{tracking.estimatedDeliveryAt && <p>Taxminiy yetkazish: {formatDate(tracking.estimatedDeliveryAt)}</p>}</div></div>
       {!terminal.has(tracking.status) && <ol className="tracking-steps">{steps.map((step, index) => <li className={index <= current ? "active" : ""} key={step}><i>{index < current ? <Check/> : index + 1}</i><span>{step}</span></li>)}</ol>}

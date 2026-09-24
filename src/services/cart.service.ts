@@ -34,8 +34,8 @@ const normalizeCart = async (response: unknown): Promise<Cart> => {
     try {
       const product = await getCartProduct(productId);
       return [productId, product] as const;
-    } catch (error) {
-      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    } catch {
+      // Bitta mahsulot yuklanmasa butun savatcha yiqilmasin: narx snapshot'dan olinadi, nomi vaqtincha raqam bilan.
       return [productId, { id: productId, name: `Mahsulot #${productId}` }] as const;
     }
   })));
