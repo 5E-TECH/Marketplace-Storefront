@@ -1,9 +1,10 @@
 import { apiRequest } from "@/lib/api";
 import { authHeaders, getAccessToken } from "@/lib/access-token";
 import { validateBuyerOrdersPageDto } from "@/generated/api-validators";
-import type { CheckoutAddress, DeliveryPreview, Order, OrderStatus, OrderTracking, PaymentMethod, PaymentProvider, PaymentStatus, TrackingPackage } from "@/types/commerce";
+import type { CheckoutAddress, DeliveryPreview, Order, OrderStatus, OrderTracking, PaymentMethod, PaymentProvider, PaymentStatus, TrackingPackage, TrackingPayment } from "@/types/commerce";
 import type { BuyerOrdersResponse } from "@/types/storefront-api";
 import { cartService } from "./cart.service";
+import { errorMessage } from "@/lib/errors";
 
 const STORAGE_KEY = "elchi_orders_v1";
 const object = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -50,7 +51,7 @@ const orderIdFrom = (response: unknown): string => {
 };
 
 const statusMap: Record<string, OrderStatus> = {
-  NEW: "Qabul qilindi", PENDING: "Qabul qilindi", CREATED: "Qabul qilindi", CONFIRMED: "Qabul qilindi", ACCEPTED: "Qabul qilindi",
+  NEW: "Qabul qilindi", PENDING: "Qabul qilindi", CREATED: "Qabul qilindi", CONFIRMED: "Qabul qilindi", ACCEPTED: "Qabul qilindi", PENDING_PAYMENT: "Qabul qilindi", DRAFT: "Qabul qilindi",
   PROCESSING: "Yig‘ilmoqda", PREPARING: "Yig‘ilmoqda", PACKING: "Yig‘ilmoqda", ASSEMBLING: "Yig‘ilmoqda", SHIPMENT_CREATED: "Yig‘ilmoqda", READY_FOR_PICKUP: "Yig‘ilmoqda",
   IN_TRANSIT: "Yo‘lda", ON_THE_ROAD: "Yo‘lda", SHIPPING: "Yo‘lda", OUT_FOR_DELIVERY: "Yo‘lda",
   DELIVERED: "Yetkazildi", COMPLETED: "Yetkazildi",
@@ -107,6 +108,21 @@ const remoteOrders = async (): Promise<Order[]> => {
   const page = await apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: 1, limit: 20 }, validate: validateBuyerOrdersPageDto });
   return page.items.map(normalizeBuyerOrder);
 };
+/** Tracking javobidagi to'lov holati. Buyurtma sahifasi uni brauzer nusxasidan ustun qo'yadi. */
+const normalizeTrackingPayment = (root: Record<string, unknown>): TrackingPayment | undefined => {
+  const payment = object(root.payment);
+  const rawStatus = String(root.paymentStatus ?? payment.status ?? "").toUpperCase();
+  if (!["PENDING", "PAID", "CANCELLED", "FAILED", "REFUNDED"].includes(rawStatus)) return undefined;
+  const providerValue = root.paymentProvider ?? payment.provider;
+  const amount = Number(payment.amount);
+  return {
+    status: rawStatus as PaymentStatus,
+    provider: providerValue === "PAYME" || providerValue === "CLICK" ? providerValue : undefined,
+    amount: Number.isFinite(amount) && amount >= 0 ? amount : undefined,
+    failureReason: optionalText(root.paymentFailureReason ?? payment.failureReason ?? payment.reason ?? payment.message),
+  };
+};
+
 const normalizeTracking = (response: unknown): OrderTracking => {
   const root = object(response);
   const order = object(root.order ?? root.salesOrder);
@@ -134,6 +150,7 @@ const normalizeTracking = (response: unknown): OrderTracking => {
     estimatedDeliveryAt: optionalText(root.estimatedDeliveryAt ?? root.estimatedDeliveryDate ?? order.estimatedDeliveryAt),
     updatedAt: optionalText(root.updatedAt ?? order.updatedAt),
     packages,
+    payment: normalizeTrackingPayment(root),
   };
 };
 
@@ -151,10 +168,23 @@ export const orderService = {
       const remote = await remoteOrders();
       return { orders: [...remote, ...local.filter((saved) => !remote.some((order) => order.id === saved.id))] };
     } catch (error) {
-      return { orders: local, error: error instanceof Error ? error.message : "Buyurtmalarni backenddan yuklab bo‘lmadi" };
+      return { orders: local, error: errorMessage(error, "Buyurtmalarni backenddan yuklab bo‘lmadi") };
     }
   },
   async getLocal(orderId: string): Promise<Order | null> { return readLocal().find((order) => order.id === orderId) ?? null; },
+  /** To'lov sahifasidan orqaga qaytilganda checkout bo'sh savat emas, shu buyurtmani ko'rsatishi uchun. */
+  async lastUnpaidOnline(maxAgeMs = 60 * 60 * 1000): Promise<Order | null> {
+    const since = Date.now() - maxAgeMs;
+    return readLocal().find((order) => order.payment === "card" && !["PAID", "REFUNDED"].includes(order.paymentStatus ?? "")
+      && Date.parse(order.createdAt) >= since) ?? null;
+  },
+  /** Buyurtmani avval brauzer nusxasidan, topilmasa backend ro'yxatidan qidiradi: boshqa qurilmada ham "Qayta to'lash" ishlashi uchun. */
+  async find(orderId: string): Promise<Order | null> {
+    const saved = readLocal().find((order) => order.id === orderId);
+    if (saved || !getAccessToken()) return saved ?? null;
+    try { return (await remoteOrders()).find((order) => order.id === orderId) ?? null; }
+    catch { return null; }
+  },
   async track(orderId: string): Promise<OrderTracking> {
     const id = orderId.trim();
     if (!id || id.length > 128) throw new Error("Buyurtma raqami noto‘g‘ri");
@@ -198,14 +228,9 @@ export const orderService = {
     const id = orderId.trim();
     if (!id || id.length > 128) throw new Error("Buyurtma raqami noto‘g‘ri");
     const response = object(await apiRequest(`/orders/${encodeURIComponent(id)}/tracking`, { method: "GET", headers: authHeaders() }));
-    const payment = object(response.payment);
-    const statusValue = response.paymentStatus ?? payment.status;
-    const rawStatus = typeof statusValue === "string" ? statusValue.toUpperCase() : "";
-    if (!["PENDING", "PAID", "CANCELLED", "FAILED", "REFUNDED"].includes(rawStatus)) throw new Error("Backend to‘lov holatini noto‘g‘ri qaytardi");
-    const providerValue = response.paymentProvider ?? payment.provider;
-    const provider = providerValue === "PAYME" || providerValue === "CLICK" ? providerValue : undefined;
-    const reason = optionalText(response.paymentFailureReason ?? payment.failureReason ?? payment.reason ?? payment.message);
-    const status = rawStatus as PaymentStatus;
+    const payment = normalizeTrackingPayment(response);
+    if (!payment) throw new Error("Backend to‘lov holatini noto‘g‘ri qaytardi");
+    const { status, provider, failureReason: reason } = payment;
     if (typeof window !== "undefined") {
       const saved = readLocal().find((item) => item.id === id);
       if (saved) { saved.paymentStatus = status; saved.paymentProvider = provider ?? saved.paymentProvider; try { saveLocal(saved); } catch { /* Status is still shown even if storage is unavailable. */ } }

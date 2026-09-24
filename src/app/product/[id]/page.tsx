@@ -11,6 +11,7 @@ import { productService } from "@/services/product.service";
 import { reviewService } from "@/services/review.service";
 import { absoluteUrl, jsonLd } from "@/lib/seo";
 import type { ProductReviewsResult } from "@/types/commerce";
+import { errorMessage } from "@/lib/errors";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ reviewPage?: string }> };
 
@@ -41,11 +42,12 @@ export default async function ProductPage({ params, searchParams }: Props) {
   const id = (await params).id;
   const rawReviewPage = Number((await searchParams).reviewPage);
   const reviewPage = Number.isSafeInteger(rawReviewPage) && rawReviewPage > 0 ? rawReviewPage : 1;
+  // Sharhlar mahsulotga bog'liq emas — mahsulot va o'xshashlari bilan bir vaqtda so'raladi.
+  const reviewsRequest = reviewService.list(id, reviewPage, 5).then((value) => ({ value, error: "" })).catch((error) => ({ value: null, error: errorMessage(error, "Sharhlarni yuklab bo‘lmadi") }));
   const { product, similar } = await getProductPageData(id);
   if (!product) notFound();
-  let reviews: ProductReviewsResult;
-  try { reviews = await reviewService.list(id, reviewPage, 5); }
-  catch (error) { reviews = { items: [], rating: product.rating, total: product.reviews, page: reviewPage, limit: 5, totalPages: 0, error: error instanceof Error ? error.message : "Sharhlarni yuklab bo‘lmadi" }; }
+  const loaded = await reviewsRequest;
+  const reviews: ProductReviewsResult = loaded.value ?? { items: [], rating: product.rating, total: product.reviews, page: reviewPage, limit: 5, totalPages: 0, error: loaded.error };
   const available = product.status !== "OUT_OF_STOCK" && (!product.variants?.length || product.variants.some((variant) => variant.stock === undefined || variant.stock > 0));
   const structuredData = { "@context": "https://schema.org", "@type": "Product", name: product.name, ...(product.description ? { description: product.description } : {}), image: product.images.length ? product.images.map(absoluteUrl) : [absoluteUrl(product.image)], sku: String(product.id), category: product.categoryInfo?.name ?? product.category, ...(product.shop?.name ? { brand: { "@type": "Brand", name: product.shop.name } } : {}), ...(reviews.total > 0 && !reviews.error ? { aggregateRating: { "@type": "AggregateRating", ratingValue: reviews.rating, reviewCount: reviews.total } } : {}), offers: { "@type": "Offer", url: absoluteUrl(`/product/${encodeURIComponent(id)}`), priceCurrency: "UZS", price: product.price, availability: `https://schema.org/${available ? "InStock" : "OutOfStock"}`, itemCondition: "https://schema.org/NewCondition", ...(product.shop?.name ? { seller: { "@type": "Organization", name: product.shop.name } } : {}) } };
   return <main><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}/><Container><div className="detail-navigation"><BackButton/><nav className="breadcrumbs" aria-label="Sahifa yo‘li"><Link href="/">Bosh sahifa</Link><span>/</span><Link href="/#products">{product.category}</Link><span>/</span><b>{product.name}</b></nav></div><ProductDetail product={product} reviews={reviews}/>{similar.length > 0 && <section className="content-section detail-related"><SectionHeader title="Sizga yoqishi mumkin" href={product.shop?.slug ? `/dokon/${encodeURIComponent(product.shop.slug)}` : "/#products"} linkLabel={product.shop?.slug ? "Do‘kon mahsulotlari" : "Barcha mahsulotlar"}/><div className="products-grid products-grid--related">{similar.map((item) => <ProductCard product={item} key={item.id}/>)}</div></section>}</Container></main>;

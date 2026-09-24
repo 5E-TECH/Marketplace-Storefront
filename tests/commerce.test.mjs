@@ -417,6 +417,46 @@ test('TC2 cancelled result renders failure reason and retry action', () => {
   assert.match(html, /href="\/orders\/order-7"[^>]*>Buyurtmaga qaytish<\/a>/);
 });
 
+test('TC3 pending result announces auto refresh, next step and order link', () => {
+  const Icon = (props) => React.createElement('i', props);
+  const { PaymentResultView } = loadTypeScript('src/components/payment-return-content.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'lucide-react': { CheckCircle2: Icon, CircleX: Icon, Clock3: Icon, RefreshCw: Icon, TriangleAlert: Icon },
+    '@/services/order.service': { orderService: {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: 'order-9', status: 'PENDING', order: null, onCheck() {}, onRetry() {} }));
+  assert.match(html, /To‘lov tekshirilmoqda/);
+  assert.match(html, /Holat har 5 soniyada avtomatik tekshiriladi/);
+  assert.match(html, /<button[^>]*>.*Hozir tekshirish<\/button>/);
+  assert.match(html, /Keyingi qadam:/);
+  assert.match(html, /href="\/orders\/order-9"[^>]*>Buyurtmaga qaytish<\/a>/);
+});
+
+test('every payment result state states a next step and keeps the order link', () => {
+  const Icon = (props) => React.createElement('i', props);
+  const { PaymentResultView } = loadTypeScript('src/components/payment-return-content.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'lucide-react': { CheckCircle2: Icon, CircleX: Icon, Clock3: Icon, RefreshCw: Icon, TriangleAlert: Icon },
+    '@/services/order.service': { orderService: {} },
+  });
+  for (const status of ['PAID', 'PENDING', 'CANCELLED', 'FAILED', 'REFUNDED']) {
+    const html = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: 'order-9', status, order: null, onCheck() {}, onRetry() {} }));
+    assert.match(html, /Keyingi qadam:/, `${status} keyingi qadamni aytmadi`);
+    assert.match(html, /href="\/orders\/order-9"[^>]*>Buyurtmaga qaytish<\/a>/, `${status} buyurtma havolasini yo‘qotdi`);
+  }
+});
+
+test('retry action stays available on failed payment without a stored order', () => {
+  const Icon = (props) => React.createElement('i', props);
+  const { PaymentResultView } = loadTypeScript('src/components/payment-return-content.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'lucide-react': { CheckCircle2: Icon, CircleX: Icon, Clock3: Icon, RefreshCw: Icon, TriangleAlert: Icon },
+    '@/services/order.service': { orderService: {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: 'order-9', status: 'FAILED', order: null, onCheck() {}, onRetry() {} }));
+  assert.match(html, /<button[^>]*>Qayta to‘lash<\/button>/);
+});
+
 test('guest request headers contain a session id without authorization', async (t) => {
   const stored = new Map();
   const originalStorage = globalThis.localStorage;
@@ -599,7 +639,7 @@ test('product outages are not reported as missing products', async () => {
 test('catalog query keeps shareable filters and only accepts backend sort values', () => {
   const { catalogHref, parseCatalogQuery } = loadTypeScript('src/lib/catalog-query.ts');
   assert.deepEqual(parseCatalogQuery({ search: '  iphone  ', sort: 'price:asc', page: '3', minPrice: '100' }, 'phones'), {
-    search: 'iphone', categoryId: 'phones', minPrice: 100, maxPrice: undefined, sort: 'price:asc', page: 3, limit: 10,
+    search: 'iphone', categoryId: 'phones', minPrice: 100, maxPrice: undefined, sort: 'price:asc', page: 3, limit: 20,
   });
   assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).sort, 'createdAt:desc');
   assert.equal(parseCatalogQuery({ sort: 'price:drop table', page: '-4' }).page, 1);

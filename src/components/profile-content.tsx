@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { authService, type AuthSession } from "@/services/auth.service";
 import { Button } from "./ui";
 import styles from "./profile-content.module.css";
+import { errorMessage } from "@/lib/errors";
 
 const links = [
   { href: "/profile/orders", icon: Package, title: "Buyurtmalarim", text: "Buyurtmalar tarixi va holati" },
@@ -43,7 +44,7 @@ export function ProfileContent() {
     try {
       setSession(await authService.updateProfile({ name: String(form.get("name") ?? ""), phone: String(form.get("phone") ?? "") }));
       setMessage("Profil ma’lumotlari saqlandi.");
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Profilni saqlab bo‘lmadi"); }
+    } catch (caught) { setError(errorMessage(caught, "Profilni saqlab bo‘lmadi")); }
     finally { setPending(false); }
   };
   const logout = async () => {

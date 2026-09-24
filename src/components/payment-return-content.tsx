@@ -3,15 +3,17 @@
 import { CheckCircle2, CircleX, Clock3, RefreshCw, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { formatPrice } from "@/lib/format";
 import { orderService } from "@/services/order.service";
-import type { Order, PaymentStatus } from "@/types/commerce";
+import type { Order, PaymentProvider, PaymentStatus } from "@/types/commerce";
 
-const copy: Record<PaymentStatus, { title: string; text: string }> = {
-  PAID: { title: "To‘lov muvaffaqiyatli", text: "Buyurtmangiz to‘landi va qayta ishlashga yuborildi." },
-  PENDING: { title: "To‘lov tekshirilmoqda", text: "Bank javobi hali kelmagan. Bir oz kuting yoki holatni qayta tekshiring." },
-  CANCELLED: { title: "To‘lov bekor qilindi", text: "Kartadan pul yechilmadi. Buyurtma sahifasidan qayta to‘lashingiz mumkin." },
-  FAILED: { title: "To‘lov amalga oshmadi", text: "To‘lov tizimi operatsiyani yakunlamadi. Qayta urinib ko‘ring yoki boshqa usulni tanlang." },
-  REFUNDED: { title: "To‘lov qaytarildi", text: "To‘langan summa kartangizga qaytarilgan. Bankda ko‘rinishi uchun vaqt kerak bo‘lishi mumkin." },
+/** `next` — xaridor shu sahifadan keyin nima qilishini aytadi; qo'ng'iroq qilmasligi uchun har holatda to'ldiriladi. */
+const copy: Record<PaymentStatus, { title: string; text: string; next: string }> = {
+  PAID: { title: "To‘lov muvaffaqiyatli", text: "Buyurtmangiz to‘landi va qayta ishlashga yuborildi.", next: "Keyingi qadam: sotuvchi buyurtmani yig‘a boshlaydi. Yetkazish holatini buyurtma sahifasida kuzatib borasiz." },
+  PENDING: { title: "To‘lov tekshirilmoqda", text: "Bank javobi hali kelmagan. Kartadan pul yechilgan bo‘lsa ham, tasdiq kelishi bir necha daqiqa olishi mumkin.", next: "Keyingi qadam: bu sahifani ochiq qoldiring yoki keyinroq buyurtma sahifasidan holatni tekshiring — buyurtma yo‘qolmaydi." },
+  CANCELLED: { title: "To‘lov bekor qilindi", text: "Kartadan pul yechilmadi.", next: "Keyingi qadam: qayta to‘lashingiz yoki buyurtmani qoldirib, keyinroq buyurtma sahifasidan to‘lashingiz mumkin." },
+  FAILED: { title: "To‘lov amalga oshmadi", text: "To‘lov tizimi operatsiyani yakunlamadi. Kartadan pul yechilmagan.", next: "Keyingi qadam: qayta urinib ko‘ring yoki boshqa to‘lov usulini tanlang." },
+  REFUNDED: { title: "To‘lov qaytarildi", text: "To‘langan summa kartangizga qaytarilgan.", next: "Keyingi qadam: mablag‘ bankda ko‘rinishi uchun vaqt kerak bo‘lishi mumkin. Savolingiz bo‘lsa buyurtma raqamini ayting." },
 };
 
 type PaymentResultViewProps = { orderId: string; status: PaymentStatus; order: Order | null; reason?: string; loading?: boolean; redirecting?: boolean; error?: string; onCheck: () => void; onRetry: () => void };
@@ -19,14 +21,15 @@ type PaymentResultViewProps = { orderId: string; status: PaymentStatus; order: O
 export function PaymentResultView({ orderId, status, order, reason = "", loading = false, redirecting = false, error = "", onCheck, onRetry }: PaymentResultViewProps) {
   const details = copy[status];
   const Icon = status === "PAID" ? CheckCircle2 : status === "PENDING" ? Clock3 : CircleX;
-  const canRetryPayment = order && ["CANCELLED", "FAILED"].includes(status);
-  return <section className={`payment-result payment-result--${status.toLowerCase()}`}><span><Icon/></span><small>BUYURTMA #{orderId}</small><h1>{details.title}</h1><p>{reason && ["CANCELLED", "FAILED"].includes(status) ? reason : details.text}</p>{status === "PENDING" && <p className="payment-auto-refresh" role="status"><RefreshCw className={loading ? "payment-result-spinner" : ""}/> Holat har 5 soniyada avtomatik tekshiriladi</p>}{error && <p className="form-error" role="alert">{error}</p>}<div>{status === "PENDING" && <button className="button button--primary" disabled={loading} onClick={onCheck}><RefreshCw/> {loading ? "Tekshirilmoqda…" : "Hozir tekshirish"}</button>}{canRetryPayment && <button className="button button--primary" disabled={redirecting} onClick={onRetry}>{redirecting ? "To‘lov sahifasi ochilmoqda…" : "Qayta to‘lash"}</button>}<Link className="button button--secondary" href={`/orders/${encodeURIComponent(orderId)}`}>Buyurtmaga qaytish</Link><Link className="button button--secondary" href="/">Bosh sahifa</Link></div></section>;
+  const canRetryPayment = ["CANCELLED", "FAILED"].includes(status);
+  return <section className={`payment-result payment-result--${status.toLowerCase()}`}><span><Icon/></span><small>BUYURTMA #{orderId}{status === "PAID" && order ? ` · ${formatPrice(order.total)} so‘m` : ""}</small><h1>{details.title}</h1><p>{reason && ["CANCELLED", "FAILED"].includes(status) ? reason : details.text}</p><p className="payment-result__next">{details.next}</p>{status === "PENDING" && <p className="payment-auto-refresh" role="status"><RefreshCw className={loading ? "payment-result-spinner" : ""}/> Holat har 5 soniyada avtomatik tekshiriladi</p>}{error && <p className="form-error" role="alert">{error}</p>}<div>{status === "PENDING" && <button className="button button--primary" disabled={loading} onClick={onCheck}><RefreshCw/> {loading ? "Tekshirilmoqda…" : "Hozir tekshirish"}</button>}{canRetryPayment && <button className="button button--primary" disabled={redirecting} onClick={onRetry}>{redirecting ? "To‘lov sahifasi ochilmoqda…" : "Qayta to‘lash"}</button>}<Link className="button button--secondary" href={`/orders/${encodeURIComponent(orderId)}`}>Buyurtmaga qaytish</Link><Link className="button button--secondary" href="/">Bosh sahifa</Link></div></section>;
 }
 
 export function PaymentReturnContent({ orderId }: { orderId: string }) {
   const [status, setStatus] = useState<PaymentStatus | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [reason, setReason] = useState("");
+  const [provider, setProvider] = useState<PaymentProvider>();
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState("");
@@ -35,14 +38,14 @@ export function PaymentReturnContent({ orderId }: { orderId: string }) {
     setLoading(true); setError("");
     try {
       const result = await orderService.paymentStatus(orderId);
-      if (mounted.current) { setStatus(result.status); setReason(result.reason ?? ""); }
+      if (mounted.current) { setStatus(result.status); setReason(result.reason ?? ""); setProvider(result.provider); }
     }
-    catch { if (mounted.current) setError("To‘lov holatini hozir tekshirib bo‘lmadi. Internetni tekshirib, qayta urinib ko‘ring."); }
+    catch { if (mounted.current) setError("To‘lov holatini hozir tasdiqlab bo‘lmadi. Bu buyurtma bekor qilindi degani emas — qayta tekshiring yoki buyurtma sahifasini oching."); }
     finally { if (mounted.current) setLoading(false); }
   }, [orderId]);
   useEffect(() => {
     mounted.current = true;
-    void orderService.getLocal(orderId).then((saved) => { if (mounted.current) setOrder(saved); });
+    void orderService.find(orderId).then((saved) => { if (mounted.current) setOrder(saved); }).catch(() => { /* Buyurtma topilmasa ham holat ko'rsatiladi. */ });
     void check();
     return () => { mounted.current = false; };
   }, [check, orderId]);
@@ -53,10 +56,12 @@ export function PaymentReturnContent({ orderId }: { orderId: string }) {
   }, [check, loading, status]);
 
   const retryPayment = async () => {
-    if (!order) return;
+    if (!order) { setError("Bu qurilmada buyurtma ma’lumoti yo‘q. “Buyurtmaga qaytish” tugmasi orqali o‘ting va o‘sha sahifadan to‘lang."); return; }
     setRedirecting(true); setError("");
-    try { window.location.assign(await orderService.startPayment(order)); }
-    catch { setError("To‘lov sahifasini ochib bo‘lmadi. Internetni tekshirib, qayta urinib ko‘ring."); setRedirecting(false); }
+    // Backend tracking'da provider qaytarsa, brauzer nusxasida u bo'lmasa ham qayta to'lash ishlaydi.
+    const target = order.paymentProvider ? order : { ...order, paymentProvider: provider };
+    try { window.location.assign(await orderService.startPayment(target)); }
+    catch { setError("To‘lov sahifasini hozir ochib bo‘lmadi. Birozdan keyin qayta urinib ko‘ring yoki buyurtma sahifasidan to‘lang."); setRedirecting(false); }
   };
 
   if (!orderId) return <section className="payment-result payment-result--error"><span><TriangleAlert/></span><h1>Buyurtma raqami topilmadi</h1><p>To‘lovdan qaytish havolasi to‘liq emas. Buyurtmalar ro‘yxatidan kerakli buyurtmani oching.</p><Link className="button button--primary" href="/profile/orders">Buyurtmalarim</Link></section>;

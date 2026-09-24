@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { FloatingCart } from "@/components/floating-cart";
 import { CartProvider } from "@/providers/cart-provider";
 import { FavoritesProvider } from "@/providers/favorites-provider";
+import { ToastProvider } from "@/providers/toast-provider";
 import { categoryService } from "@/services/category.service";
 import { absoluteUrl, defaultOpenGraphImages, siteUrl } from "@/lib/seo";
 
@@ -22,7 +23,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const categories = await categoryService.list();
   return (
     <html lang="uz">
-      <body><FavoritesProvider><CartProvider><Header categories={categories.data}/>{children}<FloatingCart/><Footer/></CartProvider></FavoritesProvider></body>
+      <body><ToastProvider><FavoritesProvider><CartProvider><Header categories={categories.data}/>{children}<FloatingCart/><Footer/></CartProvider></FavoritesProvider></ToastProvider></body>
     </html>
   );
 }
