@@ -78,7 +78,9 @@ export const cartService = {
   },
   async clear(snapshot?: Cart): Promise<Cart> {
     const cart = snapshot ?? await remoteGet();
-    await Promise.all(cart.items.map((item) => apiRequest(`${CART_PATH}/items/${encodeURIComponent(item.id)}`, { method: "DELETE" })));
+    // Checkout savatni backendda o'zi bo'shatadi, shuning uchun allaqachon o'chirilgan qator 404 beradi — bu xato emas.
+    await Promise.all(cart.items.map((item) => apiRequest(`${CART_PATH}/items/${encodeURIComponent(item.id)}`, { method: "DELETE" })
+      .catch((error) => { if (!(error instanceof ApiError) || error.status !== 404) throw error; })));
     return { ...cart, items: [] };
   },
 };

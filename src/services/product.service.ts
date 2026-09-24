@@ -3,6 +3,7 @@ import { ApiError, apiRequest } from "@/lib/api";
 import { validateStorefrontProductDto, validateStorefrontProductsPageDto, validateStorefrontShopPageDto } from "@/generated/api-validators";
 import type { CatalogResult, Product, ProductQuery, ShopResult, StorefrontShop } from "@/types/commerce";
 import type { StorefrontProductDto, StorefrontProductsResponse, StorefrontShopPageDto } from "@/types/storefront-api";
+import { errorMessage } from "@/lib/errors";
 
 const STOREFRONT_PRODUCTS_PATH = "/storefront/products";
 const STOREFRONT_SHOPS_PATH = "/storefront/shops";
@@ -99,7 +100,7 @@ export const productService = {
       const response = await apiRequest(STOREFRONT_PRODUCTS_PATH, { params: { search: query.search, categoryId: query.categoryId, minPrice: query.minPrice, maxPrice: query.maxPrice, sort: query.sort, page, limit }, next: { revalidate: 30 }, validate: validateStorefrontProductsPageDto });
       result = response;
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "Storefront API bilan aloqa yo‘q";
+      const reason = errorMessage(error, "Storefront API bilan aloqa yo‘q");
       const message = `${env.apiUrl}${STOREFRONT_PRODUCTS_PATH} — ${reason}`;
       return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: message };
     }
@@ -134,7 +135,7 @@ export const productService = {
       const responseLimit = Math.max(1, number(result.limit, limit));
       return { data: items, total, page: Math.max(1, number(result.page, page)), limit: responseLimit, totalPages: Math.max(0, number(result.totalPages, Math.ceil(total / responseLimit))), source: "api" };
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "Do‘kon mahsulotlarini yuklab bo‘lmadi";
+      const reason = errorMessage(error, "Do‘kon mahsulotlarini yuklab bo‘lmadi");
       return { data: [], total: 0, page, limit, totalPages: 0, source: "unavailable", error: `${env.apiUrl}${path} — ${reason}` };
     }
   },

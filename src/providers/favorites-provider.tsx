@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { favoritesService } from "@/services/favorites.service";
+import { errorMessage } from "@/lib/errors";
+import { useToast } from "./toast-provider";
 import type { ID, Product } from "@/types/commerce";
 
 type FavoritesContextValue = {
@@ -26,6 +28,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const productsRef = useRef(products);
   const pendingRef = useRef(new Set<string>());
   const mounted = useRef(true);
+  const { show } = useToast();
   const commit = useCallback((next: Product[]) => { productsRef.current = next; setProducts(next); }, []);
 
   const refresh = useCallback(async () => {
@@ -35,7 +38,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       const remote = await favoritesService.list();
       if (mounted.current) commit(remote);
     } catch (caught) {
-      if (mounted.current) setError(caught instanceof Error ? caught.message : "Sevimlilarni yuklab bo‘lmadi");
+      if (mounted.current) setError(errorMessage(caught, "Sevimlilarni yuklab bo‘lmadi"));
     } finally {
       if (mounted.current) { setLoading(false); setHydrated(true); }
     }
@@ -71,15 +74,15 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       if (existed) await favoritesService.remove(product.id);
       else await favoritesService.add(product.id);
     } catch (caught) {
-      if (mounted.current) {
-        commit(previous);
-        setError(caught instanceof Error ? caught.message : "Sevimlilar amalini bajarib bo‘lmadi");
-      }
+      // Yurak tugmasi sahifada xato ko'rsatmaydi, shuning uchun xabar popup orqali beriladi.
+      const message = errorMessage(caught, "Sevimlilar amalini bajarib bo‘lmadi");
+      if (mounted.current) { commit(previous); setError(message); }
+      show(message, "error");
     } finally {
       pendingRef.current.delete(id);
       if (mounted.current) setPendingIds(new Set(pendingRef.current));
     }
-  }, [commit, hydrated]);
+  }, [commit, hydrated, show]);
   const value = useMemo(() => ({ products, count: products.length, hydrated, loading, error, has, isPending, toggle, refresh }), [products, hydrated, loading, error, has, isPending, toggle, refresh]);
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

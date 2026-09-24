@@ -1,15 +1,14 @@
 "use client";
 
-import { Check, Clock3, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
+import { Check, Clock3, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getSafeImageSrc } from "@/lib/product-storage";
 import type { Product, ProductReviewsResult } from "@/types/commerce";
 import { useCart } from "@/providers/cart-provider";
-import { useFavorites } from "@/providers/favorites-provider";
 import { cartService } from "@/services/cart.service";
-import { Button, Price } from "./ui";
+import { Button, FavoriteButton, Price, QuantityStepper } from "./ui";
 import { ProductInformation } from "./product-information";
 import { ProductReviews } from "./product-reviews";
 
@@ -19,7 +18,6 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
   const [quantity, setQuantity] = useState(1);
   const cart = useCart();
   const router = useRouter();
-  const favorites = useFavorites();
   useEffect(() => { cartService.rememberProduct(product); }, [product]);
   const selectedVariant = product.variants?.find((variant) => variant.color === product.colors[activeColor]) ?? product.variants?.[activeColor] ?? product.variants?.[0];
   const selectedColor = product.colors[activeColor] ?? selectedVariant?.color ?? "";
@@ -52,7 +50,11 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
 
         <div className="purchase-card">
           <div className="purchase-price"><Price value={selectedPrice} oldValue={selectedOldPrice}/>{selectedOldPrice && selectedOldPrice > selectedPrice && <span className="purchase-discount">{Math.round((1 - selectedPrice / selectedOldPrice) * 100)}% tejaysiz</span>}</div>
-          <div className="purchase-actions"><div className="quantity"><button disabled={quantity <= 1} onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Kamaytirish"><Minus/></button><b>{quantity}</b><button disabled={maxQuantity !== undefined && quantity >= maxQuantity} onClick={() => setQuantity((current) => maxQuantity === undefined ? current + 1 : Math.min(maxQuantity, current + 1))} aria-label="Ko‘paytirish"><Plus/></button></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> {!selectedVariant ? "Variant mavjud emas" : selectedVariant.stock === 0 ? "Sotuvda yo‘q" : "Savatchaga qo‘shish"}</Button><button className={`detail-heart ${favorites.has(product.id) ? "active" : ""}`} disabled={!favorites.hydrated || favorites.isPending(product.id)} onClick={() => void favorites.toggle(product)} aria-label={favorites.has(product.id) ? "Sevimlilardan olib tashlash" : "Sevimlilarga qo‘shish"}><Heart fill={favorites.has(product.id) ? "currentColor" : "none"}/></button></div>
+          <div className="purchase-actions">
+            <QuantityStepper value={quantity} max={maxQuantity} onDecrease={() => setQuantity((current) => Math.max(1, current - 1))} onIncrease={() => setQuantity((current) => maxQuantity === undefined ? current + 1 : Math.min(maxQuantity, current + 1))}/>
+            <Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> {!selectedVariant ? "Variant mavjud emas" : selectedVariant.stock === 0 ? "Sotuvda yo‘q" : "Savatchaga qo‘shish"}</Button>
+            <FavoriteButton product={product} variant="boxed"/>
+          </div>
           <button className="quick-buy" disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={buyNow}>Bir klikda xarid qilish</button>
         </div>
 

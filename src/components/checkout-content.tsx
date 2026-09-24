@@ -14,6 +14,7 @@ import type { CheckoutAddress, DeliveryPreview, Order, PaymentMethod } from "@/t
 import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 import { SelectField, type SelectOption } from "./select-field";
 import { PaymentBrand } from "./payment-brand";
+import { errorMessage } from "@/lib/errors";
 
 type CheckoutForm = { recipientName: string; phone: string; regionId: string; region: string; districtId: string; district: string; street: string };
 
@@ -43,6 +44,7 @@ export function CheckoutContent() {
   const [completed, setCompleted] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [paymentPending, setPaymentPending] = useState(false);
+  const [unpaid, setUnpaid] = useState<Order | null>(null);
   const [error, setError] = useState("");
   const [regions, setRegions] = useState<RegionOption[]>([]);
   const [districts, setDistricts] = useState<DistrictOption[]>([]);
@@ -68,6 +70,13 @@ export function CheckoutContent() {
     setSelectedIds(readCartSelection(cart.items));
     setSelectionReady(true);
   }, [cart.items, cart.loading, selectionReady]);
+  // To'lov sahifasidan orqaga qaytilganda savat bo'sh bo'ladi: bo'sh sahifa o'rniga o'sha buyurtmani ko'rsatamiz.
+  useEffect(() => {
+    let active = true;
+    if (cart.loading || cart.items.length) { setUnpaid(null); return; }
+    void orderService.lastUnpaidOnline().then((order) => { if (active) setUnpaid(order); }).catch(() => { /* Bo'sh savat paneli baribir ko'rsatiladi. */ });
+    return () => { active = false; };
+  }, [cart.items.length, cart.loading]);
 
   useEffect(() => {
     const session = authService.getSession();
@@ -79,7 +88,7 @@ export function CheckoutContent() {
     setRegionsPending(true);
     locationService.regions(controller.signal)
       .then((items) => { setRegions(items); setRegionsError(""); })
-      .catch((caught) => { if (!controller.signal.aborted) setRegionsError(caught instanceof Error ? caught.message : "Viloyatlarni yuklab bo‘lmadi"); })
+      .catch((caught) => { if (!controller.signal.aborted) setRegionsError(errorMessage(caught, "Viloyatlarni yuklab bo‘lmadi")); })
       .finally(() => { if (!controller.signal.aborted) setRegionsPending(false); });
     return () => controller.abort();
   }, [regionsReload]);
@@ -90,7 +99,7 @@ export function CheckoutContent() {
     setDistrictsPending(true);
     locationService.districts(form.regionId, controller.signal)
       .then((items) => { setDistricts(items); setDistrictsError(""); })
-      .catch((caught) => { if (!controller.signal.aborted) setDistrictsError(caught instanceof Error ? caught.message : "Tumanlarni yuklab bo‘lmadi"); })
+      .catch((caught) => { if (!controller.signal.aborted) setDistrictsError(errorMessage(caught, "Tumanlarni yuklab bo‘lmadi")); })
       .finally(() => { if (!controller.signal.aborted) setDistrictsPending(false); });
     return () => controller.abort();
   }, [form.regionId, districtsReload]);
@@ -106,7 +115,7 @@ export function CheckoutContent() {
         const next = await orderService.preview(address);
         if (previewRequest.current === requestId) { setPreview(next); setError(""); }
       } catch (caught) {
-        if (previewRequest.current === requestId) setError(caught instanceof Error ? caught.message : "Yetkazib berish narxini hisoblab bo‘lmadi");
+        if (previewRequest.current === requestId) setError(errorMessage(caught, "Yetkazib berish narxini hisoblab bo‘lmadi"));
       } finally {
         if (previewRequest.current === requestId) setPreviewPending(false);
       }
@@ -133,8 +142,9 @@ export function CheckoutContent() {
     try {
       const redirectUrl = await orderService.startPayment(order);
       window.location.assign(redirectUrl);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "To‘lov sahifasini ochib bo‘lmadi. Qayta urinib ko‘ring");
+    } catch {
+      // Backend xabari texnik bo'lishi mumkin; xaridorga nima qilishini aytamiz, buyurtma esa saqlanib qoladi.
+      setError("To‘lov sahifasini hozir ochib bo‘lmadi. Buyurtmangiz saqlandi — birozdan keyin “To‘lovni davom ettirish” tugmasi orqali qayta urinib ko‘ring yoki buyurtma sahifasidan to‘lang.");
       setPaymentPending(false);
     }
   };
@@ -170,7 +180,7 @@ export function CheckoutContent() {
           await cart.refresh();
         } catch { /* Original checkout error is more useful to the buyer. */ }
       }
-      setError(caught instanceof Error ? caught.message : "Buyurtma yaratilmadi. Qayta urinib ko‘ring");
+      setError(errorMessage(caught, "Buyurtma yaratilmadi. Qayta urinib ko‘ring"));
     }
     finally { setPending(false); }
   };
@@ -178,6 +188,11 @@ export function CheckoutContent() {
   if (completed) return <section className={`checkout-success${completed.payment === "card" ? " checkout-success--pending" : ""}`}><span>{completed.payment === "card" ? <WalletCards/> : <CheckCircle2/>}</span><p>{completed.payment === "card" ? "TO‘LOV KUTILMOQDA" : "BUYURTMA QABUL QILINDI"}</p><h1>{completed.payment === "card" ? "Buyurtma yaratildi" : "Rahmat!"}</h1><b>Buyurtma raqami: {completed.id}</b>{completed.warning && <p role="alert">{completed.warning}</p>}{error && <p className="form-error" role="alert">{error}</p>}<small>{completed.payment === "card" ? `${completed.paymentProvider === "PAYME" ? "Payme" : "Click"} orqali to‘lov yakunlanmaguncha buyurtma to‘langan hisoblanmaydi. Sahifa ochilmasa qayta urinishingiz mumkin.` : "Buyurtma backendda yaratildi va tasdiqlandi. Endi u sotuvchi kabinetida ko‘rinadi."}</small><div>{completed.payment === "card" && <button className="button button--primary" type="button" disabled={paymentPending} onClick={() => void openPayment(completed)}><ExternalLink/>{paymentPending ? "To‘lov sahifasi ochilmoqda…" : "To‘lovni davom ettirish"}</button>}<Link className={completed.payment === "card" ? "button button--secondary" : "button button--primary"} href={`/orders/${encodeURIComponent(completed.id)}`}>Buyurtmani kuzatish</Link><Link className="button button--secondary" href="/">Bosh sahifa</Link></div></section>;
   if ((cart.loading && !cart.items.length) || !selectionReady) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
   if (cart.error) return <StatePanel kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={cart.error} action={<Button onClick={() => void cart.refresh()}>Qayta urinish</Button>}/>;
+  if (!cart.items.length && unpaid) return <StatePanel icon={<WalletCards/>} title={`#${unpaid.id} buyurtmasi to‘lovni kutmoqda`} description={error || `Buyurtma yaratilgan, lekin to‘lov yakunlanmagan. ${unpaid.paymentProvider === "CLICK" ? "Click" : "Payme"} sahifasida to‘lovni yakunlang yoki buyurtma sahifasidan keyinroq to‘lang.`} action={<>
+    <Button disabled={paymentPending} onClick={() => void openPayment(unpaid)}><ExternalLink/>{paymentPending ? "Ochilmoqda…" : "To‘lovni davom ettirish"}</Button>
+    <Link className="button button--secondary" href={`/orders/${encodeURIComponent(unpaid.id)}`}>Buyurtmani kuzatish</Link>
+    <Link className="button button--secondary" href="/#products">Yangi xarid</Link>
+  </>}/>;
   if (!cart.items.length) return <StatePanel icon={<ShoppingCart/>} title="Rasmiylashtirish uchun savatcha bo‘sh" description="Avval katalogdan mahsulot tanlang — keyin bu yerda buyurtmani rasmiylashtirasiz." action={<Link className="button button--primary" href="/#products">Mahsulot tanlash</Link>}/>;
   if (!selectedItems.length) return <StatePanel icon={<ShoppingCart/>} title="Buyurtma uchun mahsulot tanlanmagan" description="Savatchaga qaytib, buyurtma qilmoqchi bo‘lgan mahsulotlarni belgilang." action={<Link className="button button--primary" href="/cart">Savatchaga qaytish</Link>}/>;
 

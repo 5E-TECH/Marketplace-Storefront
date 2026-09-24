@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { cartService, cartTotals } from "@/services/cart.service";
+import { errorMessage } from "@/lib/errors";
+import { useToast } from "./toast-provider";
 import type { AddCartInput, Cart, CartItem } from "@/types/commerce";
 
 const UPDATE_DELAY_MS = 450;
@@ -23,6 +25,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const confirmedQuantities = useRef(new Map<string, number>());
   const inFlightUpdates = useRef(new Map<string, Promise<void>>());
   const mounted = useRef(true);
+  const { show } = useToast();
 
   const commitCart = useCallback((next: Cart) => {
     cartRef.current = next;
@@ -41,7 +44,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
     commitCart(withOptimisticUpdates(serverCart));
   }, [commitCart, withOptimisticUpdates]);
-  const run = useCallback((action: () => Promise<Cart>): Promise<boolean> => {
+  // `notify` faqat xaridor bosgan amallar uchun: fon yangilanishi har sahifada popup chiqarmasin.
+  const run = useCallback((action: () => Promise<Cart>, notify = true): Promise<boolean> => {
     pendingActions.current += 1;
     setLoading(true);
     const task = queue.current.then(async () => {
@@ -51,7 +55,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (mounted.current) acceptServerCart(next);
         return true;
       } catch (caught) {
-        if (mounted.current) setError(caught instanceof Error ? caught.message : "Savatcha amalini bajarib bo‘lmadi");
+        const message = errorMessage(caught, "Savatcha amalini bajarib bo‘lmadi");
+        if (mounted.current) setError(message);
+        if (notify) show(message, "error");
         return false;
       } finally {
         pendingActions.current -= 1;
@@ -60,7 +66,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
     queue.current = task;
     return task;
-  }, [acceptServerCart]);
+  }, [acceptServerCart, show]);
 
   const syncItem = useCallback(async (id: string): Promise<void> => {
     const active = inFlightUpdates.current.get(id);
@@ -79,10 +85,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       } catch (caught) {
         pendingUpdates.current.delete(id);
         const confirmed = confirmedQuantities.current.get(id);
+        const message = errorMessage(caught, "Mahsulot miqdorini saqlab bo‘lmadi");
         if (mounted.current) {
           if (confirmed !== undefined) commitCart({ ...cartRef.current, items: cartRef.current.items.map((item) => item.id === id ? { ...item, quantity: confirmed } : item) });
-          setError(caught instanceof Error ? caught.message : "Mahsulot miqdorini saqlab bo‘lmadi");
+          setError(message);
         }
+        show(message, "error");
       } finally {
         inFlightUpdates.current.delete(id);
         if (mounted.current) setSyncing(inFlightUpdates.current.size > 0 || pendingUpdates.current.size > 0);
@@ -91,12 +99,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     inFlightUpdates.current.set(id, request);
     await request;
     if (pendingUpdates.current.has(id)) await syncItem(id);
-  }, [acceptServerCart, commitCart]);
+  }, [acceptServerCart, commitCart, show]);
 
   const flush = useCallback(async () => {
     await Promise.all([...pendingUpdates.current.keys()].map(syncItem));
   }, [syncItem]);
-  const refresh = useCallback(async () => { await flush(); await run(() => cartService.get()); }, [flush, run]);
+  const refresh = useCallback(async () => { await flush(); await run(() => cartService.get(), false); }, [flush, run]);
 
   useEffect(() => {
     mounted.current = true;

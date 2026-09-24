@@ -7,6 +7,7 @@ import { FormEvent, useState } from "react";
 import { authService } from "@/services/auth.service";
 import { Button } from "./ui";
 import styles from "./profile-content.module.css";
+import { errorMessage } from "@/lib/errors";
 
 type Mode = "login" | "register" | "forgot";
 
@@ -51,7 +52,7 @@ export function AuthContent({ mode, returnTo = "/profile" }: { mode: Mode; retur
         await authService.resetPassword(resetPhone, String(form.get("code") ?? ""), String(form.get("newPassword") ?? ""));
         setMessage("Parol yangilandi. Endi yangi parol bilan kirishingiz mumkin.");
       }
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "So‘rovni bajarib bo‘lmadi"); }
+    } catch (caught) { setError(errorMessage(caught, "So‘rovni bajarib bo‘lmadi")); }
     finally { setPending(false); }
   };
 

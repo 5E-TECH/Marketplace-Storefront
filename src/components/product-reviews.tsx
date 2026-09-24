@@ -10,6 +10,7 @@ import { formatLongDate } from "@/lib/format";
 import { reviewService } from "@/services/review.service";
 import type { ProductReviewsResult, ReviewableOrderItem } from "@/types/commerce";
 import { Button, StatePanel } from "./ui";
+import { errorMessage } from "@/lib/errors";
 
 export function ProductReviews({ productId, reviews }: { productId: string | number; reviews: ProductReviewsResult }) {
   const router = useRouter();
@@ -37,7 +38,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
         setEligible(items);
         setSelectedItem(items[0]?.orderItemId ?? "");
       } catch (error) {
-        if (active) setEligibilityError(error instanceof Error ? error.message : "Xarid ma’lumotini tekshirib bo‘lmadi");
+        if (active) setEligibilityError(errorMessage(error, "Xarid ma’lumotini tekshirib bo‘lmadi"));
       } finally { if (active) setEligibilityLoading(false); }
     };
     void load();
@@ -57,7 +58,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
       setScore(0);
       router.refresh();
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Sharhni yuborib bo‘lmadi");
+      setFormError(errorMessage(error, "Sharhni yuborib bo‘lmadi"));
     } finally { setSubmitting(false); }
   };
 

@@ -3,6 +3,7 @@ import { validateCategoryTreeDto } from "@/generated/api-validators";
 import { apiRequest } from "@/lib/api";
 import type { CatalogCategory, CategoryResult } from "@/types/commerce";
 import type { CategoryTreeDto } from "@/types/storefront-api";
+import { errorMessage } from "@/lib/errors";
 
 const normalizeCategory = (category: CategoryTreeDto): CatalogCategory => ({
   id: category.id,
@@ -22,7 +23,7 @@ export const categoryService = {
       const response = await apiRequest("/categories", { next: { revalidate: 300 }, validate: validateCategoryTree });
       return { data: response.filter((category) => category.isActive).map(normalizeCategory), source: "api" };
     } catch (error) {
-      return { data: [], source: "unavailable", error: error instanceof Error ? error.message : "Kategoriyalar yuklanmadi" };
+      return { data: [], source: "unavailable", error: errorMessage(error, "Kategoriyalar yuklanmadi") };
     }
   },
 };
