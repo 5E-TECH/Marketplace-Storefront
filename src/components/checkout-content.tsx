@@ -27,10 +27,28 @@ const toAddress = (form: CheckoutForm): CheckoutAddress => ({
   regionId: form.regionId,
   districtId: form.districtId,
 });
+/*
+ * ⚠️ VAQTINCHA: Payme va Click variantlari o'chirilgan (C3.7 / C8.1, 2026-09-21).
+ *
+ * Frontend tomoni tayyor — `startPayment`, qaytish sahifasi va holat pollingi
+ * yozilgan. LEKIN backend shartnomasi hali yo'q, uchta teshik bor:
+ *   1. `order.service.ts` tanaga `returnUrl` qo'shadi, `CreatePaymentDto` esa
+ *      atigi {salesOrderId, provider, amount} ni biladi va api-gateway
+ *      `forbidNonWhitelisted: true` bilan ishlaydi → 400;
+ *   2. `PaymentResultDto` da to'lov havolasi yo'q → qayerga yo'naltirish
+ *      noma'lum (backendda URL yasash kodi ham yo'q);
+ *   3. `POST /payments` mehmon uchun yopiq — handler `request.user.sub` ni
+ *      ishlatadi → ro'yxatdan o'tmagan xaridorda 401.
+ *      Bu MVP ning "mehmon buyurtma bera oladi" talabini buzadi.
+ *
+ * Shu sababli variantlar chiqarilmaydi: aks holda xaridor tugmani bosib
+ * xato oladi. Backend kartasi bajarilgach quyidagi ikki qatorni qaytaring —
+ * boshqa hech narsaga tegish shart emas.
+ */
 const paymentChoices: { method: PaymentMethod; title: string; note: string }[] = [
   { method: "cod", title: "Qabul qilganda", note: "Naqd yoki terminal orqali" },
-  { method: "payme", title: "Payme", note: "Karta bilan xavfsiz online to‘lov" },
-  { method: "click", title: "Click", note: "Karta bilan xavfsiz online to‘lov" },
+  // { method: "payme", title: "Payme", note: "Karta bilan xavfsiz online to‘lov" },
+  // { method: "click", title: "Click", note: "Karta bilan xavfsiz online to‘lov" },
 ];
 const canPreview = (form: CheckoutForm) => form.recipientName.trim().length >= 2 && /^\d{9}$/.test(form.phone) && Boolean(form.regionId) && Boolean(form.districtId) && form.street.trim().length >= 5;
 

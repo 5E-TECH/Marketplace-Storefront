@@ -4,7 +4,7 @@ import Link from "next/link";
 import { formatPrice } from "@/lib/format";
 import { catalogHref } from "@/lib/catalog-query";
 import { getSafeImageSrc } from "@/lib/product-storage";
-import type { CatalogCategory, Product, ProductQuery, ProductSort, StorefrontShop } from "@/types/commerce";
+import type { Banner, CatalogCategory, Product, ProductQuery, ProductSort, StorefrontShop } from "@/types/commerce";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
 import { CategoryIcon } from "./category-icon";
@@ -17,6 +17,40 @@ export function Hero({ product }: { product?: Product }) {
       {(product.rating > 0 || product.reviews > 0) && <div className="hero-meta"><span>★ {product.rating} / 5 reyting</span><span>{product.reviews} ta sharh</span></div>}
     </div>
     <div className="hero-visual"><Image src={getSafeImageSrc(product.image)} alt={product.name} fill priority sizes="(max-width: 768px) 100vw, 52vw"/><div className="hero-product-label"><small>{product.shop?.name ?? "Marketplace"}</small><b>{formatPrice(product.price)} so‘m</b></div></div>
+  </section></Container>;
+}
+
+/**
+ * Bosh sahifa reklama bannerlari (C6.9). Backend faqat faol va muddati
+ * o'tmaganlarini qaytaradi, shu sabab bu yerda qo'shimcha filtr yo'q.
+ * Ro'yxat bo'sh bo'lsa butun blok chiqmaydi — bo'sh joy qolmasin.
+ */
+/**
+ * `sizes` aniq ustunlar jadvaliga mos (globals.css `.home-banners[data-columns]`):
+ * 1 banner — to'liq kenglik, 2 — yarim, 3+ — uchdan bir (planshetda yarim).
+ * Oldingi `31vw` 1–2 bannerni to'liq kenglikda cho'zib, xira rasm yuklardi.
+ */
+const bannerSizes = (count: number): string => {
+  if (count === 1) return "(max-width: 1280px) calc(100vw - 24px), 1240px";
+  if (count === 2) return "(max-width: 720px) calc(100vw - 24px), (max-width: 1280px) calc(50vw - 27px), 613px";
+  return "(max-width: 720px) calc(100vw - 24px), (max-width: 1050px) calc(50vw - 27px), (max-width: 1280px) calc(33vw - 24px), 404px";
+};
+
+export function Banners({ banners }: { banners: Banner[] }) {
+  if (!banners.length) return null;
+  const sizes = bannerSizes(banners.length);
+  return <Container><section className="home-banners" data-columns={Math.min(banners.length, 3)} aria-label="Aksiyalar va e’lonlar">
+    {banners.map((banner) => {
+      // Sarlavha rasm ustida matn bo'lib turibdi — alt uni takrorlasa ekran o'quvchi ikki marta o'qirdi.
+      const visual = <>
+        <Image src={getSafeImageSrc(banner.imageUrl)} alt="" fill sizes={sizes}/>
+        <span className="home-banner-title">{banner.title}</span>
+      </>;
+      if (!banner.linkUrl) return <div className="home-banner" key={banner.id}>{visual}</div>;
+      return banner.linkUrl.startsWith("/")
+        ? <Link className="home-banner" href={banner.linkUrl} key={banner.id}>{visual}</Link>
+        : <a className="home-banner" href={banner.linkUrl} key={banner.id} target="_blank" rel="noopener noreferrer">{visual}</a>;
+    })}
   </section></Container>;
 }
 

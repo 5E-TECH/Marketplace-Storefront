@@ -36,6 +36,19 @@ export const normalizeReviews = (response: unknown): ProductReviewsResult => {
   return { items, rating: rating(root.rating ?? root.averageRating), total, page, limit, totalPages };
 };
 
+/**
+ * `GET /orders` bandlari hozircha `sales_order_item.id` ni qaytarmaydi —
+ * kontraktda ham (`BuyerOrderListItemProductDto`) bu maydon yo'q. Sharh
+ * yaratish esa aynan `orderItemId` ni talab qiladi, shuning uchun ro'yxat
+ * bo'sh qaytadi va "sharh qoldirish" ko'rinmaydi. Bu backend kontrakti
+ * bilan bog'liq alohida kamchilik; maydon qo'shilgach bu yer o'zgarishsiz
+ * ishlab ketadi.
+ */
+const reviewableItemId = (item: object): string => {
+  const id = (item as { id?: unknown }).id;
+  return typeof id === "string" || typeof id === "number" ? String(id) : "";
+};
+
 export const reviewService = {
   async list(productId: string | number, page = 1, limit = 5): Promise<ProductReviewsResult> {
     return normalizeReviews(await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "GET", params: { page, limit } }));
@@ -53,7 +66,10 @@ export const reviewService = {
     const pages = first.totalPages > 1 ? await Promise.all(Array.from({ length: first.totalPages - 1 }, (_, index) => apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: index + 2, limit: 100 }, validate: validateBuyerOrdersPageDto }))) : [];
     return [first, ...pages].flatMap((page) => page.items).flatMap((order) => {
       if (!["DELIVERED", "COMPLETED"].includes(order.orderStatus.trim().toUpperCase().replace(/[\s-]+/g, "_"))) return [];
-      return order.items.flatMap((item) => item.id && String(item.productId) === String(productId) ? [{ orderItemId: item.id, orderId: order.orderId }] : []);
+      return order.items.flatMap((item) => {
+        const orderItemId = reviewableItemId(item);
+        return orderItemId && String(item.productId) === String(productId) ? [{ orderItemId, orderId: order.orderId }] : [];
+      });
     });
   },
 };
