@@ -24,6 +24,23 @@ const remotePatterns = [productionImagePattern, ...configuredPatterns].filter((p
   patterns.findIndex((item) => item.protocol === pattern.protocol && item.hostname === pattern.hostname && item.port === pattern.port && item.pathname === pattern.pathname) === index,
 );
 
+/**
+ * Production'da Cloudflare Tunnel to'g'ridan-to'g'ri `storefront:3001` ga
+ * ulanadi (Caddy'siz), shuning uchun xavfsizlik sarlavhalarini Next'ning o'zi
+ * qo'yadi. Skriptlarni cheklaydigan to'liq CSP ataylab yo'q — Next inline
+ * skriptlari uchun nonce kerak bo'ladi; `frame-ancestors` esa skriptlarga
+ * tegmaydi va clickjacking'ni yopadi. Sayt geolokatsiya, kamera va
+ * mikrofondan foydalanmaydi.
+ */
+export const securityHeaders = (production: boolean) => [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  ...(production ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }] : []),
+];
+
 const nextConfig: NextConfig = {
   // `next build` ishlayotgan dev server manifestlarini buzmasligi uchun cache'lar ajratilgan.
   distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
@@ -36,6 +53,9 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   poweredByHeader: false,
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders(process.env.NODE_ENV === "production") }];
+  },
   compress: true,
 };
 

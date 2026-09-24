@@ -2136,6 +2136,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/content/banners/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Banner rasmini yuklash (JPEG/PNG/WEBP, 5 MB gacha) */
+        post: operations["AdminContentController_uploadImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/content/banners/order": {
         parameters: {
             query?: never;
@@ -3212,9 +3229,9 @@ export interface components {
             id: string;
             /** @example 50% chegirma */
             title: string;
-            /** @example https://cdn.example.com/banners/autumn.jpg */
+            /** @example https://api.elchimarket.uz/media/marketplace-media/banners/1727000000000-uuid.jpg */
             imageUrl: string;
-            /** @example null */
+            /** @example /katalog/telefon */
             linkUrl: string | null;
             /** @example 10 */
             sortOrder: number;
@@ -3829,9 +3846,9 @@ export interface components {
             id: string;
             /** @example 50% chegirma */
             title: string;
-            /** @example https://cdn.example.com/banners/autumn.jpg */
+            /** @example https://api.elchimarket.uz/media/marketplace-media/banners/1727000000000-uuid.jpg */
             imageUrl: string;
-            /** @example null */
+            /** @example /katalog/telefon */
             linkUrl: string | null;
             /** @example 10 */
             sortOrder: number;
@@ -3851,19 +3868,34 @@ export interface components {
             /** @example 2026-09-22T10:00:00.000Z */
             updatedAt: string;
         };
+        UploadedFileDto: {
+            /** @example products/1722250000000-uuid.jpg */
+            objectName: string;
+            /** @example marketplace-media */
+            bucket: string;
+            /** @example http://localhost:9000/marketplace-media/products/1722250000000-uuid.jpg */
+            url: string;
+            /** @example image/jpeg */
+            mimeType: string;
+            /** @example 245678 */
+            size: number;
+        };
         CreateBannerDto: {
-            /** @example 50% chegirma */
+            /**
+             * @description Storefront’da banner rasmi ustida yoziladi.
+             * @example 50% chegirma
+             */
             title: string;
             /**
-             * @description `POST /files/upload` qaytargan manzil.
-             * @example https://cdn.example.com/banners/autumn.jpg
+             * @description `POST /admin/content/banners/image` qaytargan manzil. Faqat platforma media omboridagi rasm qabul qilinadi — boshqa hostdagi rasm storefront’da chiqmaydi.
+             * @example https://api.elchimarket.uz/media/marketplace-media/banners/1727000000000-uuid.jpg
              */
             imageUrl: string;
             /**
-             * @description Bannerga bosilganda ochiladigan sahifa.
-             * @example /storefront/products?categoryId=7
+             * @description Bannerga bosilganda ochiladigan sahifa: '/' bilan boshlanuvchi yo'l yoki https:// manzil. Bo'sh — banner bosilmaydi.
+             * @example /katalog/telefon
              */
-            linkUrl?: unknown;
+            linkUrl?: string | null;
             /**
              * @default 0
              * @example 10
@@ -3878,12 +3910,12 @@ export interface components {
              * @description Shu vaqtgacha storefront’da ko‘rinmaydi; null — darhol.
              * @example 2026-09-25T00:00:00.000Z
              */
-            startsAt?: unknown;
+            startsAt?: string | null;
             /**
              * @description Shu vaqtdan keyin o‘zi yo‘qoladi; null — muddatsiz.
              * @example 2026-10-01T00:00:00.000Z
              */
-            endsAt?: unknown;
+            endsAt?: string | null;
         };
         ReorderBannerItemDto: {
             /** @example 3 */
@@ -3897,36 +3929,21 @@ export interface components {
         UpdateBannerDto: {
             /** @example 50% chegirma */
             title?: string;
-            /**
-             * @description `POST /files/upload` qaytargan manzil.
-             * @example https://cdn.example.com/banners/autumn.jpg
-             */
+            /** @example https://api.elchimarket.uz/media/marketplace-media/banners/1727000000000-uuid.jpg */
             imageUrl?: string;
             /**
-             * @description Bannerga bosilganda ochiladigan sahifa.
-             * @example /storefront/products?categoryId=7
+             * @description Bo'sh qiymat yoki null havolani olib tashlaydi.
+             * @example /katalog/telefon
              */
-            linkUrl?: unknown;
-            /**
-             * @default 0
-             * @example 10
-             */
+            linkUrl?: string | null;
+            /** @example 10 */
             sortOrder?: number;
-            /**
-             * @default true
-             * @example true
-             */
+            /** @example true */
             isActive?: boolean;
-            /**
-             * @description Shu vaqtgacha storefront’da ko‘rinmaydi; null — darhol.
-             * @example 2026-09-25T00:00:00.000Z
-             */
-            startsAt?: unknown;
-            /**
-             * @description Shu vaqtdan keyin o‘zi yo‘qoladi; null — muddatsiz.
-             * @example 2026-10-01T00:00:00.000Z
-             */
-            endsAt?: unknown;
+            /** @example 2026-09-25T00:00:00.000Z */
+            startsAt?: string | null;
+            /** @example 2026-10-01T00:00:00.000Z */
+            endsAt?: string | null;
         };
         DeleteBannerResultDto: {
             /** @example 3 */
@@ -8265,6 +8282,62 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AuthErrorResponseDto"];
                 };
+            };
+        };
+    };
+    AdminContentController_uploadImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadedFileDto"];
+                };
+            };
+            /** @description Fayl yo‘q yoki formati noto‘g‘ri */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            /** @description Fayl 5 MB dan katta */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

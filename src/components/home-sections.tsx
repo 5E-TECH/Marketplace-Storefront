@@ -25,12 +25,25 @@ export function Hero({ product }: { product?: Product }) {
  * o'tmaganlarini qaytaradi, shu sabab bu yerda qo'shimcha filtr yo'q.
  * Ro'yxat bo'sh bo'lsa butun blok chiqmaydi — bo'sh joy qolmasin.
  */
+/**
+ * `sizes` aniq ustunlar jadvaliga mos (globals.css `.home-banners[data-columns]`):
+ * 1 banner — to'liq kenglik, 2 — yarim, 3+ — uchdan bir (planshetda yarim).
+ * Oldingi `31vw` 1–2 bannerni to'liq kenglikda cho'zib, xira rasm yuklardi.
+ */
+const bannerSizes = (count: number): string => {
+  if (count === 1) return "(max-width: 1280px) calc(100vw - 24px), 1240px";
+  if (count === 2) return "(max-width: 720px) calc(100vw - 24px), (max-width: 1280px) calc(50vw - 27px), 613px";
+  return "(max-width: 720px) calc(100vw - 24px), (max-width: 1050px) calc(50vw - 27px), (max-width: 1280px) calc(33vw - 24px), 404px";
+};
+
 export function Banners({ banners }: { banners: Banner[] }) {
   if (!banners.length) return null;
-  return <Container><section className="home-banners" aria-label="Aksiyalar va e'lonlar">
+  const sizes = bannerSizes(banners.length);
+  return <Container><section className="home-banners" data-columns={Math.min(banners.length, 3)} aria-label="Aksiyalar va e’lonlar">
     {banners.map((banner) => {
+      // Sarlavha rasm ustida matn bo'lib turibdi — alt uni takrorlasa ekran o'quvchi ikki marta o'qirdi.
       const visual = <>
-        <Image src={getSafeImageSrc(banner.imageUrl)} alt={banner.title} fill sizes="(max-width: 720px) 92vw, (max-width: 1050px) 46vw, 31vw"/>
+        <Image src={getSafeImageSrc(banner.imageUrl)} alt="" fill sizes={sizes}/>
         <span className="home-banner-title">{banner.title}</span>
       </>;
       if (!banner.linkUrl) return <div className="home-banner" key={banner.id}>{visual}</div>;
