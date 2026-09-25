@@ -51,9 +51,15 @@ assert.match(shop, /<h1>[^<]+<\/h1>/, "Do‘kon SSR HTML ichida nom bilan chiqis
 assert.match(shop, new RegExp(`<link rel="canonical" href="${canonicalBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/dokon/${shopSlug}"\\s*/?>`), "Do‘kon canonical manzili kerak");
 assert.match(shop, /<meta property="og:title" content="[^"]+"\s*\/?>/, "Do‘kon ulashish teglari kerak");
 
-const staticRoutes = ["/katalog", "/qidiruv", "/cart", "/checkout", "/favorites", "/login", "/register", "/forgot-password", "/profile", "/profile/orders", "/orders/seo-test", "/api-test"];
+// Ochiq sahifalar indekslanadi; savatcha, kabinet, checkout kabi shaxsiy sahifalar esa noindex.
+const publicRoutes = ["/katalog", "/qidiruv"];
+const privateRoutes = ["/cart", "/checkout", "/favorites", "/login", "/register", "/forgot-password", "/profile", "/profile/orders", "/orders/seo-test", "/api-test"];
+const staticRoutes = [...publicRoutes, ...privateRoutes];
 const staticPages = await Promise.all(staticRoutes.map(async (route) => [route, await get(`${storefront}${route}`)]));
-for (const [route, html] of staticPages) assertIndexablePage(html, route);
+for (const [route, html] of staticPages) {
+  if (publicRoutes.includes(route)) assertIndexablePage(html, route);
+  else assert.match(html, /<meta name="robots" content="[^"]*noindex/i, `TC5: ${route} shaxsiy sahifa — noindex bo‘lishi kerak`);
+}
 const metadataPairs = staticPages.map(([route, html]) => `${route}\u0000${html.match(/<title>([^<]+)<\/title>/)?.[1]}\u0000${metaContent(html, "description")}`);
 assert.equal(new Set(metadataPairs.map((value) => value.split("\u0000").slice(1).join("\u0000"))).size, metadataPairs.length, "TC3: har statik sahifada o‘z title va description juftligi bo‘lishi kerak");
 

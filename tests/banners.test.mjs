@@ -87,44 +87,40 @@ test('ishonchsiz domendagi rasm o‘rniga zaxira rasm qo‘yiladi', () => {
 });
 
 test('bo‘sh ro‘yxatda banner bloki umuman chizilmaydi', () => {
-  const body = source('src/components/home-sections.tsx');
-  const component = body.slice(body.indexOf('export function Banners'));
-  assert.match(component.slice(0, 200), /if \(!banners\.length\) return null;/);
+  const component = source('src/components/banner-carousel.tsx');
+  assert.match(component, /if \(!count\) return null;/);
 });
 
 test('rasm alt bo‘sh — sarlavha ekran o‘quvchida ikki marta o‘qilmaydi', () => {
-  const body = source('src/components/home-sections.tsx');
-  const component = body.slice(body.indexOf('export function Banners'), body.indexOf('const categoryIds'));
-  assert.match(component, /<Image src=\{getSafeImageSrc\(banner\.imageUrl\)\} alt="" fill sizes=\{sizes\}\/>/);
+  const component = source('src/components/banner-carousel.tsx');
+  assert.match(component, /<Image src=\{getSafeImageSrc\(banner\.imageUrl\)\} alt="" fill sizes=\{SIZES\}/);
 });
 
-test('sizes ustunlar soniga mos: 1 banner to‘liq kenglikda xira chiqmaydi', () => {
-  const body = source('src/components/home-sections.tsx');
-  assert.match(body, /if \(count === 1\) return "\(max-width: 1280px\) calc\(100vw - 24px\), 1240px";/);
-  assert.match(body, /data-columns=\{Math\.min\(banners\.length, 3\)\}/);
-  const css = source('src/app/globals.css');
-  assert.match(css, /\.home-banners\[data-columns="1"\] \{ grid-template-columns: minmax\(0, 1fr\); \}/);
-  assert.match(css, /\.home-banners\[data-columns="2"\] \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
+test('banner to‘liq kenglikda: sizes konteyner eniga mos, rasm xira chiqmaydi', () => {
+  const component = source('src/components/banner-carousel.tsx');
+  assert.match(component, /const SIZES = "\(max-width: 1280px\) calc\(100vw - 24px\), 1240px";/);
 });
 
-test('sarlavha ikki qator bilan cheklangan va och rasmda ham o‘qiladi', () => {
+test('karusel o‘zi almashadi, qo‘lda ham o‘tkaziladi va bitta bannerda boshqaruv chiqmaydi', () => {
+  const component = source('src/components/banner-carousel.tsx');
+  assert.match(component, /window\.setInterval\(/);
+  assert.match(component, /prefers-reduced-motion: reduce/);
+  assert.match(component, /aria-label="Oldingi banner"/);
+  assert.match(component, /aria-label="Keyingi banner"/);
+  assert.match(component, /\{count > 1 && <>/);
+});
+
+test('sarlavha och rasmda ham o‘qiladi', () => {
   const css = source('src/app/globals.css');
-  const rule = css.match(/\.home-banner-title \{[^}]*\}/)[0];
-  assert.match(rule, /-webkit-line-clamp: 2/);
-  assert.match(rule, /rgba\(10,10,14,\.76\) 70%/);
+  const rule = css.match(/\.banner-title \{[^}]*\}/)[0];
+  assert.match(rule, /rgba\(10,10,14,\.78\) 0%/);
 });
 
 test('bosh sahifa bannerlarni StorefrontHome ga uzatadi', () => {
-  const page = source('src/app/page.tsx');
+  const page = source('src/app/(home)/page.tsx');
   assert.match(page, /bannerService\.list\(\)/);
   assert.match(page, /banners=\{banners\.data\}/);
-  assert.match(source('src/components/storefront-home.tsx'), /<Banners banners=\{banners\}\/>/);
-});
-
-test('telefonda bitta ustun — data-columns qoidasidan ustun turadi', () => {
-  const css = source('src/app/globals.css');
-  const mobile = css.slice(css.indexOf('@media (max-width: 720px)'));
-  assert.match(mobile, /\.home-banners, \.home-banners\[data-columns\] \{ grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(source('src/components/storefront-home.tsx'), /<BannerCarousel banners=\{banners\}\/>/);
 });
 
 test('storefront xavfsizlik sarlavhalarini o‘zi qo‘yadi (Cloudflare Caddy’siz ulanadi)', async () => {

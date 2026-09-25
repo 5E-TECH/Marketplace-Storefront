@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { authService } from "@/services/auth.service";
 import { cartService, cartTotals } from "@/services/cart.service";
 import { errorMessage } from "@/lib/errors";
 import { useToast } from "./toast-provider";
@@ -118,8 +119,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refresh]);
   useEffect(() => {
+    // Muddati o'tgan token har so'rovda 401 olib turmasin: sessiya tozalanadi, savatcha mehmon sifatida qayta yuklanadi.
+    const expired = () => { authService.clearSession(); void refresh(); };
     window.addEventListener("elchi:guest-merged", refresh);
-    return () => window.removeEventListener("elchi:guest-merged", refresh);
+    window.addEventListener("elchi:auth-expired", expired);
+    return () => {
+      window.removeEventListener("elchi:guest-merged", refresh);
+      window.removeEventListener("elchi:auth-expired", expired);
+    };
   }, [refresh]);
 
   const add = useCallback(async (input: AddCartInput) => run(() => cartService.add(input)), [run]);

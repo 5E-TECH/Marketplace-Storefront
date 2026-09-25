@@ -65,7 +65,7 @@ export const reviewService = {
     const first = await apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: 1, limit: 100 }, validate: validateBuyerOrdersPageDto });
     const pages = first.totalPages > 1 ? await Promise.all(Array.from({ length: first.totalPages - 1 }, (_, index) => apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: index + 2, limit: 100 }, validate: validateBuyerOrdersPageDto }))) : [];
     return [first, ...pages].flatMap((page) => page.items).flatMap((order) => {
-      if (!["DELIVERED", "COMPLETED"].includes(order.orderStatus.trim().toUpperCase().replace(/[\s-]+/g, "_"))) return [];
+      if (!["DELIVERED", "FULFILLED", "COMPLETED"].includes(order.orderStatus.trim().toUpperCase().replace(/[\s-]+/g, "_"))) return [];
       return order.items.flatMap((item) => {
         const orderItemId = reviewableItemId(item);
         return orderItemId && String(item.productId) === String(productId) ? [{ orderItemId, orderId: order.orderId }] : [];

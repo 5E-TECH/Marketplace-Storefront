@@ -2,30 +2,37 @@
 
 import { Search, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { formatPrice } from "@/lib/format";
 import { searchService, type SearchSuggestion } from "@/services/search.service";
 
 const SUGGEST_DELAY_MS = 250;
 const MIN_QUERY = 2;
 
-/** Sarlavhadagi qidiruv: takliflar, klaviatura bilan tanlash va yuborish shu komponentda. */
+/**
+ * Qidiruv so'zi serverda ham maydonga qo'yiladi: qidiruv sahifasi ochilganda maydon bo'sh turib qolmaydi.
+ * Statik sahifalarda `useSearchParams` Suspense talab qiladi — u yerda bo'sh maydon zaxira sifatida chiqadi.
+ */
 export function HeaderSearch() {
+  return <Suspense fallback={<SearchField initialQuery=""/>}><SearchFieldFromUrl/></Suspense>;
+}
+
+function SearchFieldFromUrl() {
+  const q = useSearchParams().get("q") ?? "";
+  // key: manzildagi so'z o'zgarsa (orqaga/oldinga, yangi qidiruv) maydon shu qiymatdan qayta boshlanadi.
+  return <SearchField initialQuery={q} key={q}/>;
+}
+
+/** Sarlavhadagi qidiruv: takliflar, klaviatura bilan tanlash va yuborish shu komponentda. */
+function SearchField({ initialQuery }: { initialQuery: string }) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [focused, setFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(-1);
 
-  // Qidiruv sahifasida orqaga/oldinga bosilganda maydon manzildagi so'rov bilan mos turadi.
-  useEffect(() => {
-    const sync = () => setQuery(new URLSearchParams(window.location.search).get("q") ?? "");
-    sync();
-    window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
-  }, []);
   useEffect(() => {
     const text = query.trim();
     if (!focused || text.length < MIN_QUERY) { setSuggestions([]); setLoading(false); return; }

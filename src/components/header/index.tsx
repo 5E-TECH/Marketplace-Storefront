@@ -30,7 +30,7 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
 
   return <header className="header">
     <div className="utility-bar"><Container>
-      <span><MapPin/> Yetkazish manzil bo‘yicha hisoblanadi</span>
+      <span><MapPin/> O‘zbekiston bo‘ylab yetkazib beramiz</span>
       <nav aria-label="Tezkor havolalar"><Link href="/profile/orders">Buyurtmalarim</Link><Link href="/favorites">Saralanganlar</Link><Link href="/katalog">Barcha kategoriyalar</Link></nav>
     </Container></div>
     <Container className="nav-wrap">

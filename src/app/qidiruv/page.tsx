@@ -8,7 +8,7 @@ type Props = { searchParams: Promise<CatalogSearchParams> };
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const query = parseCatalogQuery(await searchParams).search;
   const title = query ? `“${query}” qidiruvi` : "Mahsulot qidirish";
-  return { title, description: query ? `${query} bo‘yicha mahsulotlar va narxlar.` : "Elchi Market mahsulotlarini nomi bo‘yicha qidiring.", alternates: { canonical: "/qidiruv" } };
+  return { title, description: query ? `${query} bo‘yicha Elchi Market’dagi mahsulotlar va ularning narxlari.` : "Elchi Market’dagi mahsulotlarni nomi bo‘yicha qidiring.", alternates: { canonical: "/qidiruv" }, ...(query ? { robots: { index: false, follow: true } } : {}) };
 }
 
 export default async function SearchPage({ searchParams }: Props) {
