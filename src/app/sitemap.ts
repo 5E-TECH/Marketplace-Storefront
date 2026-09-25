@@ -4,8 +4,9 @@ import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
 import type { CatalogCategory, Product } from "@/types/commerce";
 
-// Har crawl backendni urmasin; soatiga bir yangilanadi.
-export const revalidate = 3600;
+// Build paytida backend yo'q (CI, docker build) — xarita so'rov vaqtida quriladi.
+// Backendni har crawl urmaydi: service'lardagi fetch keshi (next.revalidate) ishlaydi.
+export const dynamic = "force-dynamic";
 const flattenCategories = (items: CatalogCategory[]): CatalogCategory[] => items.flatMap((category) => [category, ...flattenCategories(category.children)]);
 const validDate = (value?: string): string | undefined => value && Number.isFinite(Date.parse(value)) ? value : undefined;
 
