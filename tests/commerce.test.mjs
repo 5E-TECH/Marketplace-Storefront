@@ -113,6 +113,17 @@ test('product image URLs only allow local assets and the configured marketplace 
   assert.equal(getSafeImageSrc('javascript:alert(1)'), '/placeholder-product.svg');
 });
 
+test('rasm hostlari next.config’dagi MEDIA_BASE_URL ro‘yxatidan olinadi', (t) => {
+  const original = process.env.NEXT_PUBLIC_IMAGE_HOSTS;
+  process.env.NEXT_PUBLIC_IMAGE_HOSTS = 'api.elchimarket.uz,cdn.elchimarket.uz,127.0.0.1:4010';
+  t.after(() => { if (original === undefined) delete process.env.NEXT_PUBLIC_IMAGE_HOSTS; else process.env.NEXT_PUBLIC_IMAGE_HOSTS = original; });
+  const { getSafeImageSrc } = loadTypeScript('src/lib/product-storage.ts');
+  assert.equal(getSafeImageSrc('https://cdn.elchimarket.uz/p/1.jpg'), 'https://cdn.elchimarket.uz/p/1.jpg');
+  assert.equal(getSafeImageSrc('http://127.0.0.1:4010/media/1.jpg'), 'http://127.0.0.1:4010/media/1.jpg');
+  assert.equal(getSafeImageSrc('http://127.0.0.1:9999/media/1.jpg'), '/placeholder-product.svg', 'boshqa port ruxsat etilmaydi');
+  assert.equal(getSafeImageSrc('https://untrusted.example/x.jpg'), '/placeholder-product.svg');
+});
+
 test('null prices fall back to a valid sale price; zero stays zero', () => {
   const { normalizeApiProduct } = loadTypeScript('src/lib/normalize-product.ts');
   assert.equal(normalizeApiProduct({ ...product, price: null, salePrice: '250' }).price, 250);
@@ -747,4 +758,169 @@ test('buyurtmalar ro‘yxatida bekor qilingan va muvaffaqiyatsiz to‘lov ajrati
 test('buyurtma sahifasida bekor qilingan/qaytarilgan buyurtmaga “To‘lash” tugmasi chiqmaydi', () => {
   const source = fs.readFileSync(new URL('../src/components/order-tracking-content.tsx', import.meta.url), 'utf8');
   assert.match(source, /isCard && paymentStatus !== "PAID" && paymentStatus !== "REFUNDED" && !isClosedOrder\(tracking\.status\) && <button/);
+});
+
+test('savatga keyin qo‘shilgan mahsulot tanlangan bo‘ladi, olib tashlangan belgi esa saqlanadi', (t) => {
+  const store = new Map();
+  const originalWindow = globalThis.window;
+  const originalStorage = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+  globalThis.window = {};
+  // Node 22+ da sessionStorage faqat o'qiladigan global — defineProperty bilan almashtiriladi.
+  Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: { getItem: (key) => store.get(key) ?? null, setItem: (key, value) => store.set(key, String(value)), removeItem: (key) => store.delete(key) } });
+  t.after(() => {
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+    if (originalStorage) Object.defineProperty(globalThis, 'sessionStorage', originalStorage); else delete globalThis.sessionStorage;
+  });
+  const { readCartSelection, saveCartSelection, clearCartSelection } = loadTypeScript('src/lib/cart-selection.ts');
+  const a = { id: 'a' }, b = { id: 'b' }, c = { id: 'c' };
+  assert.deepEqual(readCartSelection([a, b]), ['a', 'b'], 'saqlangan holat bo‘lmasa hammasi tanlanadi');
+  saveCartSelection(['a'], [a, b]);
+  assert.deepEqual(readCartSelection([a, b, c]), ['a', 'c'], 'olib tashlangan b qoladi, yangi c tanlanadi');
+  saveCartSelection([], [a]);
+  assert.deepEqual(readCartSelection([b]), ['b'], 'savat bo‘shatilgandan keyin qo‘shilgan mahsulot checkout’dan tushib qolmaydi');
+  clearCartSelection();
+  assert.deepEqual(readCartSelection([a, b]), ['a', 'b']);
+});
+
+test('login returnTo faqat ichki yo‘lga ruxsat beradi (open redirect yo‘q)', () => {
+  const { safeReturnPath } = loadTypeScript('src/lib/return-path.ts');
+  assert.equal(safeReturnPath('/favorites'), '/favorites');
+  assert.equal(safeReturnPath('/qidiruv?q=telefon#natija'), '/qidiruv?q=telefon#natija');
+  assert.equal(safeReturnPath(undefined), '/profile');
+  for (const unsafe of ['//evil.example', '/\\evil.example', '/\\/evil.example', 'https://evil.example', 'javascript:alert(1)', '/\tevil', ' /x', `/${'a'.repeat(600)}`]) {
+    assert.equal(safeReturnPath(unsafe), '/profile', unsafe);
+  }
+  // Kodlangan teskari chiziq yo'l ichida qoladi — begona hostga olib chiqmaydi.
+  assert.equal(new URL(safeReturnPath('/%5Cevil.example'), 'https://elchimarket.uz').host, 'elchimarket.uz');
+});
+
+test('sahifada kartasi bor savat mahsuloti karta keshga yozguncha kutiladi (N+1 yo‘q)', async (t) => {
+  let productRequests = 0;
+  const listeners = new Map();
+  const originalWindow = globalThis.window;
+  const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  globalThis.window = { addEventListener: (name, fn) => listeners.set(name, fn) };
+  // HTML oqimi hali tugamagan; tugagach sahifada 7-mahsulot kartasi bor, lekin hali hydrate bo'lmagan.
+  const doc = { readyState: 'loading', querySelector: (selector) => selector === '[data-product-id="7"]' ? {} : null };
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: doc });
+  t.after(() => {
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+    if (originalDocument) Object.defineProperty(globalThis, 'document', originalDocument); else delete globalThis.document;
+  });
+  const { cartService } = loadTypeScript('src/services/cart.service.ts', {
+    '@/lib/api': {
+      ApiError: class ApiError extends Error {},
+      apiRequest: async (path) => {
+        if (path === '/cart') return { items: [{ id: 'row-1', productId: 7, variantId: 'v7', shopId: '3', quantity: 2, unitPriceSnapshot: 90 }] };
+        productRequests++;
+        return { ...product, id: 7 };
+      },
+    },
+  });
+  const pending = cartService.get();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  doc.readyState = 'complete'; listeners.get('load')();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(productRequests, 0, 'karta hydrate bo‘lguncha so‘rov ketmaydi');
+  cartService.rememberProduct({ ...product, id: 7, name: 'Kartadagi mahsulot' });
+  const cart = await pending;
+  assert.equal(productRequests, 0, 'karta yozgan mahsulot uchun backendga GET ketmasligi kerak');
+  assert.equal(cart.items[0].product.name, 'Kartadagi mahsulot');
+  assert.equal(cart.items[0].quantity, 2);
+});
+
+test('sahifada kartasi yo‘q savat mahsuloti HTML oqimi tugagach darhol bir marta so‘raladi', async (t) => {
+  let productRequests = 0;
+  const originalWindow = globalThis.window;
+  const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  globalThis.window = { addEventListener: () => {} };
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { readyState: 'complete', querySelector: () => null } });
+  t.after(() => {
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+    if (originalDocument) Object.defineProperty(globalThis, 'document', originalDocument); else delete globalThis.document;
+  });
+  const { cartService } = loadTypeScript('src/services/cart.service.ts', {
+    '@/lib/api': {
+      ApiError: class ApiError extends Error {},
+      apiRequest: async (path) => {
+        if (path === '/cart') return { items: [{ id: 'row-1', productId: 8, variantId: 'v8', shopId: '3', quantity: 1, unitPriceSnapshot: 90 }] };
+        productRequests++;
+        return { ...product, id: 8, name: 'Backenddan' };
+      },
+    },
+  });
+  const started = Date.now();
+  const cart = await cartService.get();
+  assert.ok(Date.now() - started < 1000, 'kartasiz sahifa (masalan /cart) kutmasligi kerak');
+  assert.equal(productRequests, 1);
+  assert.equal(cart.items[0].product.name, 'Backenddan');
+});
+
+test('online to‘lov usullari faqat NEXT_PUBLIC_ONLINE_PAYMENTS bilan yoqiladi', () => {
+  const { parseOnlinePaymentMethods } = loadTypeScript('src/config/payments.ts');
+  assert.deepEqual(parseOnlinePaymentMethods(undefined), []);
+  assert.deepEqual(parseOnlinePaymentMethods(''), []);
+  assert.deepEqual(parseOnlinePaymentMethods(' Click , payme ,uzum'), ['payme', 'click']);
+});
+
+test('to‘lov sahifasini ochib bo‘lmasa sabab aniq aytiladi, buyurtma saqlanadi', async (t) => {
+  const originalWindow = globalThis.window;
+  globalThis.window = { location: { origin: 'https://shop.test' } };
+  t.after(() => { if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow; });
+  let answer;
+  const { orderService, paymentStartMessage } = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest: async () => { if (answer instanceof Error) throw answer; return answer; } },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer x' }), getAccessToken: () => 'x' },
+    './cart.service': { cartService: {} },
+  });
+  const order = { id: 'o-1', total: 120, paymentProvider: 'PAYME' };
+  const reason = async () => { try { await orderService.startPayment(order); return 'ok'; } catch (error) { return [error.reason, paymentStartMessage(error)]; } };
+  answer = { id: '1', status: 'PENDING', redirectUrl: null };
+  assert.equal((await reason())[0], 'not_configured');
+  assert.match((await reason())[1], /hozircha ishga tushirilmagan/);
+  answer = Object.assign(new Error('Token berilmagan'), { status: 401 });
+  assert.equal((await reason())[0], 'unauthorized');
+  answer = Object.assign(new Error('Provayder sozlanmagan'), { status: 503 });
+  assert.equal((await reason())[0], 'not_configured');
+  answer = Object.assign(new Error('Server'), { status: 500 });
+  assert.equal((await reason())[0], 'failed');
+  answer = { redirectUrl: 'javascript:alert(1)' };
+  assert.equal((await reason())[0], 'not_configured', 'xavfli manzilga yo‘naltirilmaydi');
+  answer = { redirectUrl: 'https://checkout.paycom.uz/abc' };
+  assert.equal(await orderService.startPayment(order), 'https://checkout.paycom.uz/abc');
+  assert.match(paymentStartMessage(new Error('boshqa')), /Buyurtmangiz saqlandi/);
+});
+
+test('uzoq PENDING qolgan to‘lovda “tekshirilmoqda” o‘rniga qayta to‘lash taklif qilinadi', () => {
+  const Icon = (props) => React.createElement('i', props);
+  const { PaymentResultView, PENDING_STALE_MS } = loadTypeScript('src/components/payment-return-content.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'lucide-react': { CheckCircle2: Icon, CircleX: Icon, Clock3: Icon, RefreshCw: Icon, TriangleAlert: Icon },
+    '@/services/order.service': { orderService: {}, isClosedOrder: () => false, paymentStartMessage: () => '' },
+  });
+  assert.equal(PENDING_STALE_MS, 120000);
+  const html = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: 'order-9', status: 'PENDING', stale: true, order: null, onCheck() {}, onRetry() {} }));
+  assert.match(html, /To‘lov hali tasdiqlanmadi/);
+  assert.match(html, /<button[^>]*>Qayta to‘lash<\/button>/);
+  assert.match(html, /Holat har 15 soniyada avtomatik tekshiriladi/);
+  const closed = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: 'order-9', status: 'PENDING', stale: true, orderClosed: true, order: null, onCheck() {}, onRetry() {} }));
+  assert.doesNotMatch(closed, /Qayta to‘lash/, 'bekor qilingan buyurtmaga qayta to‘lash taklif qilinmaydi');
+});
+
+test('checkout online usulni faqat akkauntga kirgan xaridorga beradi', () => {
+  const source = fs.readFileSync(new URL('../src/components/checkout-content.tsx', import.meta.url), 'utf8');
+  assert.match(source, /const locked = method !== "cod" && !signedIn/);
+  assert.match(source, /disabled=\{locked\}/);
+  assert.match(source, /if \(paymentMethod !== "cod" && !signedIn\) \{ setError\(/);
+  assert.match(source, /href="\/login\?next=\/checkout"/);
+  assert.match(source, /\.\.\.onlinePaymentMethods\.map/);
+});
+
+test('miqdor tugmalari optimistik yangilanishda bloklanmaydi (tez bosishlar yo‘qolmaydi)', () => {
+  for (const file of ['src/components/product-card.tsx', 'src/components/cart-item-row.tsx']) {
+    const source = fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    const increase = source.match(/onIncrease=\{([^\n]+)\}\/>/)?.[1] ?? '';
+    assert.ok(increase, `${file}: onIncrease topilmadi`);
+    assert.doesNotMatch(increase, /run\(/, `${file}: oshirish run() ichida — tugma pending bo‘lib, bosishlar yo‘qoladi`);
+  }
 });

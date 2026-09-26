@@ -34,7 +34,7 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
   };
 
   return <>
-    <div className="detail-layout">
+    <div className="detail-layout" data-product-id={product.id}>
       <section className={`detail-gallery${product.images.length > 1 ? "" : " detail-gallery--single"}`}>
         {product.images.length > 1 && <div className="detail-thumbs">{product.images.map((image, index) => <button type="button" className={activeImage === index ? "active" : ""} onMouseEnter={() => setActiveImage(index)} onClick={() => setActiveImage(index)} key={image} aria-label={`${index + 1}-rasm`} aria-current={activeImage === index || undefined}><Image src={getSafeImageSrc(image)} alt="" fill sizes="72px"/></button>)}</div>}
         <div className="detail-main-image"><Image src={getSafeImageSrc(product.images[activeImage])} alt={product.name} fill priority sizes="(max-width: 800px) 100vw, 48vw"/><div className="mobile-image-count">{activeImage + 1} / {product.images.length}</div></div>

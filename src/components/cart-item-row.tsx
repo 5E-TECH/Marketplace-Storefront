@@ -23,8 +23,9 @@ export function CartItemRow({ item, selected, onSelect, onUpdate, onRemove }: Pr
       {item.color && <span className="item-color">Rang <i style={{ background: item.color }}/></span>}
       <div className="cart-row-actions">
         <QuantityStepper value={item.quantity} decreaseAction="remove" max={variant?.stock} disabled={pending}
-          onDecrease={() => void run(() => item.quantity === 1 ? onRemove(item.id) : onUpdate(item.id, item.quantity - 1))}
-          onIncrease={() => void run(() => onUpdate(item.id, item.quantity + 1))}/>
+          // Miqdor optimistik va debounce bilan yangilanadi — tez bosishlar yo'qolmasligi uchun tugma bloklanmaydi.
+          onDecrease={() => { if (item.quantity === 1) void run(() => onRemove(item.id)); else void onUpdate(item.id, item.quantity - 1); }}
+          onIncrease={() => { void onUpdate(item.id, item.quantity + 1); }}/>
         <FavoriteButton product={item.product} variant="inline"/>
         <button type="button" disabled={pending} onClick={() => void run(() => onRemove(item.id))} aria-label="O‘chirish"><Trash2/> <span>O‘chirish</span></button>
       </div>

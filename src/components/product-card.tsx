@@ -31,7 +31,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
   const currentImage = product.images[activeImage] ?? product.image;
   const imageSrc = failedImage === currentImage ? "/placeholder-product.svg" : getSafeImageSrc(currentImage);
   const discount = product.oldPrice && product.oldPrice > product.price ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
-  return <article className="product-card">
+  return <article className="product-card" data-product-id={product.id}>
     <div className="product-image" onPointerEnter={(event) => { const bounds = event.currentTarget.getBoundingClientRect(); imageBounds.current = { left: bounds.left, width: bounds.width }; }} onPointerMove={(event) => selectImage(event.clientX)} onPointerLeave={() => { imageBounds.current = null; setActiveImage(0); }}>
       {(product.badge || discount > 0) && <span className="badge">{product.badge || `−${discount}%`}</span>}
       <Link href={`/product/${product.id}`} prefetch={false} className="product-image-link" aria-label={product.name}>
@@ -48,8 +48,10 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
         <Price value={product.price} oldValue={product.oldPrice}/>
         {cartItem
           ? <QuantityStepper className="product-cart-stepper" testId="product-card-stepper" value={cartItem.quantity} decreaseAction="remove" max={variant?.stock} disabled={pending}
-              onDecrease={() => void run(() => cartItem.quantity === 1 ? cart.remove(cartItem.id) : cart.update(cartItem.id, cartItem.quantity - 1))}
-              onIncrease={() => void run(() => cart.update(cartItem.id, cartItem.quantity + 1))}/>
+              // Miqdor optimistik va debounce bilan yangilanadi (bir necha bosish — bitta PATCH): tugmani bloklamaymiz,
+              // aks holda tez bosishlar yo'qoladi. Faqat o'chirish tarmoq amali sifatida kutiladi.
+              onDecrease={() => { if (cartItem.quantity === 1) void run(() => cart.remove(cartItem.id)); else void cart.update(cartItem.id, cartItem.quantity - 1); }}
+              onIncrease={() => { void cart.update(cartItem.id, cartItem.quantity + 1); }}/>
           : <button data-testid="product-card-add" type="button" className="product-add" disabled={pending || !variant} aria-busy={pending || undefined} aria-label={variant ? "Savatchaga qo‘shish" : "Mahsulot varianti mavjud emas"}
               onClick={() => void run(() => cart.add({ product, quantity: 1, color: variant?.color ?? product.colors[0] ?? "", variantId: variant?.id }))}><Plus/></button>}
       </div>

@@ -7,6 +7,19 @@ import { cartService } from "./cart.service";
 import { errorMessage } from "@/lib/errors";
 
 const STORAGE_KEY = "elchi_orders_v1";
+
+/** To'lov sahifasini ochib bo'lmaganda sabab: xaridorga nima qilishini aniq aytish uchun. */
+export type PaymentStartFailure = "not_configured" | "unauthorized" | "failed";
+export class PaymentStartError extends Error {
+  constructor(readonly reason: PaymentStartFailure, message: string) { super(message); this.name = "PaymentStartError"; }
+}
+const PAYMENT_START_MESSAGES: Record<PaymentStartFailure, string> = {
+  not_configured: "Online to‘lov hozircha ishga tushirilmagan. Buyurtmangiz saqlandi — keyinroq buyurtma sahifasidan to‘lashingiz mumkin.",
+  unauthorized: "Online to‘lash uchun akkauntingizga kiring. Buyurtmangiz saqlandi.",
+  failed: "To‘lov sahifasini hozir ochib bo‘lmadi. Buyurtmangiz saqlandi — birozdan keyin qayta urinib ko‘ring yoki buyurtma sahifasidan to‘lang.",
+};
+export const paymentStartMessage = (error: unknown): string => error instanceof PaymentStartError ? error.message : PAYMENT_START_MESSAGES.failed;
+const paymentStartError = (reason: PaymentStartFailure) => new PaymentStartError(reason, PAYMENT_START_MESSAGES[reason]);
 const object = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const money = (value: unknown, field: string): number => {
   const parsed = Number(value);
@@ -229,11 +242,22 @@ export const orderService = {
     catch { order.warning = [order.warning, "Buyurtma yaratildi, lekin savatchani tozalab bo‘lmadi. Buyurtmani qayta yubormang."].filter(Boolean).join(" "); }
     return order;
   },
+  /**
+   * Backend to'lov yozuvini yaratadi (takror chaqiruv o'sha yozuvni qaytaradi) va provayder sahifasi manzilini beradi.
+   * `redirectUrl` bo'lmasa provayder kalitlari hali sozlanmagan: buyurtma saqlanadi, xaridor keyin to'laydi.
+   */
   async startPayment(order: Order): Promise<string> {
     if (!order.paymentProvider) throw new Error("To‘lov tizimi tanlanmagan");
-    const response = object(await apiRequest("/payments", { method: "POST", body: { salesOrderId: order.id, provider: order.paymentProvider, amount: order.total, returnUrl: `${window.location.origin}/checkout/payment/return?orderId=${encodeURIComponent(order.id)}` } }));
+    let response: Record<string, unknown>;
+    try {
+      response = object(await apiRequest("/payments", { method: "POST", headers: authHeaders(), body: { salesOrderId: order.id, provider: order.paymentProvider, amount: order.total, returnUrl: `${window.location.origin}/checkout/payment/return?orderId=${encodeURIComponent(order.id)}` } }));
+    } catch (error) {
+      const status = (error as { status?: unknown } | null)?.status;
+      // POST /payments faqat ro'yxatdan o'tgan xaridor uchun (bearer); 409/503 — provayder sozlanmagan.
+      throw paymentStartError(status === 401 || status === 403 ? "unauthorized" : status === 409 || status === 503 ? "not_configured" : "failed");
+    }
     const redirectUrl = safeHttpUrl(response.redirectUrl ?? response.checkoutUrl ?? response.paymentUrl);
-    if (!redirectUrl) throw new Error("To‘lov sahifasi hali backend tomonidan tayyorlanmagan");
+    if (!redirectUrl) throw paymentStartError("not_configured");
     return redirectUrl;
   },
   async paymentStatus(orderId: string): Promise<{ status: PaymentStatus; provider?: PaymentProvider; reason?: string; orderStatus?: OrderStatus }> {

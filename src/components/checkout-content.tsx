@@ -8,7 +8,8 @@ import { clearCartSelection, readCartSelection } from "@/lib/cart-selection";
 import { formatPrice } from "@/lib/format";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
-import { orderService } from "@/services/order.service";
+import { orderService, paymentStartMessage } from "@/services/order.service";
+import { onlinePaymentMethods } from "@/config/payments";
 import { locationService, type DistrictOption, type RegionOption } from "@/services/location.service";
 import type { CheckoutAddress, DeliveryPreview, Order, PaymentMethod } from "@/types/commerce";
 import { Button, LoadingGrid, Price, StatePanel } from "./ui";
@@ -28,18 +29,18 @@ const toAddress = (form: CheckoutForm): CheckoutAddress => ({
   districtId: form.districtId,
 });
 /*
- * v1 (MVP): faqat COD — Payme/Click ataylab o'chirilgan.
- *
- * Online to'lov v2'da, merchant shartnomalari rasmiylashtirilgach yoqiladi.
- * Frontend tomoni tayyor (`startPayment`, qaytish sahifasi, holat pollingi) va
- * karta buyurtmasi bo'lmagani uchun v1'da ishga tushmaydi. Yoqishdan oldin
- * API_CONTRACT.md → "Online to'lov (v2)" bo'limidagi backend ishlari bajarilsin,
- * keyin quyidagi ikki qatorni qaytaring.
+ * v1 (MVP): faqat COD. Online to'lov v2'da, merchant shartnomalari rasmiylashtirilgach yoqiladi:
+ * API_CONTRACT.md → "Online to'lov (v2)" bandlari bajarilgach `NEXT_PUBLIC_ONLINE_PAYMENTS=payme,click`
+ * bilan qayta build qilinadi (src/config/payments.ts). Frontend oqimi — buyurtma, `POST /payments`,
+ * provayderga yo'naltirish, qaytish sahifasi va holat pollingi — tayyor.
  */
+const onlineChoiceCopy: Record<Exclude<PaymentMethod, "cod">, { title: string; note: string }> = {
+  payme: { title: "Payme", note: "Karta bilan xavfsiz online to‘lov" },
+  click: { title: "Click", note: "Karta bilan xavfsiz online to‘lov" },
+};
 const paymentChoices: { method: PaymentMethod; title: string; note: string }[] = [
   { method: "cod", title: "Qabul qilganda", note: "Naqd yoki terminal orqali" },
-  // { method: "payme", title: "Payme", note: "Karta bilan xavfsiz online to‘lov" },
-  // { method: "click", title: "Click", note: "Karta bilan xavfsiz online to‘lov" },
+  ...onlinePaymentMethods.map((method) => ({ method, ...onlineChoiceCopy[method] })),
 ];
 const canPreview = (form: CheckoutForm) => form.recipientName.trim().length >= 2 && /^\d{9}$/.test(form.phone) && Boolean(form.regionId) && Boolean(form.districtId) && form.street.trim().length >= 5;
 
@@ -54,6 +55,8 @@ export function CheckoutContent() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [paymentPending, setPaymentPending] = useState(false);
   const [unpaid, setUnpaid] = useState<Order | null>(null);
+  // `POST /payments` faqat ro'yxatdan o'tgan xaridor uchun: mehmonga online usul taklif qilinmaydi.
+  const [signedIn, setSignedIn] = useState(false);
   const [error, setError] = useState("");
   const [regions, setRegions] = useState<RegionOption[]>([]);
   const [districts, setDistricts] = useState<DistrictOption[]>([]);
@@ -89,6 +92,7 @@ export function CheckoutContent() {
 
   useEffect(() => {
     const session = authService.getSession();
+    setSignedIn(Boolean(session));
     if (session) setForm((current) => ({ ...current, recipientName: current.recipientName || session.name || "", phone: session.phone.replace(/^\+?998/, "").replace(/\D/g, "").slice(0, 9) }));
   }, []);
 
@@ -151,15 +155,16 @@ export function CheckoutContent() {
     try {
       const redirectUrl = await orderService.startPayment(order);
       window.location.assign(redirectUrl);
-    } catch {
-      // Backend xabari texnik bo'lishi mumkin; xaridorga nima qilishini aytamiz, buyurtma esa saqlanib qoladi.
-      setError("To‘lov sahifasini hozir ochib bo‘lmadi. Buyurtmangiz saqlandi — birozdan keyin “To‘lovni davom ettirish” tugmasi orqali qayta urinib ko‘ring yoki buyurtma sahifasidan to‘lang.");
+    } catch (caught) {
+      // Backend xabari texnik bo'lishi mumkin; sababga qarab xaridorga nima qilishini aytamiz, buyurtma saqlanib qoladi.
+      setError(paymentStartMessage(caught));
       setPaymentPending(false);
     }
   };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (pending || previewPending || cart.loading) return;
+    if (paymentMethod !== "cod" && !signedIn) { setError("Online to‘lash uchun akkauntingizga kiring yoki “Qabul qilganda” usulini tanlang."); return; }
     setPending(true); setError("");
     const selected = new Set(selectedIds);
     const deferredItems = cart.items.filter((item) => !selected.has(item.id));
@@ -214,13 +219,13 @@ export function CheckoutContent() {
       <label className="form-wide"><span>Ko‘cha, uy va xonadon</span><textarea name="street" value={form.street} onChange={(event) => change("street", event.target.value)} required minLength={5} autoComplete="street-address" placeholder="Ko‘cha, uy va xonadon raqami"/></label>
     </div><p className="delivery-preview-status" aria-live="polite">{previewPending ? "Yetkazish narxi hisoblanmoqda…" : preview ? `Yetkazish avtomatik hisoblandi: ${formatPrice(preview.deliveryFee)} so‘m` : selectedItems.length !== cart.items.length ? "Tanlangan mahsulotlar uchun yetkazish narxi buyurtma berishda hisoblanadi" : "Manzil to‘liq kiritilgach yetkazish narxi avtomatik hisoblanadi"}</p></fieldset>
     <fieldset><legend><WalletCards/> To‘lov usuli</legend><div className="payment-options">
-      {paymentChoices.map(({ method, title, note }) => <label className={`payment-option${paymentMethod === method ? " active" : ""}`} key={method}>
-        <input type="radio" name="paymentMethod" value={method} checked={paymentMethod === method} onChange={() => setPaymentMethod(method)}/>
+      {paymentChoices.map(({ method, title, note }) => { const locked = method !== "cod" && !signedIn; return <label className={`payment-option${paymentMethod === method ? " active" : ""}${locked ? " is-disabled" : ""}`} key={method}>
+        <input type="radio" name="paymentMethod" value={method} checked={paymentMethod === method} disabled={locked} onChange={() => setPaymentMethod(method)}/>
         <PaymentBrand method={method}/>
         <span className="payment-option__copy"><b>{title}</b><small>{note}</small></span>
         <span className="payment-option__check" aria-hidden><Check/></span>
-      </label>)}
-    </div>{paymentMethod !== "cod" && <p className="payment-note">Buyurtma yaratilgach {paymentMethod === "payme" ? "Payme" : "Click"} sahifasiga o‘tasiz. To‘lov oynasini yopsangiz, buyurtma sahifasidan davom ettirishingiz mumkin.</p>}</fieldset>
+      </label>; })}
+    </div>{onlinePaymentMethods.length > 0 && !signedIn && <p className="payment-note">Payme yoki Click orqali to‘lash uchun <Link href="/login?next=/checkout">akkauntingizga kiring</Link>. Mehmon sifatida “Qabul qilganda” usuli bilan buyurtma berishingiz mumkin.</p>}{paymentMethod !== "cod" && <p className="payment-note">Buyurtma yaratilgach {paymentMethod === "payme" ? "Payme" : "Click"} sahifasiga o‘tasiz. To‘lov oynasini yopsangiz, buyurtma sahifasidan davom ettirishingiz mumkin.</p>}</fieldset>
     {regionsError && <div className="form-error form-error--action" role="alert"><span>Viloyatlar ro‘yxatini yuklab bo‘lmadi. {regionsError}</span><button type="button" onClick={() => setRegionsReload((value) => value + 1)}>Qayta urinish</button></div>}
     {districtsError && <div className="form-error form-error--action" role="alert"><span>Tumanlar ro‘yxatini yuklab bo‘lmadi. {districtsError}</span><button type="button" onClick={() => setDistrictsReload((value) => value + 1)}>Qayta urinish</button></div>}
     {error && <p className="form-error" role="alert">{error}</p>}

@@ -105,7 +105,9 @@ try {
     assert.equal(result.width, 375, `${route}: viewport must be 375px`);
     assert.ok(result.scrollWidth <= result.width, `${route}: horizontal overflow (${result.scrollWidth}px > ${result.width}px)`);
     assert.ok(result.headerVisible && result.footerVisible, `${route}: header and footer must be visible`);
-    assert.equal(result.floatingCartVisible, true, `${route}: cart must remain fixed in the bottom-right corner`);
+    // Savatcha va checkout sahifasida suzuvchi tugma o'sha sahifani takrorlaydi va kontentni yopadi — u yerda ko'rsatilmaydi.
+    if (route === "/cart" || route === "/checkout") assert.equal(result.floatingCartVisible, null, `${route}: floating cart must be hidden on its own page`);
+    else assert.equal(result.floatingCartVisible, true, `${route}: cart must remain fixed in the bottom-right corner`);
   }
 
   await send("Page.navigate", { url: `${base}${categoryPath}?sort=price%3Aasc` });
@@ -113,7 +115,7 @@ try {
   const filterState = await evaluate(`({
     path: location.pathname,
     sort: new URLSearchParams(location.search).get("sort"),
-    activeSort: document.querySelector(".sort-control [aria-current=page]")?.textContent.trim(),
+    activeSort: document.querySelector(".sort-control [aria-current=page]")?.getAttribute("aria-label"),
     products: document.querySelectorAll(".product-card").length,
     prices: [...document.querySelectorAll(".product-card .price strong")].map((element) => Number(element.textContent.replace(/\\D/g, ""))),
   })`);
@@ -127,7 +129,7 @@ try {
     page: new URLSearchParams(location.search).get("page"),
     sort: new URLSearchParams(location.search).get("sort"),
     pagination: document.querySelector(".catalog-pagination [aria-current=page]")?.textContent.trim(),
-    activeSort: document.querySelector(".sort-control [aria-current=page]")?.textContent.trim(),
+    activeSort: document.querySelector(".sort-control [aria-current=page]")?.getAttribute("aria-label"),
   })`);
   assert.deepEqual(pageState, { page: "2", sort: "price:asc", pagination: "2", activeSort: "Arzondan qimmatga" });
 
@@ -140,7 +142,7 @@ try {
     q: new URLSearchParams(location.search).get("q"),
     heading: document.querySelector(".search-page-heading h1")?.textContent.trim(),
     input: document.querySelector("#header-search")?.value,
-    activeSort: document.querySelector(".sort-control [aria-current=page]")?.textContent.trim(),
+    activeSort: document.querySelector(".sort-control [aria-current=page]")?.getAttribute("aria-label"),
     products: document.querySelectorAll(".product-card").length,
     names: [...document.querySelectorAll(".product-card h3")].map(element => element.textContent.trim()),
     prices: [...document.querySelectorAll(".product-card .price strong")].map(element => Number(element.textContent.replace(/\\D/g, ""))),

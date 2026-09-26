@@ -20,8 +20,58 @@ const getCartProduct = (productId: string): Promise<unknown> => {
   productCache.set(productId, { expiresAt: Date.now() + PRODUCT_CACHE_TTL, value });
   return value;
 };
+const isCached = (productId: string): boolean => (productCache.get(productId)?.expiresAt ?? 0) > Date.now();
+/**
+ * Katalog kartalari mahsulotni keshga ko'rsatilgach yozadi. Bosh sahifa oqim bilan keladi (`loading.tsx`
+ * Suspense): React kontentni `load`dan keyin ochadi, savat esa undan oldin yuklanadi — darhol so'ralsa har
+ * savat qatori uchun ortiqcha GET ketadi (N+1). Shuning uchun route skeleton'i (`.route-loading`) yo'qolguncha,
+ * so'ng sahifada kartasi (`data-product-id`) bor mahsulot karta uni keshga yozguncha kutiladi.
+ * Kartasi yo'q mahsulot (masalan, /cart sahifasi) kutilmaydi.
+ */
+const HTML_STREAM_LIMIT_MS = 3000;
+const ROUTE_REVEAL_LIMIT_MS = 5000;
+const CARD_HYDRATION_LIMIT_MS = 5000;
+const productWaiters = new Map<string, Set<() => void>>();
+// Har chaqiruv faqat o'z kutuvchisini o'chiradi: parallel savat yangilanishlari bir-birini kutishdan mahrum qilmasin.
+const whenRemembered = (productId: string): { promise: Promise<void>; cancel: () => void } => {
+  let resolver: () => void = () => {};
+  const promise = new Promise<void>((resolve) => { resolver = resolve; });
+  const waiters = productWaiters.get(productId) ?? new Set();
+  waiters.add(resolver);
+  productWaiters.set(productId, waiters);
+  return { promise, cancel: () => { waiters.delete(resolver); if (!waiters.size && productWaiters.get(productId) === waiters) productWaiters.delete(productId); } };
+};
+const wait = (ms: number) => new Promise<void>((resolve) => { setTimeout(resolve, ms); });
+const htmlStreamed = (): Promise<void> => document.readyState === "complete"
+  ? Promise.resolve()
+  : Promise.race([new Promise<void>((resolve) => { window.addEventListener("load", () => resolve(), { once: true }); }), wait(HTML_STREAM_LIMIT_MS)]);
+const routeLoading = (): boolean => Boolean(document.querySelector(".route-loading"));
+const routeRevealed = (): Promise<void> => !routeLoading() || typeof MutationObserver === "undefined" ? Promise.resolve() : new Promise((resolve) => {
+  const done = () => { observer.disconnect(); clearTimeout(timer); resolve(); };
+  const observer = new MutationObserver(() => { if (!routeLoading()) done(); });
+  const timer = setTimeout(done, ROUTE_REVEAL_LIMIT_MS);
+  observer.observe(document.body, { childList: true, subtree: true });
+});
+const hasProductCard = (productId: string): boolean => {
+  const id = typeof CSS !== "undefined" && typeof CSS.escape === "function" ? CSS.escape(productId) : productId.replace(/["\\]/g, "\\$&");
+  return Boolean(document.querySelector(`[data-product-id="${id}"]`));
+};
+const waitForPageProducts = async (productIds: string[]): Promise<void> => {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (productIds.every(isCached)) return;
+  await htmlStreamed();
+  await routeRevealed();
+  const pending = productIds.filter((productId) => !isCached(productId) && hasProductCard(productId));
+  if (!pending.length) return;
+  const waiters = pending.map(whenRemembered);
+  await Promise.race([Promise.all(waiters.map((waiter) => waiter.promise)), wait(CARD_HYDRATION_LIMIT_MS)]);
+  waiters.forEach((waiter) => waiter.cancel());
+};
 const cacheCartProduct = (product: AddCartInput["product"]) => {
-  productCache.set(String(product.id), { expiresAt: Date.now() + PRODUCT_CACHE_TTL, value: Promise.resolve(product) });
+  const productId = String(product.id);
+  productCache.set(productId, { expiresAt: Date.now() + PRODUCT_CACHE_TTL, value: Promise.resolve(product) });
+  productWaiters.get(productId)?.forEach((resolve) => resolve());
+  productWaiters.delete(productId);
 };
 
 const normalizeCart = async (response: unknown): Promise<Cart> => {
@@ -30,6 +80,7 @@ const normalizeCart = async (response: unknown): Promise<Cart> => {
   const rawItems = Array.isArray(data.items) ? data.items : Array.isArray(root.items) ? root.items : [];
   // The contract returns product IDs and price snapshots, not embedded products.
   const productIds = [...new Set(rawItems.filter((input) => !object(input).product && !object(object(input).variant).product).map((input) => String(object(input).productId)))];
+  await waitForPageProducts(productIds);
   const products = new Map<string, unknown>(await Promise.all(productIds.map(async (productId) => {
     try {
       const product = await getCartProduct(productId);

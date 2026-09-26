@@ -18,6 +18,8 @@ services:
         API_BASE_URL: ${API_BASE_URL}
         MEDIA_BASE_URL: ${MEDIA_BASE_URL:-https://api.elchimarket.uz/media}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?NEXT_PUBLIC_SITE_URL kerak — masalan https://elchimarket.uz}
+        # v2: Payme/Click backendda tayyor bo'lgach "payme,click". Bo'sh — faqat COD.
+        NEXT_PUBLIC_ONLINE_PAYMENTS: ${NEXT_PUBLIC_ONLINE_PAYMENTS:-}
     image: marketplace-storefront:latest
     restart: unless-stopped
     env_file: .env.production

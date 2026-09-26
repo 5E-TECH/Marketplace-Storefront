@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { isClosedOrder, orderService } from "@/services/order.service";
+import { isClosedOrder, orderService, paymentStartMessage } from "@/services/order.service";
 import type { Order, OrderStatus, OrderTracking } from "@/types/commerce";
 import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 
@@ -60,7 +60,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
     if (!found) { setError("Buyurtma ma’lumotini yuklab bo‘lmadi. Sahifani yangilab, qayta urinib ko‘ring."); setPaymentPending(false); return; }
     const target = found.paymentProvider ? found : { ...found, paymentProvider };
     try { window.location.assign(await orderService.startPayment(target)); }
-    catch { setError("To‘lov sahifasini hozir ochib bo‘lmadi. Birozdan keyin qayta urinib ko‘ring."); setPaymentPending(false); }
+    catch (caught) { setError(paymentStartMessage(caught)); setPaymentPending(false); }
   };
   return <section className="tracking-page"><div className="page-heading"><div><h1>#{tracking.orderId}</h1></div><button onClick={() => void load()}><RefreshCw/> Yangilash</button></div>
     {error && <p className="form-error" role="alert">{error}</p>}
