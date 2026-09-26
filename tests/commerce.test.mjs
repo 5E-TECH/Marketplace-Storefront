@@ -385,7 +385,7 @@ test('online checkout stays pending, skips COD confirmation and requests a provi
   assert.deepEqual(calls[0][1].body, { paymentMethod: 'online', address });
   assert.equal(await orderService.startPayment(order), 'https://checkout.payme.uz/order-1');
   assert.equal(calls[1][1].body.returnUrl, 'https://shop.test/checkout/payment/return?orderId=online-1');
-  assert.deepEqual(await orderService.paymentStatus('online-1'), { status: 'PAID', provider: 'PAYME', reason: undefined });
+  assert.deepEqual(await orderService.paymentStatus('online-1'), { status: 'PAID', provider: 'PAYME', reason: undefined, orderStatus: undefined });
   assert.equal(JSON.parse(stored.get('elchi_orders_v1'))[0].paymentStatus, 'PAID');
 });
 
@@ -673,4 +673,78 @@ test('category service uses backend slugs and finds nested categories', async ()
   const categories = await categoryService.list();
   assert.equal(categories.source, 'api');
   assert.equal(findCategoryBySlug(categories.data, 'mobil-telefonlar').id, '7');
+});
+
+/** localStorage + window'ni vaqtincha almashtiradi; buyurtma servisini berilgan tracking javobi bilan yuklaydi. */
+function loadOrderServiceWithStorage(t, orders, apiRequest) {
+  const stored = new Map([['elchi_orders_v1', JSON.stringify(orders)]]);
+  const originalStorage = globalThis.localStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = { location: { origin: 'https://shop.test' } };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value) } });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const loaded = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest },
+    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null },
+    './cart.service': { cartService: {} },
+  });
+  return { ...loaded, saved: () => JSON.parse(stored.get('elchi_orders_v1')) };
+}
+const unpaidOnlineOrder = () => ({ id: 'online-5', createdAt: new Date().toISOString(), status: 'Qabul qilindi', customer: {}, items: [], subtotal: 100, delivery: 0, total: 100, payment: 'card', paymentProvider: 'PAYME', paymentStatus: 'PENDING' });
+
+test('admin bekor qilgan buyurtma checkout’da “to‘lovni kutmoqda” bo‘lib chiqmaydi', async (t) => {
+  const { orderService, saved } = loadOrderServiceWithStorage(t, [unpaidOnlineOrder()], async () => ({ orderId: 'online-5', orderStatus: 'CANCELLED', payment: { provider: 'PAYME', status: 'CANCELLED' }, shipments: [] }));
+  assert.equal(await orderService.lastUnpaidOnline(), null);
+  assert.equal(saved()[0].status, 'Bekor qilindi');
+  assert.equal(saved()[0].paymentStatus, 'CANCELLED');
+  // Brauzer nusxasi yangilangani uchun keyingi chaqiruv backendga bormaydi ham.
+  assert.equal(await orderService.lastUnpaidOnline(), null);
+});
+
+test('to‘lanmagan buyurtma tekshiruvi backend javob bermasa ham ko‘rsatiladi', async (t) => {
+  const { orderService } = loadOrderServiceWithStorage(t, [unpaidOnlineOrder()], async () => { throw new Error('offline'); });
+  assert.equal((await orderService.lastUnpaidOnline())?.id, 'online-5');
+});
+
+test('to‘lov holati buyurtma holatini ham qaytaradi va saqlaydi', async (t) => {
+  const { orderService, isClosedOrder, saved } = loadOrderServiceWithStorage(t, [unpaidOnlineOrder()], async () => ({ orderId: 'online-5', orderStatus: 'REFUNDED', payment: { provider: 'PAYME', status: 'REFUNDED' }, shipments: [] }));
+  assert.deepEqual(await orderService.paymentStatus('online-5'), { status: 'REFUNDED', provider: 'PAYME', reason: undefined, orderStatus: 'Qaytarildi' });
+  assert.equal(saved()[0].status, 'Qaytarildi');
+  assert.equal(isClosedOrder('Qaytarildi'), true);
+  assert.equal(isClosedOrder('Bekor qilindi'), true);
+  assert.equal(isClosedOrder('Qabul qilindi'), false);
+});
+
+test('bekor qilingan buyurtmaning qaytish sahifasida “Qayta to‘lash” yo‘q', () => {
+  const Icon = (props) => React.createElement('i', props);
+  const { PaymentResultView } = loadTypeScript('src/components/payment-return-content.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'lucide-react': { CheckCircle2: Icon, CircleX: Icon, Clock3: Icon, RefreshCw: Icon, TriangleAlert: Icon },
+    '@/services/order.service': { orderService: {} },
+  });
+  const html = renderToStaticMarkup(React.createElement(PaymentResultView, { orderId: 'order-7', status: 'CANCELLED', order: null, orderClosed: true, onCheck() {}, onRetry() {} }));
+  assert.doesNotMatch(html, /Qayta to‘lash/);
+  assert.match(html, /buyurtma bekor qilingan, uni qayta to‘lab bo‘lmaydi/);
+  assert.match(html, /href="\/orders\/order-7"[^>]*>Buyurtmaga qaytish<\/a>/);
+});
+
+test('buyurtmalar ro‘yxatida bekor qilingan va muvaffaqiyatsiz to‘lov ajratiladi', () => {
+  const { paymentLabel } = loadTypeScript('src/components/orders-content.tsx', {
+    'next/link': { __esModule: true, default: () => null },
+    'lucide-react': { Package: () => null, RefreshCw: () => null },
+    '@/services/order.service': { orderService: {} },
+    './ui': {},
+  });
+  assert.equal(paymentLabel({ payment: 'card', paymentStatus: 'CANCELLED' }), 'Bekor qilingan');
+  assert.equal(paymentLabel({ payment: 'card', paymentStatus: 'FAILED' }), 'To‘lov amalga oshmadi');
+  assert.equal(paymentLabel({ payment: 'card', paymentStatus: 'REFUNDED' }), 'Qaytarilgan');
+  assert.equal(paymentLabel({ payment: 'cash' }), 'Qabul qilganda to‘lash');
+});
+
+test('buyurtma sahifasida bekor qilingan/qaytarilgan buyurtmaga “To‘lash” tugmasi chiqmaydi', () => {
+  const source = fs.readFileSync(new URL('../src/components/order-tracking-content.tsx', import.meta.url), 'utf8');
+  assert.match(source, /isCard && paymentStatus !== "PAID" && paymentStatus !== "REFUNDED" && !isClosedOrder\(tracking\.status\) && <button/);
 });

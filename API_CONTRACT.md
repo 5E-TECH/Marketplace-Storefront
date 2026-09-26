@@ -88,7 +88,11 @@ Checkout manzil tanlovi real backend ma’lumotidan ishlaydi:
 - `GET /regions` — viloyat va shaharlar (`id`, `name`);
 - `GET /regions/{regionId}/districts` — tanlangan hudud tumanlari (`id`, `regionId`, `name`).
 
-### Online to‘lov — holat va qolgan ishlar (2026-09-23 tekshiruvi)
+### Online to‘lov (v2) — v1’da o‘chiq
+
+> **v1 (MVP) faqat COD.** Payme/Click merchant shartnomalari rasmiylashtirilgach v2’da yoqiladi; quyidagi backend ishlari shu paytgacha kutadi. 2026-09-25 holatiga `contract/openapi.json` da `CreatePaymentDto.returnUrl`, `PaymentResultDto.redirectUrl` va `POST /admin/orders/{id}/refund` bor — 3 va 4-bandlar kontrakt tomonidan yopilgan, jonli backendda qayta tekshiriladi.
+
+#### 2026-09-23 tekshiruvi
 
 Frontend tayyor. Quyidagi holat jonli `api.elchimarket.uz` da haqiqiy so‘rovlar bilan tasdiqlangan.
 
