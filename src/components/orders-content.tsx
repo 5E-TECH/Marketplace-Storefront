@@ -8,10 +8,12 @@ import type { Order } from "@/types/commerce";
 import { formatDate } from "@/lib/format";
 import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 
-const paymentLabel = (order: Order) => order.payment !== "card" ? "Qabul qilganda to‘lash"
+// Buyurtma sahifasidagi (order-tracking-content) yozuvlar bilan bir xil bo'lishi kerak.
+export const paymentLabel = (order: Order) => order.payment !== "card" ? "Qabul qilganda to‘lash"
   : order.paymentStatus === "PAID" ? "Online to‘langan"
   : order.paymentStatus === "REFUNDED" ? "Qaytarilgan"
-  : order.paymentStatus === "CANCELLED" || order.paymentStatus === "FAILED" ? "To‘lov amalga oshmadi"
+  : order.paymentStatus === "CANCELLED" ? "Bekor qilingan"
+  : order.paymentStatus === "FAILED" ? "To‘lov amalga oshmadi"
   : "To‘lov kutilmoqda";
 
 export function OrdersContent() {

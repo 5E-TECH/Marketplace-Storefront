@@ -63,6 +63,8 @@ export const normalizeOrderStatus = (value: unknown): OrderStatus => {
   const key = typeof value === "string" ? value.trim().toUpperCase().replace(/[\s-]+/g, "_") : "";
   return statusMap[key] ?? "Qabul qilindi";
 };
+/** Bekor qilingan yoki qaytarilgan buyurtmani qayta to'lab bo'lmaydi (masalan, admin bekor qilgan). */
+export const isClosedOrder = (status: OrderStatus | undefined): boolean => status === "Bekor qilindi" || status === "Qaytarildi";
 const optionalText = (value: unknown): string | undefined => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const safeHttpUrl = (value: unknown): string | undefined => {
   const text = optionalText(value);
@@ -178,8 +180,15 @@ export const orderService = {
   /** To'lov sahifasidan orqaga qaytilganda checkout bo'sh savat emas, shu buyurtmani ko'rsatishi uchun. */
   async lastUnpaidOnline(maxAgeMs = 60 * 60 * 1000): Promise<Order | null> {
     const since = Date.now() - maxAgeMs;
-    return readLocal().find((order) => order.payment === "card" && !["PAID", "REFUNDED"].includes(order.paymentStatus ?? "")
-      && Date.parse(order.createdAt) >= since) ?? null;
+    const unpaid = (order: Order) => order.payment === "card" && !["PAID", "REFUNDED"].includes(order.paymentStatus ?? "") && !isClosedOrder(order.status);
+    const candidate = readLocal().find((order) => unpaid(order) && Date.parse(order.createdAt) >= since);
+    if (!candidate) return null;
+    // Brauzer nusxasi eskirgan bo'lishi mumkin (admin bekor qilgan, boshqa oynada to'langan) — backenddan tekshiramiz.
+    try {
+      const tracking = await orderService.track(candidate.id);
+      const current = { ...candidate, status: tracking.status, paymentStatus: tracking.payment?.status ?? candidate.paymentStatus };
+      return unpaid(current) ? current : null;
+    } catch { return candidate; }
   },
   /** Buyurtmani avval brauzer nusxasidan, topilmasa backend ro'yxatidan qidiradi: boshqa qurilmada ham "Qayta to'lash" ishlashi uchun. */
   async find(orderId: string): Promise<Order | null> {
@@ -196,7 +205,7 @@ export const orderService = {
       const orders = readLocal();
       const index = orders.findIndex((order) => order.id === id);
       if (index >= 0) {
-        orders[index] = { ...orders[index], status: tracking.status };
+        orders[index] = { ...orders[index], status: tracking.status, ...(tracking.payment ? { paymentStatus: tracking.payment.status, paymentProvider: tracking.payment.provider ?? orders[index].paymentProvider } : {}) };
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(orders)); } catch { /* Tracking remains usable if storage is unavailable. */ }
       }
     }
@@ -227,17 +236,18 @@ export const orderService = {
     if (!redirectUrl) throw new Error("To‘lov sahifasi hali backend tomonidan tayyorlanmagan");
     return redirectUrl;
   },
-  async paymentStatus(orderId: string): Promise<{ status: PaymentStatus; provider?: PaymentProvider; reason?: string }> {
+  async paymentStatus(orderId: string): Promise<{ status: PaymentStatus; provider?: PaymentProvider; reason?: string; orderStatus?: OrderStatus }> {
     const id = orderId.trim();
     if (!id || id.length > 128) throw new Error("Buyurtma raqami noto‘g‘ri");
     const response = object(await apiRequest(`/orders/${encodeURIComponent(id)}/tracking`, { method: "GET", headers: authHeaders() }));
     const payment = normalizeTrackingPayment(response);
     if (!payment) throw new Error("Backend to‘lov holatini noto‘g‘ri qaytardi");
     const { status, provider, failureReason: reason } = payment;
+    const orderStatus = typeof response.orderStatus === "string" ? normalizeOrderStatus(response.orderStatus) : undefined;
     if (typeof window !== "undefined") {
       const saved = readLocal().find((item) => item.id === id);
-      if (saved) { saved.paymentStatus = status; saved.paymentProvider = provider ?? saved.paymentProvider; try { saveLocal(saved); } catch { /* Status is still shown even if storage is unavailable. */ } }
+      if (saved) { saved.paymentStatus = status; saved.paymentProvider = provider ?? saved.paymentProvider; saved.status = orderStatus ?? saved.status; try { saveLocal(saved); } catch { /* Status is still shown even if storage is unavailable. */ } }
     }
-    return { status, provider, reason };
+    return { status, provider, reason, orderStatus };
   },
 };

@@ -28,22 +28,13 @@ const toAddress = (form: CheckoutForm): CheckoutAddress => ({
   districtId: form.districtId,
 });
 /*
- * ⚠️ VAQTINCHA: Payme va Click variantlari o'chirilgan (C3.7 / C8.1, 2026-09-21).
+ * v1 (MVP): faqat COD — Payme/Click ataylab o'chirilgan.
  *
- * Frontend tomoni tayyor — `startPayment`, qaytish sahifasi va holat pollingi
- * yozilgan. LEKIN backend shartnomasi hali yo'q, uchta teshik bor:
- *   1. `order.service.ts` tanaga `returnUrl` qo'shadi, `CreatePaymentDto` esa
- *      atigi {salesOrderId, provider, amount} ni biladi va api-gateway
- *      `forbidNonWhitelisted: true` bilan ishlaydi → 400;
- *   2. `PaymentResultDto` da to'lov havolasi yo'q → qayerga yo'naltirish
- *      noma'lum (backendda URL yasash kodi ham yo'q);
- *   3. `POST /payments` mehmon uchun yopiq — handler `request.user.sub` ni
- *      ishlatadi → ro'yxatdan o'tmagan xaridorda 401.
- *      Bu MVP ning "mehmon buyurtma bera oladi" talabini buzadi.
- *
- * Shu sababli variantlar chiqarilmaydi: aks holda xaridor tugmani bosib
- * xato oladi. Backend kartasi bajarilgach quyidagi ikki qatorni qaytaring —
- * boshqa hech narsaga tegish shart emas.
+ * Online to'lov v2'da, merchant shartnomalari rasmiylashtirilgach yoqiladi.
+ * Frontend tomoni tayyor (`startPayment`, qaytish sahifasi, holat pollingi) va
+ * karta buyurtmasi bo'lmagani uchun v1'da ishga tushmaydi. Yoqishdan oldin
+ * API_CONTRACT.md → "Online to'lov (v2)" bo'limidagi backend ishlari bajarilsin,
+ * keyin quyidagi ikki qatorni qaytaring.
  */
 const paymentChoices: { method: PaymentMethod; title: string; note: string }[] = [
   { method: "cod", title: "Qabul qilganda", note: "Naqd yoki terminal orqali" },

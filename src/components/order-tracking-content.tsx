@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { orderService } from "@/services/order.service";
+import { isClosedOrder, orderService } from "@/services/order.service";
 import type { Order, OrderStatus, OrderTracking } from "@/types/commerce";
 import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 
@@ -66,7 +66,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="tracking-card"><div className="tracking-status"><Truck/><div><small>Hozirgi holat</small><h2>{tracking.status}</h2>{tracking.estimatedDeliveryAt && <p>Taxminiy yetkazish: {formatDate(tracking.estimatedDeliveryAt)}</p>}</div></div>
       {!terminal.has(tracking.status) && <ol className="tracking-steps">{steps.map((step, index) => <li className={index <= current ? "active" : ""} key={step}><i>{index < current ? <Check/> : index + 1}</i><span>{step}</span></li>)}</ol>}
-      {(order || tracking.payment) && <div className="tracking-payment"><CreditCard/><div><small>To‘lov holati</small><b>{paymentLabel}</b>{paymentProvider && <span>{paymentProvider === "PAYME" ? "Payme" : "Click"}</span>}</div>{isCard && paymentStatus !== "PAID" && paymentStatus !== "REFUNDED" && <button className="button button--primary" disabled={paymentPending} onClick={() => void retryPayment()}><ExternalLink/>{paymentPending ? "Ochilmoqda…" : "To‘lash"}</button>}</div>}
+      {(order || tracking.payment) && <div className="tracking-payment"><CreditCard/><div><small>To‘lov holati</small><b>{paymentLabel}</b>{paymentProvider && <span>{paymentProvider === "PAYME" ? "Payme" : "Click"}</span>}</div>{isCard && paymentStatus !== "PAID" && paymentStatus !== "REFUNDED" && !isClosedOrder(tracking.status) && <button className="button button--primary" disabled={paymentPending} onClick={() => void retryPayment()}><ExternalLink/>{paymentPending ? "Ochilmoqda…" : "To‘lash"}</button>}</div>}
       {tracking.packages.length > 0 && <div className="tracking-packages"><h2>Posilkalar</h2>{tracking.packages.map((item) => <article key={item.id}><div><b>{item.shopName || `Posilka #${item.id}`}</b><small>{item.status}</small></div>{item.trackingUrl && <a href={item.trackingUrl} target="_blank" rel="noopener noreferrer">Elchi orqali kuzatish</a>}</article>)}</div>}
     </div>
     {order && <div className="tracking-details"><h2>Buyurtma tafsilotlari</h2>{order.items.map((item) => <div key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<hr/><div><b>Jami</b><Price value={order.total}/></div><p>{order.customer.name} · {order.customer.phone}<br/>{order.customer.address}</p></div>}

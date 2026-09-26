@@ -4,7 +4,7 @@ import { CheckCircle2, CircleX, Clock3, RefreshCw, TriangleAlert } from "lucide-
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatPrice } from "@/lib/format";
-import { orderService } from "@/services/order.service";
+import { isClosedOrder, orderService } from "@/services/order.service";
 import type { Order, PaymentProvider, PaymentStatus } from "@/types/commerce";
 
 /** `next` — xaridor shu sahifadan keyin nima qilishini aytadi; qo'ng'iroq qilmasligi uchun har holatda to'ldiriladi. */
@@ -16,13 +16,16 @@ const copy: Record<PaymentStatus, { title: string; text: string; next: string }>
   REFUNDED: { title: "To‘lov qaytarildi", text: "To‘langan summa kartangizga qaytarilgan.", next: "Keyingi qadam: mablag‘ bankda ko‘rinishi uchun vaqt kerak bo‘lishi mumkin. Savolingiz bo‘lsa buyurtma raqamini ayting." },
 };
 
-type PaymentResultViewProps = { orderId: string; status: PaymentStatus; order: Order | null; reason?: string; loading?: boolean; redirecting?: boolean; error?: string; onCheck: () => void; onRetry: () => void };
+/** Buyurtmaning o'zi bekor qilingan (masalan, admin tomonidan) — qayta to'lash taklif qilinmaydi. */
+const closedNext = "Keyingi qadam: buyurtma bekor qilingan, uni qayta to‘lab bo‘lmaydi. Mahsulot kerak bo‘lsa, yangi buyurtma bering.";
 
-export function PaymentResultView({ orderId, status, order, reason = "", loading = false, redirecting = false, error = "", onCheck, onRetry }: PaymentResultViewProps) {
+type PaymentResultViewProps = { orderId: string; status: PaymentStatus; order: Order | null; reason?: string; orderClosed?: boolean; loading?: boolean; redirecting?: boolean; error?: string; onCheck: () => void; onRetry: () => void };
+
+export function PaymentResultView({ orderId, status, order, reason = "", orderClosed = false, loading = false, redirecting = false, error = "", onCheck, onRetry }: PaymentResultViewProps) {
   const details = copy[status];
   const Icon = status === "PAID" ? CheckCircle2 : status === "PENDING" ? Clock3 : CircleX;
-  const canRetryPayment = ["CANCELLED", "FAILED"].includes(status);
-  return <section className={`payment-result payment-result--${status.toLowerCase()}`}><span><Icon/></span><small>BUYURTMA #{orderId}{status === "PAID" && order ? ` · ${formatPrice(order.total)} so‘m` : ""}</small><h1>{details.title}</h1><p>{reason && ["CANCELLED", "FAILED"].includes(status) ? reason : details.text}</p><p className="payment-result__next">{details.next}</p>{status === "PENDING" && <p className="payment-auto-refresh" role="status"><RefreshCw className={loading ? "payment-result-spinner" : ""}/> Holat har 5 soniyada avtomatik tekshiriladi</p>}{error && <p className="form-error" role="alert">{error}</p>}<div>{status === "PENDING" && <button className="button button--primary" disabled={loading} onClick={onCheck}><RefreshCw/> {loading ? "Tekshirilmoqda…" : "Hozir tekshirish"}</button>}{canRetryPayment && <button className="button button--primary" disabled={redirecting} onClick={onRetry}>{redirecting ? "To‘lov sahifasi ochilmoqda…" : "Qayta to‘lash"}</button>}<Link className="button button--secondary" href={`/orders/${encodeURIComponent(orderId)}`}>Buyurtmaga qaytish</Link><Link className="button button--secondary" href="/">Bosh sahifa</Link></div></section>;
+  const canRetryPayment = ["CANCELLED", "FAILED"].includes(status) && !orderClosed;
+  return <section className={`payment-result payment-result--${status.toLowerCase()}`}><span><Icon/></span><small>BUYURTMA #{orderId}{status === "PAID" && order ? ` · ${formatPrice(order.total)} so‘m` : ""}</small><h1>{details.title}</h1><p>{reason && ["CANCELLED", "FAILED"].includes(status) ? reason : details.text}</p><p className="payment-result__next">{orderClosed && status !== "REFUNDED" ? closedNext : details.next}</p>{status === "PENDING" && <p className="payment-auto-refresh" role="status"><RefreshCw className={loading ? "payment-result-spinner" : ""}/> Holat har 5 soniyada avtomatik tekshiriladi</p>}{error && <p className="form-error" role="alert">{error}</p>}<div>{status === "PENDING" && <button className="button button--primary" disabled={loading} onClick={onCheck}><RefreshCw/> {loading ? "Tekshirilmoqda…" : "Hozir tekshirish"}</button>}{canRetryPayment && <button className="button button--primary" disabled={redirecting} onClick={onRetry}>{redirecting ? "To‘lov sahifasi ochilmoqda…" : "Qayta to‘lash"}</button>}<Link className="button button--secondary" href={`/orders/${encodeURIComponent(orderId)}`}>Buyurtmaga qaytish</Link><Link className="button button--secondary" href="/">Bosh sahifa</Link></div></section>;
 }
 
 export function PaymentReturnContent({ orderId }: { orderId: string }) {
@@ -30,6 +33,7 @@ export function PaymentReturnContent({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [reason, setReason] = useState("");
   const [provider, setProvider] = useState<PaymentProvider>();
+  const [orderClosed, setOrderClosed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState("");
@@ -38,7 +42,7 @@ export function PaymentReturnContent({ orderId }: { orderId: string }) {
     setLoading(true); setError("");
     try {
       const result = await orderService.paymentStatus(orderId);
-      if (mounted.current) { setStatus(result.status); setReason(result.reason ?? ""); setProvider(result.provider); }
+      if (mounted.current) { setStatus(result.status); setReason(result.reason ?? ""); setProvider(result.provider); setOrderClosed(isClosedOrder(result.orderStatus)); }
     }
     catch { if (mounted.current) setError("To‘lov holatini hozir tasdiqlab bo‘lmadi. Bu buyurtma bekor qilindi degani emas — qayta tekshiring yoki buyurtma sahifasini oching."); }
     finally { if (mounted.current) setLoading(false); }
@@ -68,5 +72,5 @@ export function PaymentReturnContent({ orderId }: { orderId: string }) {
   if (loading && !status) return <section className="payment-result" role="status"><span><RefreshCw className="payment-result-spinner"/></span><h1>To‘lov tekshirilmoqda</h1><p>Sahifani yopmang. Bu odatda bir necha soniya oladi.</p></section>;
   if (error && !status) return <section className="payment-result payment-result--error"><span><TriangleAlert/></span><h1>Holatni tekshirib bo‘lmadi</h1><p role="alert">{error}</p><div><button className="button button--primary" onClick={() => void check()}>Qayta tekshirish</button><Link className="button button--secondary" href={`/orders/${encodeURIComponent(orderId)}`}>Buyurtmaga o‘tish</Link></div></section>;
 
-  return <PaymentResultView orderId={orderId} status={status ?? "PENDING"} order={order} reason={reason} loading={loading} redirecting={redirecting} error={error} onCheck={() => void check()} onRetry={() => void retryPayment()}/>;
+  return <PaymentResultView orderId={orderId} status={status ?? "PENDING"} order={order} reason={reason} orderClosed={orderClosed} loading={loading} redirecting={redirecting} error={error} onCheck={() => void check()} onRetry={() => void retryPayment()}/>;
 }
