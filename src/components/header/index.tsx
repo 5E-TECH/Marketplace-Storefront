@@ -20,6 +20,8 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
   const [authenticated, setAuthenticated] = useState(false);
   const favorites = useFavorites();
   const cart = useCart();
+  // Backend javob bermasa savat bo'sh emas, noma'lum: xaridor mahsulotlari yo'qolgan deb o'ylamasin.
+  const cartUnavailable = Boolean(cart.error) && !cart.items.length && !cart.loading;
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
   useEffect(() => {
     const syncAuth = () => setAuthenticated(Boolean(authService.getSession()));
@@ -41,7 +43,7 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
         <HeaderSearch/>
         <Link className="header-nav-action header-favorite" href="/favorites" aria-label={`Sevimlilar: ${favorites.count}`}><i><Heart fill={favorites.count ? "currentColor" : "none"}/>{favorites.count > 0 && <span>{badge(favorites.count)}</span>}</i><b>Sevimlilar</b></Link>
         <Link className="user-action" href={authenticated ? "/profile" : "/login"} aria-label={authenticated ? "Profil" : "Kirish"}><UserRound/><span>{authenticated ? "Profil" : "Kirish"}</span></Link>
-        <Link className="header-nav-action header-cart" href="/cart" aria-label={cart.quantity ? `Savatcha: ${cart.quantity} ta mahsulot` : "Savatcha"} aria-busy={cart.loading || undefined}><i><ShoppingCart/>{cart.quantity > 0 && <span>{badge(cart.quantity)}</span>}</i><b>Savat</b></Link>
+        <Link className="header-nav-action header-cart" href="/cart" aria-label={cartUnavailable ? "Savatchani yuklab bo‘lmadi" : cart.quantity ? `Savatcha: ${cart.quantity} ta mahsulot` : "Savatcha"} aria-busy={cart.loading || undefined}><i><ShoppingCart/>{cartUnavailable ? <span className="is-warning" aria-hidden>!</span> : cart.quantity > 0 && <span>{badge(cart.quantity)}</span>}</i><b>Savat</b></Link>
       </div>
     </Container>
     <div className="category-strip"><Container>

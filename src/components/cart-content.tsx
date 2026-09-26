@@ -21,14 +21,9 @@ export function CartContent() {
     setSelectedIds(readCartSelection(items));
     setSelectionReady(true);
   }, [items, loading, selectionReady]);
+  // Savat o'zgarsa (yangi mahsulot, boshqa oynadan o'chirish) belgilar saqlangan holatdan qayta olinadi: yangi qator tanlangan bo'ladi.
   useEffect(() => {
-    if (!selectionReady) return;
-    const available = new Set(items.map((item) => item.id));
-    setSelectedIds((current) => {
-      const next = current.filter((id) => available.has(id));
-      if (next.length !== current.length) saveCartSelection(next);
-      return next;
-    });
+    if (selectionReady) setSelectedIds(readCartSelection(items));
   }, [items, selectionReady]);
   const selected = useMemo(() => new Set(selectedIds), [selectedIds]);
   const selectedItems = useMemo(() => items.filter((item) => selected.has(item.id)), [items, selected]);
@@ -38,7 +33,7 @@ export function CartContent() {
   const originalTotal = useMemo(() => selectedItems.reduce((sum, item) => sum + (item.product.oldPrice ?? item.product.price) * item.quantity, 0), [selectedItems]);
   const setItemSelected = (id: string, checked: boolean) => setSelectedIds((current) => {
     const next = checked ? [...new Set([...current, id])] : current.filter((itemId) => itemId !== id);
-    saveCartSelection(next);
+    saveCartSelection(next, items);
     return next;
   });
   // Savatni tozalash ortga qaytarilmaydi, shuning uchun tasdiq oynasi orqali so'raladi.
@@ -50,7 +45,7 @@ export function CartContent() {
   const setAllSelected = (checked: boolean) => {
     const next = checked ? items.map((item) => item.id) : [];
     setSelectedIds(next);
-    saveCartSelection(next);
+    saveCartSelection(next, items);
   };
   if (loading && !items.length) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
   if (error && !items.length) return <StatePanel kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={error} action={<Button onClick={() => void refresh()}>Qayta urinish</Button>}/>;

@@ -52,6 +52,8 @@ try {
   const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result.value;
   await send("Runtime.enable");
   await send("Page.enable");
+  // Headless oynada fokus hodisalari ishlashi uchun (checkout ro'yxatlari onFocus bilan ochiladi).
+  await send("Emulation.setFocusEmulationEnabled", { enabled: true });
   await send("Network.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
   await send("Page.navigate", { url: base });
@@ -112,8 +114,9 @@ try {
   assert.ok(await evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"), "Mobile cart must not overflow horizontally");
   await evaluate("document.querySelector('.order-summary a[href=\"/checkout\"]').click()");
   await until(() => evaluate("location.pathname === '/checkout' && Boolean(document.querySelector('[name=region]'))"), "checkout address form");
+  // Viloyat va tuman qidiruvli ro'yxatdan (SelectField) tanlanadi — matn yozish tanlov emas.
   await evaluate(`(() => {
-    const values = { recipientName: 'Test Xaridor', phone: '+998901234567', region: 'Toshkent shahri', district: 'Chilonzor tumani', street: 'Bunyodkor ko‘chasi 1' };
+    const values = { recipientName: 'Test Xaridor', phone: '901234567', street: 'Bunyodkor ko‘chasi 1' };
     for (const [name, value] of Object.entries(values)) {
       const field = document.querySelector('[name=' + name + ']');
       const prototype = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -121,6 +124,19 @@ try {
       field.dispatchEvent(new Event('input', { bubbles: true }));
     }
   })()`);
+  const pickOption = async (name, match) => {
+    await until(() => evaluate(`!document.querySelector('[name=${name}]')?.disabled`), `${name} select enabled`);
+    await evaluate(`document.querySelector('[name=${name}]').focus()`);
+    const picked = await until(() => evaluate(`(() => {
+      const option = [...document.querySelectorAll('[role=option]')].find((item) => ${match ? `item.textContent.trim().startsWith(${JSON.stringify(match)})` : "true"});
+      if (!option) return "";
+      option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      return option.textContent.trim();
+    })()`), `${name} option`);
+    return picked;
+  };
+  await pickOption("region", "Toshkent shahri");
+  await pickOption("district");
   await until(() => evaluate("/Yetkazish avtomatik hisoblandi/.test(document.querySelector('.delivery-preview-status')?.textContent ?? '')"), "automatic delivery preview");
   assert.equal(await evaluate("document.querySelector('[name=regionId], [name=districtId]')"), null, "Checkout must not expose technical IDs");
   await send("Page.navigate", { url: `${base}/cart` });

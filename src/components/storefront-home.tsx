@@ -57,7 +57,8 @@ export function SearchStorefront({ query, catalog, suggestions }: { query: Produ
     </Container>
     {query.search && <>
       <Container><PriceFilterForm action="/qidiruv" query={query} hidden={{ q: query.search }} submitLabel="Ko‘rsatish" resetHref={catalogHref("/qidiruv", query, { minPrice: undefined, maxPrice: undefined, page: 1 })}/></Container>
-      <Products products={catalog.data} total={catalog.total} query={query} basePath="/qidiruv" apiError={catalog.error}/>
+      {/* Sahifa sarlavhasi qidiruv so'zini aytadi — bo'lim sarlavhasi uni takrorlamaydi. */}
+      <Products products={catalog.data} total={catalog.total} query={query} basePath="/qidiruv" title="Mahsulotlar" apiError={catalog.error}/>
       <CatalogPagination query={query} catalog={catalog} basePath="/qidiruv"/>
       {!catalog.error && !catalog.data.length && suggestions.length > 0 && <Container><section className="content-section search-alternatives"><h2>Balki bular kerakdir</h2><p>So‘zni qisqaroq yoki boshqacha yozib ko‘ring — masalan, “telefon” o‘rniga “smartfon”.</p><ProductGrid products={suggestions}/></section></Container>}
     </>}

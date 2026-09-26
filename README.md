@@ -38,7 +38,7 @@ Productionda ildiz domen Next.js SSR storefrontga, `admin.` subdomen esa alohida
 
 Katalog, mahsulot detail, savatcha va sevimlilar backend API bilan ishlaydi. Endpointlar: [API_CONTRACT.md](API_CONTRACT.md).
 
-Checkout mehmon sessiyasi bilan ishlaydi: yetkazish narxini backenddan oladi, buyurtmani idempotent tarzda yaratadi va COD sifatida tasdiqlaydi. Tasdiqlangan buyurtmaning qisqa nusxasi shu brauzerda xaridor tarixi uchun saqlanadi. v1 (MVP) faqat COD bilan ishlaydi; Payme/Click v2’da, merchant shartnomalari rasmiylashtirilgach yoqiladi.
+Checkout mehmon sessiyasi bilan ishlaydi: yetkazish narxini backenddan oladi, buyurtmani idempotent tarzda yaratadi va COD sifatida tasdiqlaydi. Tasdiqlangan buyurtmaning qisqa nusxasi shu brauzerda xaridor tarixi uchun saqlanadi. v1 (MVP) faqat COD bilan ishlaydi; Payme/Click v2’da, merchant shartnomalari rasmiylashtirilgach `NEXT_PUBLIC_ONLINE_PAYMENTS=payme,click` bilan qayta build qilib yoqiladi. Online to‘lov faqat akkauntga kirgan xaridorga taklif qilinadi (backend `POST /payments` bearer talab qiladi).
 
 Xaridor telefon va parol bilan ro‘yxatdan o‘tishi yoki kirishi, parolini tiklashi, profilidagi ism va telefonni yangilashi hamda logout qilishi mumkin. Login paytida mehmon savati backenddagi akkaunt savatiga birlashtiriladi. Kirgan xaridorning buyurtmalar tarixi backenddan olinadi; hali sync bo‘lmagan shu brauzerdagi buyurtma nusxalari ham yo‘qolmaydi.
 

@@ -92,6 +92,8 @@ Checkout manzil tanlovi real backend ma’lumotidan ishlaydi:
 
 > **v1 (MVP) faqat COD.** Payme/Click merchant shartnomalari rasmiylashtirilgach v2’da yoqiladi; quyidagi backend ishlari shu paytgacha kutadi. 2026-09-25 holatiga `contract/openapi.json` da `CreatePaymentDto.returnUrl`, `PaymentResultDto.redirectUrl` va `POST /admin/orders/{id}/refund` bor — 3 va 4-bandlar kontrakt tomonidan yopilgan, jonli backendda qayta tekshiriladi.
 
+**Frontend holati:** oqim tayyor va `NEXT_PUBLIC_ONLINE_PAYMENTS` (bo‘sh — o‘chiq) bilan yoqiladi. Mehmonga online usul ko‘rsatilmaydi (backend `POST /payments` da bearer talab qiladi). `redirectUrl` bo‘sh yoki `409`/`503` bo‘lsa xaridorga “online to‘lov hozircha ishga tushirilmagan” deyiladi va buyurtma saqlanadi. Provayder sahifasidan to‘lamay qaytilsa, to‘lov 2 daqiqa `PENDING` qolgach qaytish sahifasi qayta to‘lashni taklif qiladi. `returnUrl` — `${origin}/checkout/payment/return?orderId=…`; bu origin backend `CORS_ORIGINS` ro‘yxatida bo‘lishi kerak.
+
 #### 2026-09-23 tekshiruvi
 
 Frontend tayyor. Quyidagi holat jonli `api.elchimarket.uz` da haqiqiy so‘rovlar bilan tasdiqlangan.
