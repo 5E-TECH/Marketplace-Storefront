@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { getAccessToken } from "@/lib/access-token";
+import { hasAuthSession } from "@/lib/access-token";
 import { formatLongDate } from "@/lib/format";
 import { reviewService } from "@/services/review.service";
 import type { ProductReviewsResult, ReviewableOrderItem } from "@/types/commerce";
@@ -28,7 +28,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
   useEffect(() => {
     let active = true;
     const load = async () => {
-      const signedIn = Boolean(getAccessToken());
+      const signedIn = hasAuthSession();
       if (!active) return;
       setAuthenticated(signedIn);
       if (!signedIn) { setEligibilityLoading(false); return; }

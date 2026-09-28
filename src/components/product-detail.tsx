@@ -4,6 +4,7 @@ import { Check, Clock3, ShieldCheck, ShoppingBag, Star, Truck } from "lucide-rea
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { buyNowHref } from "@/lib/cart-selection";
 import { getSafeImageSrc } from "@/lib/product-storage";
 import type { Product, ProductReviewsResult } from "@/types/commerce";
 import { useCart } from "@/providers/cart-provider";
@@ -26,11 +27,19 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
   const maxQuantity = selectedVariant?.stock;
   const selectedProduct = selectedVariant ? { ...product, price: selectedPrice, oldPrice: selectedOldPrice } : product;
   useEffect(() => { if (maxQuantity !== undefined) setQuantity((current) => Math.min(Math.max(1, maxQuantity), current)); }, [maxQuantity]);
+  const [buying, setBuying] = useState(false);
+  const cartItem = selectedVariant ? cart.items.find((item) => String(item.productId) === String(product.id) && String(item.variantId ?? "") === String(selectedVariant.id)) : undefined;
+  const unavailable = !selectedVariant || selectedVariant.stock === 0;
+  // Faqat shu mahsulot tanlangan miqdorda rasmiylashtiriladi: savatda bo'lsa miqdori tenglashtiriladi (ustiga qo'shilmaydi),
+  // savatdagi boshqa mahsulotlar savatda qoladi.
   const buyNow = async () => {
-    if (!selectedVariant) return;
-    const added = await cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant.id });
-    if (!added) return;
-    router.push("/checkout");
+    if (!selectedVariant || buying) return;
+    setBuying(true);
+    try {
+      if (cartItem) { if (cartItem.quantity !== quantity) await cart.update(cartItem.id, quantity); }
+      else if (!(await cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant.id }))) return;
+      router.push(buyNowHref(product.id, selectedVariant.id));
+    } finally { setBuying(false); }
   };
 
   return <>
@@ -55,7 +64,7 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
             <Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> {!selectedVariant ? "Variant mavjud emas" : selectedVariant.stock === 0 ? "Sotuvda yo‘q" : "Savatchaga qo‘shish"}</Button>
             <FavoriteButton product={product} variant="boxed"/>
           </div>
-          <button className="quick-buy" disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={buyNow}>Bir klikda xarid qilish</button>
+          <button className="quick-buy" data-testid="product-buy-now" disabled={cart.loading || buying || unavailable} onClick={() => void buyNow()}>{buying ? "Ochilmoqda…" : "Buyurtma berish"}</button>
         </div>
 
         <div className="service-list"><div><span><Truck/></span><p><b>O‘zbekiston bo‘ylab yetkazamiz</b><small>Narxi va muddatini manzilni yozganingizda ko‘rasiz</small></p></div><div><span><ShieldCheck/></span><p><b>Qo‘lingizga olganda to‘laysiz</b><small>Naqd yoki kuryerning terminali orqali</small></p></div><div><span><Clock3/></span><p><b>Buyurtma qayerdaligini ko‘rib turasiz</b><small>“Buyurtmalarim” bo‘limida har bir bosqich yoziladi</small></p></div></div>
@@ -65,6 +74,6 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
     <ProductInformation product={product}/>
     <ProductReviews productId={product.id} reviews={reviews}/>
 
-    <div className="mobile-buy-bar"><div><Price value={selectedPrice}/><small>Yetkazish alohida hisoblanadi</small></div><Button disabled={cart.loading || !selectedVariant || selectedVariant.stock === 0} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/> Savatchaga</Button></div>
+    <div className="mobile-buy-bar"><div><Price value={selectedPrice}/><small>Yetkazish alohida hisoblanadi</small></div><Button className="mobile-buy-bar__cart" variant="secondary" aria-label="Savatchaga qo‘shish" disabled={cart.loading || unavailable} onClick={() => cart.add({ product: selectedProduct, quantity, color: selectedColor, variantId: selectedVariant?.id })}><ShoppingBag/></Button><Button disabled={cart.loading || buying || unavailable} onClick={() => void buyNow()}>{buying ? "Ochilmoqda…" : "Buyurtma berish"}</Button></div>
   </>;
 }

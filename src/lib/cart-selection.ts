@@ -31,8 +31,47 @@ export function readCartSelection(items: CartItem[]): string[] {
   return items.filter((item) => !excluded.has(item.id)).map((item) => item.id);
 }
 
+const lineKey = (item: CartItem): string => `${item.productId}:${item.variantId ?? ""}`;
+
+/**
+ * Checkout belgilanmagan qatorlarni vaqtincha o'chirib, keyin qayta qo'shadi — ular yangi id oladi.
+ * Xaridor olib tashlagan belgilar mahsulot/variant bo'yicha yangi qatorlarga ko'chiriladi.
+ */
+export function carryCartSelection(previous: CartItem[], next: CartItem[]): void {
+  if (typeof window === "undefined") return;
+  const excluded = readExcluded();
+  const excludedLines = new Set(previous.filter((item) => excluded.has(item.id)).map(lineKey));
+  saveCartSelection(next.filter((item) => !excludedLines.has(lineKey(item))).map((item) => item.id), next);
+}
+
 export function clearCartSelection(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(STORAGE_KEY);
   sessionStorage.removeItem(LEGACY_STORAGE_KEY);
+}
+
+/**
+ * "Buyurtma berish" tugmasi: checkout faqat shu mahsulotni rasmiylashtiradi, savatdagi qolganlari savatda qoladi.
+ * Tanlov URL'da uzatiladi (saqlanmaydi) — savat sahifasidan oddiy checkout'ga o'tilganda eski tanlov aralashmaydi.
+ */
+export type BuyNowTarget = { productId: string; variantId?: string };
+
+export function buyNowHref(productId: string | number, variantId?: string | number): string {
+  const params = new URLSearchParams({ product: String(productId) });
+  if (variantId !== undefined && variantId !== null && String(variantId) !== "") params.set("variant", String(variantId));
+  return `/checkout?${params}`;
+}
+
+export function readBuyNowTarget(search: string): BuyNowTarget | null {
+  const params = new URLSearchParams(search);
+  const productId = params.get("product")?.trim();
+  if (!productId || productId.length > 128) return null;
+  const variantId = params.get("variant")?.trim();
+  return { productId, variantId: variantId && variantId.length <= 128 ? variantId : undefined };
+}
+
+export function buyNowSelection(items: CartItem[], target: BuyNowTarget): string[] {
+  return items
+    .filter((item) => String(item.productId) === target.productId && (target.variantId === undefined || String(item.variantId ?? "") === target.variantId))
+    .map((item) => item.id);
 }

@@ -15,5 +15,6 @@ export type ProductVariantUpdateInput = components["schemas"]["UpdateProductVari
 export type ProductManagementDto = components["schemas"]["ProductDto"];
 export type MyProductsResponse = components["schemas"]["MyProductsPageDto"];
 export type BuyerOrdersResponse = components["schemas"]["BuyerOrdersPageDto"];
+export type OrderActionResultDto = components["schemas"]["OrderActionResultDto"];
 export type FavoritesResponse = components["schemas"]["FavoritesPageDto"];
 export type StorefrontBannerDto = components["schemas"]["StorefrontBannerDto"];

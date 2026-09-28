@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api";
-import { authHeaders, clearAccessToken, getAccessToken, rotateGuestSessionId } from "@/lib/access-token";
+import { authHeaders, clearAccessToken, hasAuthSession, rotateGuestSessionId } from "@/lib/access-token";
 import { guestService } from "@/services/guest.service";
 
 export type AuthSession = { userId?: string; name?: string; phone: string; verifiedAt: string; authenticated: true };
@@ -36,8 +36,10 @@ const sessionFrom = (value: unknown, fallbackPhone: string, fallbackName?: strin
     authenticated: true,
   };
 };
-const accessTokenFrom = (value: unknown): string => {
+/** Token tanada kelmasa (`AUTH_TOKENS_IN_BODY=false`) sessiya HttpOnly cookie'da — `null`. */
+const accessTokenFrom = (value: unknown): string | null => {
   const token = object(value).accessToken;
+  if (token === undefined || token === null) return null;
   if (typeof token !== "string" || !token) throw new Error("Backend access token qaytarmadi");
   return token;
 };
@@ -99,7 +101,7 @@ export const authService = {
   },
   async logout(): Promise<void> {
     try {
-      if (getAccessToken()) await apiRequest("/auth/logout", { method: "POST", headers: authHeaders() });
+      if (hasAuthSession()) await apiRequest("/auth/logout", { method: "POST", headers: authHeaders() });
     } finally {
       this.clearSession();
     }

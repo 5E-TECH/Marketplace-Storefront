@@ -4,14 +4,14 @@ import { Check, CheckCircle2, ExternalLink, MapPin, ShoppingCart, Truck, WalletC
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/providers/cart-provider";
-import { clearCartSelection, readCartSelection } from "@/lib/cart-selection";
+import { buyNowHref, buyNowSelection, carryCartSelection, clearCartSelection, readBuyNowTarget, readCartSelection, type BuyNowTarget } from "@/lib/cart-selection";
 import { formatPrice } from "@/lib/format";
 import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
-import { orderService, paymentStartMessage } from "@/services/order.service";
+import { OrderNotConfirmedError, orderService, paymentStartMessage } from "@/services/order.service";
 import { onlinePaymentMethods } from "@/config/payments";
 import { locationService, type DistrictOption, type RegionOption } from "@/services/location.service";
-import type { CheckoutAddress, DeliveryPreview, Order, PaymentMethod } from "@/types/commerce";
+import type { Cart, CartItem, CheckoutAddress, DeliveryPreview, Order, PaymentMethod } from "@/types/commerce";
 import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 import { SelectField, type SelectOption } from "./select-field";
 import { PaymentBrand } from "./payment-brand";
@@ -68,6 +68,10 @@ export function CheckoutContent() {
   const [districtsReload, setDistrictsReload] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectionReady, setSelectionReady] = useState(false);
+  // "Buyurtma berish" tugmasidan kelinganda (`?product=`) faqat shu mahsulot rasmiylashtiriladi.
+  const [buyNow, setBuyNow] = useState<BuyNowTarget | null>(null);
+  // Buyurtma yaratildi, lekin COD tasdiqlash yiqildi: savat qayta yuborilmaydi, faqat tasdiqlash takrorlanadi.
+  const [unconfirmed, setUnconfirmed] = useState<Order | null>(null);
   const idempotencyKey = useRef(newIdempotencyKey());
   const previewRequest = useRef(0);
   const address = useMemo(() => toAddress(form), [form]);
@@ -78,10 +82,13 @@ export function CheckoutContent() {
   const selectedSubtotal = useMemo(() => selectedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0), [selectedItems]);
 
   useEffect(() => {
-    if (cart.loading || selectionReady) return;
-    setSelectedIds(readCartSelection(cart.items));
+    // Savat yuklanmagan (xato) bo'lsa tanlov hisoblanmaydi — "Qayta urinish"dan keyin haqiqiy savatdan olinadi.
+    if (cart.loading || cart.error || selectionReady) return;
+    const target = readBuyNowTarget(window.location.search);
+    setBuyNow(target);
+    setSelectedIds(target ? buyNowSelection(cart.items, target) : readCartSelection(cart.items));
     setSelectionReady(true);
-  }, [cart.items, cart.loading, selectionReady]);
+  }, [cart.error, cart.items, cart.loading, selectionReady]);
   // To'lov sahifasidan orqaga qaytilganda savat bo'sh bo'ladi: bo'sh sahifa o'rniga o'sha buyurtmani ko'rsatamiz.
   useEffect(() => {
     let active = true;
@@ -148,6 +155,40 @@ export function CheckoutContent() {
     setForm((current) => ({ ...current, districtId: option?.value ?? "", district: option?.label ?? "" }));
     setError(""); setDistrictsError("");
   };
+  // Butun savatga o'tish: URL'dagi tanlov olib tashlanadi, savatdagi belgilar ishlatiladi.
+  // Idempotency-Key bitta tanlovga tegishli: boshqa tanlov eski kalit bilan ketsa backend oldingi javobni qaytarib,
+  // buyurtmaga kirmagan mahsulotlar savatdan o'chib ketardi.
+  const checkoutWholeCart = () => {
+    if (pending) return;
+    window.history.replaceState(null, "", "/checkout");
+    idempotencyKey.current = newIdempotencyKey();
+    setBuyNow(null);
+    setPreview(null);
+    setSelectedIds(readCartSelection(cart.items));
+    setError("");
+  };
+  // Vaqtincha olib tashlangan (belgilanmagan) qatorlar qaytariladi; yangi id'larga xaridor belgilari ko'chiriladi.
+  const restoreDeferred = async (items: CartItem[], snapshot: CartItem[]): Promise<void> => {
+    let latest: Cart | null = null;
+    for (const item of items) latest = await cartService.add({ product: item.product, quantity: item.quantity, color: item.color, variantId: item.variantId });
+    if (latest) carryCartSelection(snapshot, latest.items);
+  };
+  const finishOrder = async (order: Order) => {
+    // Tez xarid savatdagi belgilarni saqlaydi; oddiy checkout'dan keyin esa tanlov tozalanadi.
+    if (buyNow) window.history.replaceState(null, "", "/checkout");
+    else clearCartSelection();
+    setUnconfirmed(null);
+    setCompleted(order);
+    idempotencyKey.current = newIdempotencyKey();
+    await cart.refresh();
+  };
+  const retryConfirm = async () => {
+    if (!unconfirmed || pending) return;
+    setPending(true); setError("");
+    try { await finishOrder(await orderService.confirm(unconfirmed)); }
+    catch (caught) { setError(errorMessage(caught, "Buyurtmani tasdiqlab bo‘lmadi. Birozdan keyin qayta urinib ko‘ring")); }
+    finally { setPending(false); }
+  };
   const regionOptions = useMemo(() => regions.map((region) => ({ value: region.id, label: region.name })), [regions]);
   const districtOptions = useMemo(() => districts.map((district) => ({ value: district.id, label: district.name })), [districts]);
   const openPayment = async (order: Order) => {
@@ -167,7 +208,8 @@ export function CheckoutContent() {
     if (paymentMethod !== "cod" && !signedIn) { setError("Online to‘lash uchun akkauntingizga kiring yoki “Qabul qilganda” usulini tanlang."); return; }
     setPending(true); setError("");
     const selected = new Set(selectedIds);
-    const deferredItems = cart.items.filter((item) => !selected.has(item.id));
+    const snapshot = cart.items;
+    const deferredItems = snapshot.filter((item) => !selected.has(item.id));
     let deferredRemoved = false;
     try {
       await flushCart();
@@ -177,22 +219,21 @@ export function CheckoutContent() {
       setPreview(delivery);
       const order = await orderService.create(address, idempotencyKey.current, delivery, paymentMethod);
       deferredRemoved = false;
-      try {
-        for (const item of deferredItems) await cartService.add({ product: item.product, quantity: item.quantity, color: item.color, variantId: item.variantId });
-      } catch {
-        order.warning = [order.warning, "Belgilanmagan mahsulotlarning ayrimlarini savatga qayta tiklab bo‘lmadi."].filter(Boolean).join(" ");
-      }
-      clearCartSelection();
-      setCompleted(order);
-      idempotencyKey.current = newIdempotencyKey();
-      await cart.refresh();
+      try { await restoreDeferred(deferredItems, snapshot); }
+      catch { order.warning = [order.warning, "Belgilanmagan mahsulotlarning ayrimlarini savatga qayta tiklab bo‘lmadi."].filter(Boolean).join(" "); }
+      await finishOrder(order);
       if (paymentMethod !== "cod") await openPayment(order);
     } catch (caught) {
       if (deferredRemoved) {
         try {
-          for (const item of deferredItems) await cartService.add({ product: item.product, quantity: item.quantity, color: item.color, variantId: item.variantId });
+          await restoreDeferred(deferredItems, snapshot);
           await cart.refresh();
         } catch { /* Original checkout error is more useful to the buyer. */ }
+      }
+      if (caught instanceof OrderNotConfirmedError) {
+        // Kalit ishlatib bo'lindi (buyurtma bor): keyingi har qanday yangi urinish yangi kalit bilan ketadi.
+        idempotencyKey.current = newIdempotencyKey();
+        setUnconfirmed(caught.order);
       }
       setError(errorMessage(caught, "Buyurtma yaratilmadi. Qayta urinib ko‘ring"));
     }
@@ -200,17 +241,27 @@ export function CheckoutContent() {
   };
 
   if (completed) return <section className={`checkout-success${completed.payment === "card" ? " checkout-success--pending" : ""}`}><span>{completed.payment === "card" ? <WalletCards/> : <CheckCircle2/>}</span><p>{completed.payment === "card" ? "TO‘LOV KUTILMOQDA" : "BUYURTMA QABUL QILINDI"}</p><h1>{completed.payment === "card" ? "Buyurtma yaratildi" : "Rahmat!"}</h1><b>Buyurtma raqami: {completed.id}</b>{completed.warning && <p role="alert">{completed.warning}</p>}{error && <p className="form-error" role="alert">{error}</p>}<small>{completed.payment === "card" ? `${completed.paymentProvider === "PAYME" ? "Payme" : "Click"} orqali to‘lov yakunlanmaguncha buyurtma to‘langan hisoblanmaydi. Sahifa ochilmasa qayta urinishingiz mumkin.` : "Buyurtmangiz qabul qilindi. Sotuvchi uni tayyorlab, kuryerga topshiradi — holatini “Buyurtmalarim” bo‘limida kuzatib borasiz."}</small><div>{completed.payment === "card" && <button className="button button--primary" type="button" disabled={paymentPending} onClick={() => void openPayment(completed)}><ExternalLink/>{paymentPending ? "To‘lov sahifasi ochilmoqda…" : "To‘lovni davom ettirish"}</button>}<Link className={completed.payment === "card" ? "button button--secondary" : "button button--primary"} href={`/orders/${encodeURIComponent(completed.id)}`}>Buyurtmani kuzatish</Link><Link className="button button--secondary" href="/">Bosh sahifa</Link></div></section>;
-  if ((cart.loading && !cart.items.length) || !selectionReady) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
+  if (unconfirmed) return <StatePanel kind="error" icon={<ShoppingCart/>} title={`#${unconfirmed.id} buyurtmasi tasdiqlanmadi`} description={`${error ? `${error}. ` : ""}Buyurtma yaratildi, lekin tasdiqlash so‘rovi yetib bormadi. Mahsulotlar buyurtmaga o‘tgan — qayta tasdiqlang.`} action={<>
+    <Button loading={pending} onClick={() => void retryConfirm()}>Qayta tasdiqlash</Button>
+    <Link className="button button--secondary" href={`/orders/${encodeURIComponent(unconfirmed.id)}`}>Buyurtmani kuzatish</Link>
+  </>}/>;
+  if (cart.loading && !cart.items.length) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
   if (cart.error) return <StatePanel kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={cart.error} action={<Button onClick={() => void cart.refresh()}>Qayta urinish</Button>}/>;
+  if (!selectionReady) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
   if (!cart.items.length && unpaid) return <StatePanel icon={<WalletCards/>} title={`#${unpaid.id} buyurtmasi to‘lovni kutmoqda`} description={error || `Buyurtma yaratilgan, lekin to‘lov yakunlanmagan. ${unpaid.paymentProvider === "CLICK" ? "Click" : "Payme"} sahifasida to‘lovni yakunlang yoki buyurtma sahifasidan keyinroq to‘lang.`} action={<>
     <Button disabled={paymentPending} onClick={() => void openPayment(unpaid)}><ExternalLink/>{paymentPending ? "Ochilmoqda…" : "To‘lovni davom ettirish"}</Button>
     <Link className="button button--secondary" href={`/orders/${encodeURIComponent(unpaid.id)}`}>Buyurtmani kuzatish</Link>
     <Link className="button button--secondary" href="/#products">Yangi xarid</Link>
   </>}/>;
   if (!cart.items.length) return <StatePanel icon={<ShoppingCart/>} title="Rasmiylashtirish uchun savatcha bo‘sh" description="Avval katalogdan mahsulot tanlang — keyin bu yerda buyurtmani rasmiylashtirasiz." action={<Link className="button button--primary" href="/#products">Mahsulot tanlash</Link>}/>;
-  if (!selectedItems.length) return <StatePanel icon={<ShoppingCart/>} title="Buyurtma uchun mahsulot tanlanmagan" description="Savatchaga qaytib, buyurtma qilmoqchi bo‘lgan mahsulotlarni belgilang." action={<Link className="button button--primary" href="/cart">Savatchaga qaytish</Link>}/>;
+  if (!selectedItems.length && buyNow) return <StatePanel icon={<ShoppingCart/>} title="Bu mahsulot savatda topilmadi" description={`${error ? `${error}. ` : ""}Mahsulot sahifasiga qaytib, “Buyurtma berish” tugmasini qayta bosing yoki savatdagi mahsulotlarni rasmiylashtiring.`} action={<>
+    <Link className="button button--primary" href={`/product/${encodeURIComponent(buyNow.productId)}`}>Mahsulotga qaytish</Link>
+    <Button variant="secondary" disabled={pending} onClick={checkoutWholeCart}>Savatni rasmiylashtirish</Button>
+  </>}/>;
+  if (!selectedItems.length) return <StatePanel icon={<ShoppingCart/>} title="Buyurtma uchun mahsulot tanlanmagan" description={`${error ? `${error}. ` : ""}Savatchaga qaytib, buyurtma qilmoqchi bo‘lgan mahsulotlarni belgilang.`} action={<Link className="button button--primary" href="/cart">Savatchaga qaytish</Link>}/>;
 
   return <section className="checkout-page"><div className="page-heading"><div><h1>Buyurtmani rasmiylashtirish</h1></div></div><form onSubmit={submit} className="checkout-layout"><div className="checkout-forms">
+    {buyNow && cart.items.length > selectedItems.length && <div className="checkout-buy-now" role="status"><p><b>Faqat shu mahsulot rasmiylashtirilmoqda.</b> Savatdagi boshqa {cart.items.length - selectedItems.length} ta mahsulot savatda qoladi.</p><button type="button" disabled={pending} onClick={checkoutWholeCart}>Butun savatni rasmiylashtirish</button></div>}
     <fieldset><legend><MapPin/> Qabul qiluvchi va manzil</legend><div className="form-grid">
       <label><span>Ism-familiya</span><input name="recipientName" value={form.recipientName} onChange={(event) => change("recipientName", event.target.value)} required minLength={2} autoComplete="name" placeholder="Ism-familiyangiz"/></label>
       <label><span>Telefon raqami</span><div className="phone-input"><b aria-hidden="true">+998</b><input name="phone" aria-label="Telefon raqami" value={form.phone} onChange={(event) => change("phone", event.target.value.replace(/\D/g, "").replace(/^998/, "").slice(0, 9))} required pattern="[0-9]{9}" inputMode="numeric" autoComplete="tel-national" maxLength={9} placeholder="90 123 45 67"/></div></label>
@@ -225,9 +276,9 @@ export function CheckoutContent() {
         <span className="payment-option__copy"><b>{title}</b><small>{note}</small></span>
         <span className="payment-option__check" aria-hidden><Check/></span>
       </label>; })}
-    </div>{onlinePaymentMethods.length > 0 && !signedIn && <p className="payment-note">Payme yoki Click orqali to‘lash uchun <Link href="/login?next=/checkout">akkauntingizga kiring</Link>. Mehmon sifatida “Qabul qilganda” usuli bilan buyurtma berishingiz mumkin.</p>}{paymentMethod !== "cod" && <p className="payment-note">Buyurtma yaratilgach {paymentMethod === "payme" ? "Payme" : "Click"} sahifasiga o‘tasiz. To‘lov oynasini yopsangiz, buyurtma sahifasidan davom ettirishingiz mumkin.</p>}</fieldset>
+    </div>{onlinePaymentMethods.length > 0 && !signedIn && <p className="payment-note">Payme yoki Click orqali to‘lash uchun <Link href={`/login?next=${encodeURIComponent(buyNow ? buyNowHref(buyNow.productId, buyNow.variantId) : "/checkout")}`}>akkauntingizga kiring</Link>. Mehmon sifatida “Qabul qilganda” usuli bilan buyurtma berishingiz mumkin.</p>}{paymentMethod !== "cod" && <p className="payment-note">Buyurtma yaratilgach {paymentMethod === "payme" ? "Payme" : "Click"} sahifasiga o‘tasiz. To‘lov oynasini yopsangiz, buyurtma sahifasidan davom ettirishingiz mumkin.</p>}</fieldset>
     {regionsError && <div className="form-error form-error--action" role="alert"><span>Viloyatlar ro‘yxatini yuklab bo‘lmadi. {regionsError}</span><button type="button" onClick={() => setRegionsReload((value) => value + 1)}>Qayta urinish</button></div>}
     {districtsError && <div className="form-error form-error--action" role="alert"><span>Tumanlar ro‘yxatini yuklab bo‘lmadi. {districtsError}</span><button type="button" onClick={() => setDistrictsReload((value) => value + 1)}>Qayta urinish</button></div>}
     {error && <p className="form-error" role="alert">{error}</p>}
-  </div><aside className="order-summary"><h2>Sizning buyurtmangiz</h2>{selectedItems.map((item) => <div className="checkout-line" key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<p><span>Mahsulotlar</span><Price value={selectedSubtotal}/></p><p><span>Yetkazish</span>{preview ? <Price value={preview.deliveryFee}/> : <b>{previewPending ? "Hisoblanmoqda…" : "Manzil bo‘yicha"}</b>}</p>{preview && <p><span>Posilkalar</span><b>{preview.packages.length || 1} ta</b></p>}<hr/><p className="order-total"><span>Jami</span><Price value={selectedSubtotal + (preview?.deliveryFee ?? 0)}/></p><Button disabled={pending || previewPending || cart.loading || !canPreview(form)} type="submit" loading={pending}><Truck/> {paymentMethod === "cod" ? "Buyurtma berish" : "Buyurtma yaratish va to‘lash"}</Button><small>Faqat savatchada belgilangan mahsulotlar buyurtma qilinadi. Yetkazish narxi manzil asosida hisoblanadi.</small></aside></form></section>;
+  </div><aside className="order-summary"><h2>Sizning buyurtmangiz</h2>{selectedItems.map((item) => <div className="checkout-line" key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<p><span>Mahsulotlar</span><Price value={selectedSubtotal}/></p><p><span>Yetkazish</span>{preview ? <Price value={preview.deliveryFee}/> : <b>{previewPending ? "Hisoblanmoqda…" : "Manzil bo‘yicha"}</b>}</p>{preview && <p><span>Posilkalar</span><b>{preview.packages.length || 1} ta</b></p>}<hr/><p className="order-total"><span>Jami</span><Price value={selectedSubtotal + (preview?.deliveryFee ?? 0)}/></p><Button disabled={pending || previewPending || cart.loading || !canPreview(form)} type="submit" loading={pending}><Truck/> {paymentMethod === "cod" ? "Buyurtma berish" : "Buyurtma yaratish va to‘lash"}</Button><small>{buyNow ? "Faqat shu mahsulot buyurtma qilinadi." : "Faqat savatchada belgilangan mahsulotlar buyurtma qilinadi."} Yetkazish narxi manzil asosida hisoblanadi.</small></aside></form></section>;
 }

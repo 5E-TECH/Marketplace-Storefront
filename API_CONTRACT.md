@@ -174,7 +174,7 @@ Tekshirish usuli: bu backendda mavjud lekin rol yetmagan yo‘l `403`, ma’lumo
 
 ### Allaqachon bor va o‘zgartirilmaydi
 
-- `POST /orders/{orderId}/refund` — xaridor buyurtmani bekor qiladi. Tanasi `{ reason?: string }`, javob `{ id, status: "CANCELLED", idempotent: boolean }`. Takroriy chaqiruvda `idempotent: true`. COD buyurtmada `400`. Bu **ko‘rib chiqishsiz darhol bekor qilish** — quyidagi oqimning o‘rnini bosmaydi.
+- `POST /orders/{orderId}/refund` — xaridor buyurtmani bekor qiladi. Tanasi `{ reason?: string }`, javob `{ id, status: "CANCELLED" | "REFUNDED", idempotent: boolean }`. Takroriy chaqiruvda `idempotent: true`. 2026-09-23 da jonli backend COD buyurtmaga `400` qaytargan edi; 2026-09-27 dagi kontrakt (jonli `docs-json` bilan bir xil) bo‘yicha to‘lanmagan buyurtma (COD ham) bekor qilinadi, to‘langani to‘liq qaytariladi, posilka yo‘lga chiqqan bo‘lsa `400`. Storefront “Bekor qilish” tugmasini shunga tayanib ko‘rsatadi — COD bekor qilish jonli buyurtma bilan qayta tekshirilsin. Bu **ko‘rib chiqishsiz darhol bekor qilish** — quyidagi oqimning o‘rnini bosmaydi.
 - `POST /admin/orders/{orderId}/refund` — admin uchun (kontraktda yo‘q, OpenAPI ga kiritilishi kerak).
 - `GET /seller/orders`, `GET /admin/orders` — mavjud.
 

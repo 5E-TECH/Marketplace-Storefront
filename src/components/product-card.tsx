@@ -3,9 +3,11 @@
 import { Plus, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { memo, useEffect, useRef, useState } from "react";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { useCartActions } from "@/providers/cart-provider";
+import { buyNowHref } from "@/lib/cart-selection";
 import { getSafeImageSrc } from "@/lib/product-storage";
 import { cartService } from "@/services/cart.service";
 import type { Product } from "@/types/commerce";
@@ -18,8 +20,20 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
   const variant = product.variants?.find((item) => item.stock === undefined || item.stock > 0);
   const cart = useCartActions();
   const { pending, run } = useAsyncAction();
+  const router = useRouter();
+  // Savat yuklanmaguncha karta mahsulot savatda borligini bilmaydi — qo'shish/tez xarid miqdorni ikkilantirmasin.
+  const busy = pending || !cart.ready;
   const cartItem = cart.items.find((item) => String(item.productId) === String(product.id) && String(item.variantId ?? "") === String(variant?.id ?? ""));
   useEffect(() => { cartService.rememberProduct(product); }, [product]);
+  // Savatda bo'lsa o'sha miqdor bilan, bo'lmasa 1 dona qo'shib — checkout faqat shu mahsulot bilan ochiladi.
+  const buyNow = () => {
+    if (!variant) return;
+    const href = buyNowHref(product.id, variant.id);
+    if (cartItem) { router.push(href); return; }
+    void run(async () => {
+      if (await cart.add({ product, quantity: 1, color: variant.color ?? product.colors[0] ?? "", variantId: variant.id })) router.push(href);
+    });
+  };
   // Rasm ustida sichqoncha surilganda galereya varaqlanadi: kenglik bo'yicha qaysi bo'lakda turgani hisoblanadi.
   const selectImage = (clientX: number) => {
     const bounds = imageBounds.current;
@@ -52,9 +66,10 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
               // aks holda tez bosishlar yo'qoladi. Faqat o'chirish tarmoq amali sifatida kutiladi.
               onDecrease={() => { if (cartItem.quantity === 1) void run(() => cart.remove(cartItem.id)); else void cart.update(cartItem.id, cartItem.quantity - 1); }}
               onIncrease={() => { void cart.update(cartItem.id, cartItem.quantity + 1); }}/>
-          : <button data-testid="product-card-add" type="button" className="product-add" disabled={pending || !variant} aria-busy={pending || undefined} aria-label={variant ? "Savatchaga qo‘shish" : "Mahsulot varianti mavjud emas"}
+          : <button data-testid="product-card-add" type="button" className="product-add" disabled={busy || !variant} aria-busy={busy || undefined} aria-label={variant ? "Savatchaga qo‘shish" : "Mahsulot varianti mavjud emas"}
               onClick={() => void run(() => cart.add({ product, quantity: 1, color: variant?.color ?? product.colors[0] ?? "", variantId: variant?.id }))}><Plus/></button>}
       </div>
+      <button data-testid="product-card-buy" type="button" className="product-buy-now" disabled={busy || !variant} aria-busy={busy || undefined} onClick={buyNow}>{variant ? "Buyurtma berish" : "Sotuvda yo‘q"}</button>
     </div>
   </article>;
 });

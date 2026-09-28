@@ -1,6 +1,6 @@
 import { validateBuyerOrdersPageDto } from "@/generated/api-validators";
 import { apiRequest } from "@/lib/api";
-import { authHeaders, getAccessToken } from "@/lib/access-token";
+import { authHeaders, hasAuthSession } from "@/lib/access-token";
 import type { ProductReview, ProductReviewsResult, ReviewableOrderItem } from "@/types/commerce";
 import type { BuyerOrdersResponse } from "@/types/storefront-api";
 
@@ -36,19 +36,6 @@ export const normalizeReviews = (response: unknown): ProductReviewsResult => {
   return { items, rating: rating(root.rating ?? root.averageRating), total, page, limit, totalPages };
 };
 
-/**
- * `GET /orders` bandlari hozircha `sales_order_item.id` ni qaytarmaydi —
- * kontraktda ham (`BuyerOrderListItemProductDto`) bu maydon yo'q. Sharh
- * yaratish esa aynan `orderItemId` ni talab qiladi, shuning uchun ro'yxat
- * bo'sh qaytadi va "sharh qoldirish" ko'rinmaydi. Bu backend kontrakti
- * bilan bog'liq alohida kamchilik; maydon qo'shilgach bu yer o'zgarishsiz
- * ishlab ketadi.
- */
-const reviewableItemId = (item: object): string => {
-  const id = (item as { id?: unknown }).id;
-  return typeof id === "string" || typeof id === "number" ? String(id) : "";
-};
-
 export const reviewService = {
   async list(productId: string | number, page = 1, limit = 5): Promise<ProductReviewsResult> {
     return normalizeReviews(await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "GET", params: { page, limit } }));
@@ -61,15 +48,12 @@ export const reviewService = {
     await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "POST", headers: authHeaders(), body: { orderItemId, rating: input.rating, ...(comment ? { comment } : {}) } });
   },
   async reviewableItems(productId: string | number): Promise<ReviewableOrderItem[]> {
-    if (!getAccessToken()) return [];
+    if (!hasAuthSession()) return [];
     const first = await apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: 1, limit: 100 }, validate: validateBuyerOrdersPageDto });
     const pages = first.totalPages > 1 ? await Promise.all(Array.from({ length: first.totalPages - 1 }, (_, index) => apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: index + 2, limit: 100 }, validate: validateBuyerOrdersPageDto }))) : [];
-    return [first, ...pages].flatMap((page) => page.items).flatMap((order) => {
-      if (!["DELIVERED", "FULFILLED", "COMPLETED"].includes(order.orderStatus.trim().toUpperCase().replace(/[\s-]+/g, "_"))) return [];
-      return order.items.flatMap((item) => {
-        const orderItemId = reviewableItemId(item);
-        return orderItemId && String(item.productId) === String(productId) ? [{ orderItemId, orderId: order.orderId }] : [];
-      });
-    });
+    // Backend sharhni sotuvchi sub-buyurtmasi `DELIVERED` bo'lgandagina qabul qiladi.
+    // Ko'p sotuvchili buyurtmada umumiy `orderStatus` bundan farq qilishi mumkin.
+    return [first, ...pages].flatMap((page) => page.items).flatMap((order) => order.items.flatMap((item) =>
+      item.sellerOrderStatus === "DELIVERED" && item.id && String(item.productId) === String(productId) ? [{ orderItemId: item.id, orderId: order.orderId }] : []));
   },
 };

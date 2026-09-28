@@ -227,6 +227,9 @@ a.banner-slide:focus-visible { outline: 3px solid var(--color-brand); outline-of
 .catalog-hero p { margin: 0; color: var(--color-muted); font-size: 14px; }
 .shop-hero p { max-width: 720px; line-height: 1.6; }
 .shop-hero > img { object-fit: cover; border-radius: 22px; background: white; }
+.shop-hero .shop-rating { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.shop-rating svg { width: 15px; height: 15px; color: #f19b19; fill: currentColor; }
+.shop-rating b { color: #f19b19; }
 .shop-hero > img, .shop-hero > span { border: 1px solid var(--color-line); }
 .search-page-heading { padding: 44px 0 4px; }
 .search-page-heading small { color: var(--color-brand); font-size: 14px; font-weight: 600; }
@@ -256,6 +259,10 @@ a.banner-slide:focus-visible { outline: 3px solid var(--color-brand); outline-of
 .price del { margin-top: 2px; color: var(--color-muted); font-size: 14px; }
 .product-bottom button { flex: 0 0 auto; width: 36px; margin-left: auto; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--color-brand); color: white; }
 .product-bottom button svg { width: 16px; }
+/* "Buyurtma berish": checkout faqat shu mahsulot bilan ochiladi. */
+.product-buy-now { width: 100%; min-height: 36px; margin-top: 10px; padding: 0 10px; border: 1px solid var(--color-brand); border-radius: 9px; background: white; color: var(--color-brand); font-size: 14px; font-weight: 700; transition: background .15s, color .15s; }
+.product-buy-now:hover:not(:disabled) { background: var(--color-brand); color: white; }
+.product-buy-now:disabled { border-color: var(--color-line); color: var(--color-muted); }
 
 footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white; }
 
@@ -306,7 +313,8 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 .quantity b { font-size: 15px; }
 .detail-heart { display: grid; place-items: center; border: 1px solid var(--color-line); border-radius: 10px; background: white; }
 .detail-heart svg { width: 20px; }
-.quick-buy { width: 100%; height: 46px; margin-top: 9px; border: 1px solid #d6d7da; border-radius: 10px; background: white; font-size: 15px; font-weight: 700; }
+.quick-buy { width: 100%; height: 46px; margin-top: 9px; border: 1px solid var(--color-brand); border-radius: 10px; background: white; color: var(--color-brand); font-size: 15px; font-weight: 700; transition: background .15s, color .15s; }
+.quick-buy:hover:not(:disabled) { background: var(--color-brand); color: white; }
 .service-list { margin-top: 14px; border: 1px solid var(--color-line); border-radius: 18px; }
 .service-list > div { min-height: 69px; display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-bottom: 1px solid var(--color-line); }
 .service-list > div:last-child { border: 0; }
@@ -452,6 +460,9 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 .cart-row-actions > button svg { width: 16px; }
 .cart-page-price { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; }
 .cart-page-price .price strong { font-size: 17px; }
+.checkout-buy-now { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 16px; padding: 12px 16px; border: 1px solid #f1d78b; border-radius: 12px; background: #fff9e8; color: #6d5719; font-size: 14px; }
+.checkout-buy-now p { margin: 0; line-height: 1.5; }
+.checkout-buy-now button { padding: 0; border: 0; background: none; color: var(--color-brand); font-weight: 700; text-decoration: underline; }
 .order-summary { position: sticky; top: 120px; padding: 22px; border: 1px solid var(--color-line); border-radius: 18px; background: white; box-shadow: var(--shadow-card); }
 .order-summary h2 { margin: 0 0 20px; font-size: 20px; }
 .order-summary > p { display: flex; align-items: center; justify-content: space-between; gap: 15px; font-size: 14px; }
@@ -462,7 +473,8 @@ footer { margin-top: 60px; padding-top: 48px; background: #111216; color: white;
 .summary-discount b { color: #21834a; }
 .order-summary > .button { width: 100%; }
 .order-summary > small { display: block; margin-top: 11px; color: var(--color-muted); font-size: 14px; line-height: 1.5; text-align: center; }
-.route-loading { min-height: 65vh; padding: 48px 0; }
+/* Skeleton ekranni to'ldiradi: footer skeleton paytida ko'rinib, kontent kelganda sakramasin (CLS). */
+.route-loading { min-height: 100vh; padding: 48px 0; }
 .checkout-forms { display: flex; flex-direction: column; gap: 16px; }
 .checkout-forms fieldset { margin: 0; padding: 22px; border: 1px solid var(--color-line); border-radius: 18px; }
 .checkout-forms legend { display: flex; align-items: center; gap: 8px; padding: 0 8px; font-size: 15px; font-weight: 800; }
@@ -538,13 +550,21 @@ body:has(.catalog-mega) .floating-cart { display: none; }
 .tracking-status > svg { width: 44px; height: 44px; padding: 10px; border-radius: 50%; background: #e9f8ee; color: #218447; }
 .tracking-status small, .tracking-status p, .tracking-packages small, .tracking-details p { color: var(--color-muted); font-size: 14px; }
 .tracking-status h2 { margin: 4px 0; }
-.tracking-payment { display: flex; align-items: center; gap: 12px; margin-top: 22px; padding: 14px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); }
-.tracking-payment > svg { width: 22px; color: var(--color-brand); }
-.tracking-payment > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
-.tracking-payment small, .tracking-payment span { color: var(--color-muted); font-size: 13px; }
-.tracking-payment b { font-size: 14px; }
-.tracking-payment .button { min-height: 38px; padding-inline: 13px; }
+.tracking-payment, .tracking-cancel { display: flex; align-items: center; gap: 12px; margin-top: 22px; padding: 14px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); }
+.tracking-payment > svg, .tracking-cancel > svg { width: 22px; flex: 0 0 auto; color: var(--color-brand); }
+.tracking-payment > div, .tracking-cancel > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.tracking-payment small, .tracking-payment span, .tracking-cancel span { color: var(--color-muted); font-size: 13px; }
+.tracking-payment b, .tracking-cancel b { font-size: 14px; }
+.tracking-payment .button, .tracking-cancel .button { min-height: 38px; padding-inline: 13px; }
 .tracking-payment .button svg { width: 15px; }
+/* Tor ekranda tugma matn ostiga tushadi — matn siqilib qolmaydi. */
+.tracking-cancel { flex-wrap: wrap; margin-top: 12px; }
+.tracking-cancel > div { flex-basis: 220px; }
+.cancel-reason { display: flex; flex-direction: column; gap: 7px; }
+.cancel-reason span { font-size: 13px; font-weight: 700; }
+.cancel-reason textarea { width: 100%; min-height: 90px; padding: 12px 14px; border: 1px solid var(--color-line); border-radius: 10px; outline: none; background: #fff; color: var(--color-text); font: inherit; font-size: 14px; resize: vertical; }
+.cancel-reason textarea:focus { border-color: var(--color-brand); box-shadow: 0 0 0 3px rgb(239 35 51 / 9%); }
+.cancel-reason + .form-error { margin: 12px 0 0; }
 .tracking-steps { display: grid; grid-template-columns: repeat(4, 1fr); margin: 28px 0 8px; padding: 0; list-style: none; }
 .tracking-steps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--color-muted); font-size: 14px; text-align: center; }
 .tracking-steps li::before { content: ""; position: absolute; top: 15px; right: 50%; width: 100%; height: 2px; background: var(--color-line); z-index: 0; }
@@ -664,7 +684,11 @@ body:has(.catalog-mega) .floating-cart { display: none; }
   .purchase-actions .button { font-size: 14px; padding: 0 12px; }
   .products-grid--related { grid-template-columns: repeat(2, 1fr); }
   .mobile-buy-bar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 12px; position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; padding: 10px 12px max(10px, env(safe-area-inset-bottom)); border-top: 1px solid var(--color-line); background: rgba(255,255,255,.96); backdrop-filter: blur(14px); }
-  .mobile-buy-bar > div { display: flex; flex-direction: column; }
+  .mobile-buy-bar > div { display: flex; flex-direction: column; margin-right: auto; }
+  .mobile-buy-bar { gap: 8px; }
+  .mobile-buy-bar .mobile-buy-bar__cart { width: 48px; flex: 0 0 48px; padding: 0; }
+  .mobile-buy-bar > div { min-width: 0; }
+  .mobile-buy-bar .button { white-space: nowrap; }
   .mobile-buy-bar .price strong { font-size: 14px; }
   .mobile-buy-bar small { margin-top: 3px; color: #248144; font-size: 12px; }
   .mobile-buy-bar .button { min-height: 48px; }
@@ -708,6 +732,8 @@ body:has(.catalog-mega) .floating-cart { display: none; }
   .sort-control .sort-label--short { display: inline; }
   .catalog-price-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 14px; }
   .catalog-price-filters .button { min-height: 44px; grid-column: 1 / -1; }
+  /* Do'kon ichida qidiruv — alohida qator, narx maydonlari yonma-yon qoladi. */
+  .catalog-price-filters .catalog-filter-search { grid-column: 1 / -1; }
   .catalog-price-filters input { height: 44px; }
   .catalog-pagination { padding-inline: 12px; gap: 5px; }
   .pagination-pages { gap: 4px; }
@@ -797,8 +823,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 /* Shared storefront states */
 .state-panel { min-height: 360px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-7) var(--space-5); border: 1px solid var(--color-line); border-radius: var(--radius-lg); background: var(--color-surface); text-align: center; }
 .state-panel--compact { min-height: 250px; }
-/* 404 va xato sahifasi: panel sarlavha ostiga yopishmasin. */
-body > main > .container > .state-panel:only-child { margin-block: var(--space-6); }
+/* 404, xato va bo'sh holat paneli sarlavha ostiga yopishmasin; skeleton ham shu joyda turadi — almashganda sakramaydi (CLS). */
+body > main > .container > :is(.state-panel, .loading-grid):only-child { margin-block: var(--space-6); }
 .state-panel__icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; background: #ececef; color: var(--color-muted); }
 .state-panel__icon svg { width: 28px; height: 28px; }
 .state-panel--error .state-panel__icon { background: #fff0f1; color: var(--color-brand); }

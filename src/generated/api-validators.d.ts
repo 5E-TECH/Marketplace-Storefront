@@ -11,3 +11,4 @@ export declare const validateCartDto: (value: unknown) => value is components["s
 export declare const validateFavoritesPageDto: (value: unknown) => value is components["schemas"]["FavoritesPageDto"];
 export declare const validateBuyerOrdersPageDto: (value: unknown) => value is components["schemas"]["BuyerOrdersPageDto"];
 export declare const validateStorefrontBannerDto: (value: unknown) => value is components["schemas"]["StorefrontBannerDto"];
+export declare const validateOrderActionResultDto: (value: unknown) => value is components["schemas"]["OrderActionResultDto"];

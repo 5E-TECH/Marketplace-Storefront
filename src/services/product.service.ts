@@ -151,7 +151,12 @@ export const productService = {
       const page = query.page ?? 1;
       const limit = query.limit ?? 10;
       const response = await apiRequest(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: listParams(query, page, limit), next: { revalidate: 30 }, validate: isShopPage });
-      return { shop: normalizeShop(response.shop), catalog: toCatalog(response.products, page, limit) };
+      const shop = normalizeShop(response.shop);
+      const catalog = toCatalog(response.products, page, limit);
+      // Faqat shu do'kon mahsulotlari: backend boshqa do'konnikini qaytarib yuborsa ham ko'rinmaydi
+      // (soni ham shunga moslanadi, aks holda "3 ta mahsulot" yonida 2 ta karta chiqardi).
+      const data = catalog.data.filter((product) => !product.shop || String(product.shop.id) === String(shop.id));
+      return { shop, catalog: { ...catalog, data, total: Math.max(0, catalog.total - (catalog.data.length - data.length)) } };
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return null;
       throw error;
