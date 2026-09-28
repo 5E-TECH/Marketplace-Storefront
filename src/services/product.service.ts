@@ -85,6 +85,20 @@ const isProductPage = (value: unknown): value is ProductPage => Array.isArray(ob
 const isShopPage = (value: unknown): value is { shop: unknown; products: ProductPage } => Boolean(object(value).shop) && isProductPage(object(value).products);
 
 /**
+ * FeaturedShopDto mahsulotlar sonini bermaydi — do'kon sahifasining `products.total`
+ * qiymati olinadi (limit=1). Xato bo'lsa son ko'rsatilmaydi, kartochka baribir chiqadi.
+ */
+async function shopProductCount(slug: string): Promise<number | undefined> {
+  try {
+    const response = await apiRequest(`${STOREFRONT_SHOPS_PATH}/${encodeURIComponent(slug)}`, { params: { page: 1, limit: 1 }, next: { revalidate: 30 }, timeoutMs: 2000, validate: isShopPage });
+    const total = Number(response.products.total);
+    return Number.isSafeInteger(total) && total >= 0 ? total : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Sahifa konverti tekshiriladi, mahsulotlar esa bittalab: sxemaga mos kelmagan
  * bitta yozuv butun katalogni bo'shatib qo'ymasin, faqat o'zi tushib qolsin.
  */
@@ -102,11 +116,13 @@ export const productService = {
   async featuredShops(): Promise<StorefrontShop[]> {
     if (!env.apiUrl) return [];
     try {
-      // Ixtiyoriy blok: sekin javob butun bosh sahifani ushlab turmasin.
-      const response = await apiRequest<unknown>(`${STOREFRONT_SHOPS_PATH}/featured`, { next: { revalidate: 30 }, timeoutMs: 3000 });
+      // Ixtiyoriy blok: sekin javob butun bosh sahifani ushlab turmasin. Keshlanmaydi —
+      // admin belgini qo'yganda yoki olganda o'zgarish keyingi yangilashda ko'rinadi.
+      const response = await apiRequest<unknown>(`${STOREFRONT_SHOPS_PATH}/featured`, { timeoutMs: 3000 });
       const root = object(response);
       const items = Array.isArray(response) ? response : Array.isArray(root.items) ? root.items : Array.isArray(root.shops) ? root.shops : [];
-      return items.flatMap((item) => { try { return [normalizeShop(item)]; } catch { return []; } });
+      const shops = items.flatMap((item) => { try { return [normalizeShop(item)]; } catch { return []; } });
+      return Promise.all(shops.map(async (shop) => shop.productCount === undefined ? { ...shop, productCount: await shopProductCount(shop.slug) } : shop));
     } catch {
       return [];
     }

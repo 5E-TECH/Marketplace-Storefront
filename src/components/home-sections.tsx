@@ -19,7 +19,7 @@ export function FeaturedShops({ shops }: { shops: StorefrontShop[] }) {
     <div className="section-header"><h2 id="featured-shops-title">Tavsiya etilgan do‘konlar</h2></div>
     <div className="featured-shops-grid">{shops.map((shop) => <Link className="featured-shop-card" href={`/dokon/${encodeURIComponent(shop.slug)}`} key={shop.id}>
       <span className="featured-shop-logo">{shop.logoUrl ? <Image src={getSafeImageSrc(shop.logoUrl)} alt="" width={72} height={72}/> : shop.name.charAt(0).toLocaleUpperCase("uz")}</span>
-      <span className="featured-shop-copy"><b>{shop.name}</b>{shop.description && <small>{shop.description}</small>}<span className="featured-shop-meta"><span><Star size={14} fill="currentColor"/> {shop.rating.toLocaleString("uz-UZ", { maximumFractionDigits: 1 })}</span>{shop.productCount !== undefined && <span><Package size={14}/> {shop.productCount} ta mahsulot</span>}</span></span>
+      <span className="featured-shop-copy"><b>{shop.name}</b>{shop.description && <small>{shop.description}</small>}<span className="featured-shop-meta">{shop.rating > 0 ? <span><Star size={14} fill="currentColor"/> {shop.rating.toFixed(1)}</span> : <span className="featured-shop-unrated">Hali baholanmagan</span>}{shop.productCount !== undefined && <span><Package size={14}/> {shop.productCount} ta mahsulot</span>}</span></span>
       <ArrowRight aria-hidden size={19}/>
     </Link>)}</div>
   </section></Container>;

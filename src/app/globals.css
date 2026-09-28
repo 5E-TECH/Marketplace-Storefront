@@ -182,8 +182,9 @@ a.banner-slide:focus-visible { outline: 3px solid var(--color-brand); outline-of
 .featured-shop-copy > b { overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
 .featured-shop-copy > small { display: -webkit-box; overflow: hidden; color: var(--color-muted); font-size: 14px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .featured-shop-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 3px; color: var(--color-muted); font-size: 13px; font-weight: 650; }
-.featured-shop-meta > span { display: inline-flex; align-items: center; gap: 4px; }
+.featured-shop-meta > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .featured-shop-meta > span:first-child { color: #d99500; }
+.featured-shop-meta > .featured-shop-unrated { color: var(--color-muted); }
 .featured-shop-card > svg { flex: 0 0 auto; color: var(--color-brand); }
 .products-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
 .product-card { min-width: 0; display: flex; overflow: hidden; flex-direction: column; border: 1px solid var(--color-line); border-radius: var(--radius-md); background: white; transition: box-shadow .2s, transform .2s; }
