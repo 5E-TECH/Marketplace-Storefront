@@ -9,14 +9,16 @@ import type { AddCartInput, Cart, CartItem } from "@/types/commerce";
 
 const UPDATE_DELAY_MS = 450;
 type PendingUpdate = { quantity: number; timer?: ReturnType<typeof setTimeout> };
-type CartContextValue = Cart & { loading: boolean; syncing: boolean; error: string | null; quantity: number; subtotal: number; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void>; clear: () => Promise<void>; refresh: () => Promise<void>; flush: () => Promise<void> };
+type CartContextValue = Cart & { loading: boolean; ready: boolean; syncing: boolean; error: string | null; quantity: number; subtotal: number; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void>; clear: () => Promise<void>; refresh: () => Promise<void>; flush: () => Promise<void> };
 const CartContext = createContext<CartContextValue | null>(null);
-type CartActionsContextValue = { items: CartItem[]; loading: boolean; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void> };
+type CartActionsContextValue = { items: CartItem[]; loading: boolean; ready: boolean; add: (input: AddCartInput) => Promise<boolean>; update: (id: string, quantity: number) => Promise<void>; remove: (id: string) => Promise<void> };
 const CartActionsContext = createContext<CartActionsContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<Cart>({ items: [] });
   const [loading, setLoading] = useState(true);
+  // Savat birinchi marta yuklanguncha kartalar mahsulot savatda bor-yo'qligini bilmaydi: shu paytda qo'shish miqdorni ikkilantirardi.
+  const [ready, setReady] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cartRef = useRef(cart);
@@ -111,7 +113,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     mounted.current = true;
     let active = true;
     const updates = pendingUpdates.current;
-    queueMicrotask(() => { if (active) void refresh(); });
+    queueMicrotask(() => { if (active) void refresh().finally(() => { if (active) setReady(true); }); });
     return () => {
       active = false;
       mounted.current = false;
@@ -155,8 +157,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [run]);
   const clear = useCallback(async () => { await flush(); await run(() => cartService.clear(cartRef.current)); }, [flush, run]);
 
-  const actions = useMemo(() => ({ items: cart.items, loading, add, update, remove }), [add, cart.items, loading, remove, update]);
-  const value = useMemo(() => ({ ...cart, ...cartTotals(cart.items), loading, syncing, error, add, update, remove, clear, refresh, flush }), [add, cart, clear, error, flush, loading, refresh, remove, syncing, update]);
+  const actions = useMemo(() => ({ items: cart.items, loading, ready, add, update, remove }), [add, cart.items, loading, ready, remove, update]);
+  const value = useMemo(() => ({ ...cart, ...cartTotals(cart.items), loading, ready, syncing, error, add, update, remove, clear, refresh, flush }), [add, cart, clear, error, flush, loading, ready, refresh, remove, syncing, update]);
   return <CartActionsContext.Provider value={actions}><CartContext.Provider value={value}>{children}</CartContext.Provider></CartActionsContext.Provider>;
 }
 

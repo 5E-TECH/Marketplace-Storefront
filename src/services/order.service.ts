@@ -1,8 +1,8 @@
 import { apiRequest } from "@/lib/api";
-import { authHeaders, getAccessToken } from "@/lib/access-token";
-import { validateBuyerOrdersPageDto } from "@/generated/api-validators";
+import { authHeaders, hasAuthSession } from "@/lib/access-token";
+import { validateBuyerOrdersPageDto, validateOrderActionResultDto } from "@/generated/api-validators";
 import type { CheckoutAddress, DeliveryPreview, Order, OrderStatus, OrderTracking, PaymentMethod, PaymentProvider, PaymentStatus, TrackingPackage, TrackingPayment } from "@/types/commerce";
-import type { BuyerOrdersResponse } from "@/types/storefront-api";
+import type { BuyerOrdersResponse, OrderActionResultDto } from "@/types/storefront-api";
 import { cartService } from "./cart.service";
 import { errorMessage } from "@/lib/errors";
 
@@ -18,6 +18,13 @@ const PAYMENT_START_MESSAGES: Record<PaymentStartFailure, string> = {
   unauthorized: "Online to‘lash uchun akkauntingizga kiring. Buyurtmangiz saqlandi.",
   failed: "To‘lov sahifasini hozir ochib bo‘lmadi. Buyurtmangiz saqlandi — birozdan keyin qayta urinib ko‘ring yoki buyurtma sahifasidan to‘lang.",
 };
+/**
+ * COD buyurtma yaratildi (`POST /checkout`), lekin tasdiqlash so'rovi yiqildi. Backend savat qatorlarini buyurtmaga
+ * o'tkazib bo'lgan — qayta `POST` qilish shart emas (va xavfli), faqat `orderService.confirm()` qayta chaqiriladi.
+ */
+export class OrderNotConfirmedError extends Error {
+  constructor(readonly order: Order, message: string) { super(message); this.name = "OrderNotConfirmedError"; }
+}
 export const paymentStartMessage = (error: unknown): string => error instanceof PaymentStartError ? error.message : PAYMENT_START_MESSAGES.failed;
 const paymentStartError = (reason: PaymentStartFailure) => new PaymentStartError(reason, PAYMENT_START_MESSAGES[reason]);
 const object = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -69,7 +76,9 @@ const statusMap: Record<string, OrderStatus> = {
   SHIPMENT_CREATED: "Yig‘ilmoqda",
   RECEIVED: "Yo‘lda", ON_THE_ROAD: "Yo‘lda", IN_TRANSIT: "Yo‘lda", OUT_FOR_DELIVERY: "Yo‘lda", PARTIALLY_FULFILLED: "Yo‘lda",
   DELIVERED: "Yetkazildi", FULFILLED: "Yetkazildi", COMPLETED: "Yetkazildi",
-  CANCELLED: "Bekor qilindi",
+  // Elchi webhook holatlari (kontrakt: ElchiWebhookDto.status): `sold`/`settled` — yetkazilib hisob-kitob qilingan.
+  SOLD: "Yetkazildi", SETTLED: "Yetkazildi",
+  CANCELLED: "Bekor qilindi", CANCELED: "Bekor qilindi",
   RETURNED: "Qaytarildi", REFUNDED: "Qaytarildi",
 };
 export const normalizeOrderStatus = (value: unknown): OrderStatus => {
@@ -78,6 +87,11 @@ export const normalizeOrderStatus = (value: unknown): OrderStatus => {
 };
 /** Bekor qilingan yoki qaytarilgan buyurtmani qayta to'lab bo'lmaydi (masalan, admin bekor qilgan). */
 export const isClosedOrder = (status: OrderStatus | undefined): boolean => status === "Bekor qilindi" || status === "Qaytarildi";
+/** Kontrakt: posilka yo'lga chiqquncha xaridor buyurtmani o'zi bekor qiladi, yo'lga chiqqach backend 400 qaytaradi. */
+const CANCELLABLE_STATUSES = new Set<OrderStatus>(["Qabul qilindi", "Yig‘ilmoqda"]);
+export const canCancelOrder = (tracking: OrderTracking): boolean =>
+  CANCELLABLE_STATUSES.has(tracking.status) && tracking.packages.every((item) => CANCELLABLE_STATUSES.has(item.status));
+export const MAX_CANCEL_REASON_LENGTH = 500;
 const optionalText = (value: unknown): string | undefined => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const safeHttpUrl = (value: unknown): string | undefined => {
   const text = optionalText(value);
@@ -181,7 +195,7 @@ export const orderService = {
   async list(): Promise<Order[]> { return readLocal(); },
   async listForCurrentBuyer(): Promise<{ orders: Order[]; error?: string }> {
     const local = readLocal();
-    if (!getAccessToken()) return { orders: local };
+    if (!hasAuthSession()) return { orders: local };
     try {
       const remote = await remoteOrders();
       return { orders: [...remote, ...local.filter((saved) => !remote.some((order) => order.id === saved.id))] };
@@ -206,7 +220,7 @@ export const orderService = {
   /** Buyurtmani avval brauzer nusxasidan, topilmasa backend ro'yxatidan qidiradi: boshqa qurilmada ham "Qayta to'lash" ishlashi uchun. */
   async find(orderId: string): Promise<Order | null> {
     const saved = readLocal().find((order) => order.id === orderId);
-    if (saved || !getAccessToken()) return saved ?? null;
+    if (saved || !hasAuthSession()) return saved ?? null;
     try { return (await remoteOrders()).find((order) => order.id === orderId) ?? null; }
     catch { return null; }
   },
@@ -224,6 +238,17 @@ export const orderService = {
     }
     return tracking;
   },
+  /**
+   * POST /orders/:id/refund — to'lanmagan buyurtma bekor qilinadi (rezerv bo'shaydi), to'langani to'liq qaytariladi.
+   * Guest buyurtmasi uchun X-Session-Id transportda qo'shiladi; sabab bo'sh bo'lsa backend standart sabab yozadi.
+   */
+  async cancel(orderId: string, reason = ""): Promise<OrderActionResultDto> {
+    const id = orderId.trim();
+    if (!id || id.length > 128) throw new Error("Buyurtma raqami noto‘g‘ri");
+    const text = reason.trim();
+    if (text.length > MAX_CANCEL_REASON_LENGTH) throw new Error(`Sabab ${MAX_CANCEL_REASON_LENGTH} belgidan oshmasin`);
+    return apiRequest(`/orders/${encodeURIComponent(id)}/refund`, { method: "POST", headers: authHeaders(), body: text ? { reason: text } : {}, validate: validateOrderActionResultDto });
+  },
   preview: previewDelivery,
   async create(address: CheckoutAddress, idempotencyKey: string, preview?: DeliveryPreview, paymentMethod: PaymentMethod = "cod"): Promise<Order> {
     validateAddress(address);
@@ -234,12 +259,30 @@ export const orderService = {
     const online = paymentMethod !== "cod";
     const created = await apiRequest<unknown>("/checkout", { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: { paymentMethod: online ? "online" : "cod", address } });
     const id = orderIdFrom(created);
-    if (!online) await apiRequest(`/checkout/${encodeURIComponent(id)}/confirm`, { method: "POST" });
     const order: Order = { id, createdAt: new Date().toISOString(), status: "Qabul qilindi", customer: { name: address.recipientName, phone: address.phone, address: address.address }, items: cart.items, subtotal: delivery.subtotal, delivery: delivery.deliveryFee, total: delivery.totalAmount, payment: online ? "card" : "cash", paymentProvider: paymentMethod === "payme" ? "PAYME" : paymentMethod === "click" ? "CLICK" : undefined, paymentStatus: online ? "PENDING" : undefined };
+    if (!online) {
+      try { await apiRequest(`/checkout/${encodeURIComponent(id)}/confirm`, { method: "POST" }); }
+      catch (error) { throw new OrderNotConfirmedError(order, errorMessage(error, "Buyurtmani tasdiqlab bo‘lmadi")); }
+    }
     try { saveLocal(order); }
     catch { order.warning = `Buyurtma qabul qilindi. Brauzerda saqlab bo‘lmadi; buyurtma raqamini yozib oling: ${id}.`; }
     try { await cartService.clear(cart); }
     catch { order.warning = [order.warning, "Buyurtma yaratildi, lekin savatchani tozalab bo‘lmadi. Buyurtmani qayta yubormang."].filter(Boolean).join(" "); }
+    return order;
+  },
+  /**
+   * Yaratilgan, lekin tasdiqlanmagan COD buyurtmani qayta tasdiqlaydi (savat qayta yuborilmaydi).
+   * Oldingi so'rov backendga yetib borib, javobi yo'qolgan bo'lsa holat tekshiriladi — tasdiqlangan buyurtma xato hisoblanmaydi.
+   */
+  async confirm(order: Order): Promise<Order> {
+    try { await apiRequest(`/checkout/${encodeURIComponent(order.id)}/confirm`, { method: "POST" }); }
+    catch (error) {
+      const tracking = object(await apiRequest(`/orders/${encodeURIComponent(order.id)}/tracking`, { method: "GET", headers: authHeaders() }).catch(() => null));
+      const status = String(tracking.orderStatus ?? "").trim().toUpperCase();
+      if (!status || status === "DRAFT" || status === "PENDING_PAYMENT") throw error;
+    }
+    try { saveLocal(order); }
+    catch { order.warning = `Buyurtma qabul qilindi. Brauzerda saqlab bo‘lmadi; buyurtma raqamini yozib oling: ${order.id}.`; }
     return order;
   },
   /**

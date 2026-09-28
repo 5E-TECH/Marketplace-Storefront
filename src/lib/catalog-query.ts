@@ -9,6 +9,9 @@ const finiteNumber = (value: string | undefined) => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
+/** Katalog, kategoriya, qidiruv va do'kon sahifalari bir xil sahifa hajmida — aks holda sahifalashda mahsulotlar tushib qoladi. */
+export const CATALOG_PAGE_SIZE = 20;
+
 export function parseCatalogQuery(params: CatalogSearchParams, categoryId?: string | number): ProductQuery {
   const rawSort = first(params.sort);
   const sort = allowedSorts.has(rawSort as ProductSort) ? rawSort as ProductSort : "createdAt:desc";
@@ -19,7 +22,7 @@ export function parseCatalogQuery(params: CatalogSearchParams, categoryId?: stri
     maxPrice: finiteNumber(first(params.maxPrice)),
     sort,
     page: Math.max(1, Math.floor(finiteNumber(first(params.page)) ?? 1)),
-    limit: 20,
+    limit: CATALOG_PAGE_SIZE,
   };
 }
 

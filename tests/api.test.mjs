@@ -47,6 +47,30 @@ test('browser uses same-origin proxy and session headers without exposing backen
   assert.deepEqual(await apiRequest('/storefront/products', { params: { limit: 5 }, headers: new Headers({ Authorization: 'Bearer override' }), validate: validateStorefrontProductsPageDto }), page);
 });
 
+test('proxy backend cookie’sini storefront domeniga moslaydi (Domain yo‘q, yo‘l proxy’ga, SameSite=Lax)', async () => {
+  const { rewriteSetCookie, proxyBackend } = loadTypeScript('src/lib/backend-proxy.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/config/env': { env: { apiUrl: 'https://api.test/api/v1' } },
+    '@/lib/api': {
+      ApiError: class ApiError extends Error {},
+      apiResponse: async () => {
+        const headers = new Headers({ 'content-type': 'application/json' });
+        headers.append('Set-Cookie', 'access_token=abc; Domain=api.test; Path=/api/v1; HttpOnly; Secure; SameSite=None');
+        headers.append('Set-Cookie', 'refresh_token=def; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Strict');
+        return new Response('{}', { status: 200, headers });
+      },
+    },
+  });
+  assert.equal(rewriteSetCookie('a=1; Path=/', '/api/v1'), 'a=1; Path=/; SameSite=Lax');
+  assert.equal(rewriteSetCookie('a=1; Path=/api/v10', '/api/v1'), 'a=1; Path=/api/v10; SameSite=Lax');
+  const request = { method: 'POST', headers: new Headers(), text: async () => '{}', nextUrl: { searchParams: new URLSearchParams() } };
+  const response = await proxyBackend(request, '/auth/login');
+  assert.deepEqual(response.headers.getSetCookie(), [
+    'access_token=abc; Path=/api/backend; HttpOnly; Secure; SameSite=Lax',
+    'refresh_token=def; Path=/api/backend/auth; HttpOnly; Secure; SameSite=Lax',
+  ]);
+});
+
 test('checkout proxy forwards guest session and idempotency headers upstream', async () => {
   let forwarded;
   const { proxyBackend } = loadTypeScript('src/lib/backend-proxy.ts', {
@@ -95,6 +119,20 @@ test('generic proxy allows the tracking route once backend implements its contra
   const response = await route.GET({ method: 'GET' }, { params: Promise.resolve({ path: ['orders', 'order-1', 'tracking'] }) });
   assert.equal(response.status, 200);
   assert.deepEqual(paths, ['/orders/order-1/tracking']);
+});
+
+test('generic proxy allows buyer order cancellation only as POST', async () => {
+  const calls = [];
+  const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/backend-proxy': { proxyBackend: async (request, path) => { calls.push([request.method, path]); return Response.json({ id: 'order-1', status: 'CANCELLED', idempotent: false }, { status: 201 }); } },
+  });
+  const context = { params: Promise.resolve({ path: ['orders', 'order-1', 'refund'] }) };
+  assert.equal((await route.POST({ method: 'POST' }, context)).status, 201);
+  const get = await route.GET({ method: 'GET' }, context);
+  assert.equal(get.status, 405);
+  assert.equal(get.headers.get('Allow'), 'POST');
+  assert.deepEqual(calls, [['POST', '/orders/order-1/refund']]);
 });
 
 test('generic proxy allows public review reads and authenticated review writes', async () => {

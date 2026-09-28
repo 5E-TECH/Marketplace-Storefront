@@ -2398,7 +2398,7 @@ return errors === 0;
 export const validateBuyerOrdersPageDto = validate25;
 const schema28 = {"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/BuyerOrderListItemDto"}},"total":{"type":"number"},"page":{"type":"number"},"limit":{"type":"number"},"totalPages":{"type":"number"}},"required":["items","total","page","limit","totalPages"]};
 const schema29 = {"type":"object","properties":{"orderId":{"type":"string"},"createdAt":{},"orderStatus":{"type":"string"},"paymentMethod":{"type":"string","enum":["online","cod"]},"paymentProvider":{"anyOf":[{"type":"string","description":"Online to‘lov provayderi; COD yoki to‘lovsiz buyurtmada null."},{"type":"null"}]},"paymentStatus":{"anyOf":[{"type":"string","enum":["PENDING","PAID","CANCELLED","FAILED","REFUNDED"],"description":"COD buyurtmada yoki to‘lov hali boshlanmagan bo‘lsa null."},{"type":"null"}]},"subtotal":{"type":"number"},"deliveryFee":{"type":"number"},"totalAmount":{"type":"number"},"items":{"type":"array","items":{"$ref":"#/components/schemas/BuyerOrderListItemProductDto"}}},"required":["orderId","createdAt","orderStatus","paymentMethod","subtotal","deliveryFee","totalAmount","items"]};
-const schema30 = {"type":"object","properties":{"productId":{"type":"string"},"name":{"type":"string"},"quantity":{"type":"number"},"unitPrice":{"type":"number"},"imageUrl":{}},"required":["productId","name","quantity","unitPrice"]};
+const schema30 = {"type":"object","properties":{"id":{"type":"string","description":"sales_order_item ID — `POST /products/:productId/reviews` dagi `orderItemId`"},"productId":{"type":"string"},"name":{"type":"string"},"quantity":{"type":"number"},"unitPrice":{"type":"number"},"imageUrl":{},"sellerOrderStatus":{"type":"string","enum":["PENDING","CONFIRMED","SHIPMENT_CREATED","RECEIVED","ON_THE_ROAD","DELIVERED","CANCELLED","RETURNED"],"description":"Shu mahsulot tegishli sotuvchi sub-buyurtmasining holati. Sharh faqat `DELIVERED` bo‘lganda qabul qilinadi (ko‘p sotuvchili buyurtmada `orderStatus` bundan farq qilishi mumkin)."}},"required":["id","productId","name","quantity","unitPrice","sellerOrderStatus"]};
 
 function validate26(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -2636,15 +2636,15 @@ const _errs28 = errors;
 if(errors === _errs28){
 if(data9 && typeof data9 == "object" && !Array.isArray(data9)){
 let missing1;
-if(((((data9.productId === undefined) && (missing1 = "productId")) || ((data9.name === undefined) && (missing1 = "name"))) || ((data9.quantity === undefined) && (missing1 = "quantity"))) || ((data9.unitPrice === undefined) && (missing1 = "unitPrice"))){
+if(((((((data9.id === undefined) && (missing1 = "id")) || ((data9.productId === undefined) && (missing1 = "productId"))) || ((data9.name === undefined) && (missing1 = "name"))) || ((data9.quantity === undefined) && (missing1 = "quantity"))) || ((data9.unitPrice === undefined) && (missing1 = "unitPrice"))) || ((data9.sellerOrderStatus === undefined) && (missing1 = "sellerOrderStatus"))){
 validate26.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
 return false;
 }
 else {
-if(data9.productId !== undefined){
+if(data9.id !== undefined){
 const _errs30 = errors;
-if(typeof data9.productId !== "string"){
-validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/productId",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+if(typeof data9.id !== "string"){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/id",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid5 = _errs30 === errors;
@@ -2653,10 +2653,10 @@ else {
 var valid5 = true;
 }
 if(valid5){
-if(data9.name !== undefined){
+if(data9.productId !== undefined){
 const _errs32 = errors;
-if(typeof data9.name !== "string"){
-validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/name",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+if(typeof data9.productId !== "string"){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/productId",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/productId/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid5 = _errs32 === errors;
@@ -2665,10 +2665,10 @@ else {
 var valid5 = true;
 }
 if(valid5){
-if(data9.quantity !== undefined){
+if(data9.name !== undefined){
 const _errs34 = errors;
-if(!(typeof data9.quantity == "number")){
-validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/quantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+if(typeof data9.name !== "string"){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/name",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/name/type",keyword:"type",params:{type: "string"},message:"must be string"}];
 return false;
 }
 var valid5 = _errs34 === errors;
@@ -2677,16 +2677,47 @@ else {
 var valid5 = true;
 }
 if(valid5){
-if(data9.unitPrice !== undefined){
+if(data9.quantity !== undefined){
 const _errs36 = errors;
-if(!(typeof data9.unitPrice == "number")){
-validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPrice",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/unitPrice/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+if(!(typeof data9.quantity == "number")){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/quantity",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/quantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid5 = _errs36 === errors;
 }
 else {
 var valid5 = true;
+}
+if(valid5){
+if(data9.unitPrice !== undefined){
+const _errs38 = errors;
+if(!(typeof data9.unitPrice == "number")){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/unitPrice",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/unitPrice/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid5 = _errs38 === errors;
+}
+else {
+var valid5 = true;
+}
+if(valid5){
+if(data9.sellerOrderStatus !== undefined){
+let data15 = data9.sellerOrderStatus;
+const _errs40 = errors;
+if(typeof data15 !== "string"){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/sellerOrderStatus",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/sellerOrderStatus/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+if(!((((((((data15 === "PENDING") || (data15 === "CONFIRMED")) || (data15 === "SHIPMENT_CREATED")) || (data15 === "RECEIVED")) || (data15 === "ON_THE_ROAD")) || (data15 === "DELIVERED")) || (data15 === "CANCELLED")) || (data15 === "RETURNED"))){
+validate26.errors = [{instancePath:instancePath+"/items/" + i0+"/sellerOrderStatus",schemaPath:"#/components/schemas/BuyerOrderListItemProductDto/properties/sellerOrderStatus/enum",keyword:"enum",params:{allowedValues: schema30.properties.sellerOrderStatus.enum},message:"must be equal to one of the allowed values"}];
+return false;
+}
+var valid5 = _errs40 === errors;
+}
+else {
+var valid5 = true;
+}
+}
 }
 }
 }
@@ -2972,5 +3003,72 @@ return false;
 }
 }
 validate28.errors = vErrors;
+return errors === 0;
+}
+
+export const validateOrderActionResultDto = validate29;
+const schema32 = {"type":"object","properties":{"id":{"type":"string"},"status":{"type":"string","enum":["CANCELLED","REFUNDED"]},"idempotent":{"type":"boolean","description":"true — buyurtma allaqachon shu holatda edi va hech qanday yangi yon ta’sir bo‘lmadi (provayderga refund takror yuborilmaydi)."}},"required":["id","status","idempotent"]};
+
+function validate29(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
+let vErrors = null;
+let errors = 0;
+if(errors === 0){
+if(data && typeof data == "object" && !Array.isArray(data)){
+let missing0;
+if((((data.id === undefined) && (missing0 = "id")) || ((data.status === undefined) && (missing0 = "status"))) || ((data.idempotent === undefined) && (missing0 = "idempotent"))){
+validate29.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
+return false;
+}
+else {
+if(data.id !== undefined){
+const _errs1 = errors;
+if(typeof data.id !== "string"){
+validate29.errors = [{instancePath:instancePath+"/id",schemaPath:"#/properties/id/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid0 = _errs1 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.status !== undefined){
+let data1 = data.status;
+const _errs3 = errors;
+if(typeof data1 !== "string"){
+validate29.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+if(!((data1 === "CANCELLED") || (data1 === "REFUNDED"))){
+validate29.errors = [{instancePath:instancePath+"/status",schemaPath:"#/properties/status/enum",keyword:"enum",params:{allowedValues: schema32.properties.status.enum},message:"must be equal to one of the allowed values"}];
+return false;
+}
+var valid0 = _errs3 === errors;
+}
+else {
+var valid0 = true;
+}
+if(valid0){
+if(data.idempotent !== undefined){
+const _errs5 = errors;
+if(typeof data.idempotent !== "boolean"){
+validate29.errors = [{instancePath:instancePath+"/idempotent",schemaPath:"#/properties/idempotent/type",keyword:"type",params:{type: "boolean"},message:"must be boolean"}];
+return false;
+}
+var valid0 = _errs5 === errors;
+}
+else {
+var valid0 = true;
+}
+}
+}
+}
+}
+else {
+validate29.errors = [{instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"}];
+return false;
+}
+}
+validate29.errors = vErrors;
 return errors === 0;
 }

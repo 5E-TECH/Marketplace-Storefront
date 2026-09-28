@@ -1,5 +1,5 @@
 import { env } from "@/config/env";
-import { getAccessToken, sessionHeaders } from "@/lib/access-token";
+import { hasAuthSession, sessionHeaders } from "@/lib/access-token";
 
 export type ApiErrorKind = "network" | "timeout" | "aborted" | "not_found" | "http" | "invalid_response" | "configuration";
 export class ApiError extends Error {
@@ -84,7 +84,7 @@ export async function apiRequest<T = unknown>(path: string, options: ApiOptions<
     const error = object(data);
     const rawMessage = error.message;
     const message = typeof rawMessage === "string" ? rawMessage : Array.isArray(rawMessage) && rawMessage.every((item) => typeof item === "string") ? rawMessage.join(", ") : response.status === 404 ? "Ma’lumot topilmadi" : `Server so‘rovni bajarmadi (${response.status})`;
-    if (response.status === 401 && typeof window !== "undefined" && getAccessToken()) window.dispatchEvent(new CustomEvent("elchi:auth-expired"));
+    if (response.status === 401 && typeof window !== "undefined" && hasAuthSession()) window.dispatchEvent(new CustomEvent("elchi:auth-expired"));
     throw new ApiError(response.status, message, data, response.status === 504 ? "timeout" : response.status === 502 && error.kind === "network" ? "network" : response.status === 404 ? "not_found" : "http");
   }
   if (response.status === 204 || response.status === 205 || !content) {

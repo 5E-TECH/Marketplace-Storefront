@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Star } from "lucide-react";
 import { catalogHref } from "@/lib/catalog-query";
 import { getSafeImageSrc } from "@/lib/product-storage";
 import { paginationItems } from "@/lib/pagination";
@@ -70,8 +71,9 @@ export function ShopStorefront({ shop, query, catalog }: { shop: StorefrontShop;
   return <main>
     <Container>
       <Breadcrumbs items={[{ label: "Bosh sahifa", href: "/" }, { label: shop.name }]}/>
-      <header className="catalog-hero shop-hero">{shop.logoUrl ? <Image src={getSafeImageSrc(shop.logoUrl)} alt="" width={92} height={92}/> : <span>{shop.name.charAt(0).toLocaleUpperCase("uz")}</span>}<div><small>Do‘kon</small><h1>{shop.name}</h1>{(shop.description || shop.address) && <p>{shop.description || shop.address}</p>}</div></header>
+      <header className="catalog-hero shop-hero">{shop.logoUrl ? <Image src={getSafeImageSrc(shop.logoUrl)} alt="" width={92} height={92}/> : <span>{shop.name.charAt(0).toLocaleUpperCase("uz")}</span>}<div><small>Do‘kon</small><h1>{shop.name}</h1>{(shop.description || shop.address) && <p>{shop.description || shop.address}</p>}<p className="shop-rating">{shop.rating > 0 ? <><Star aria-hidden/><b>{shop.rating.toFixed(1)}</b> reyting</> : "Hali baholanmagan"}</p></div></header>
     </Container>
+    <Container><PriceFilterForm action={basePath} query={query} searchLabel="Do‘kon ichida qidirish" submitLabel="Ko‘rsatish" resetHref={basePath}/></Container>
     <Products products={catalog.data} total={catalog.total} query={query} basePath={basePath} title={`${shop.name} mahsulotlari`} apiError={catalog.error}/>
     <CatalogPagination query={query} catalog={catalog} basePath={basePath}/>
   </main>;

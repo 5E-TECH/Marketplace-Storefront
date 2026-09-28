@@ -54,23 +54,29 @@ test('review creation sends only the backend CreateReviewDto fields', async () =
   const { reviewService } = loadTypeScript('src/services/review.service.ts', {
     '@/generated/api-validators': {},
     '@/lib/api': { apiRequest: async (...args) => calls.push(args) },
-    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer', hasAuthSession: () => true },
   });
   await reviewService.create('6', { orderItemId: ' 31 ', rating: 5, comment: ' Yaxshi ' });
   assert.deepEqual(calls, [['/storefront/products/6/reviews', { method: 'POST', headers: { Authorization: 'Bearer buyer' }, body: { orderItemId: '31', rating: 5, comment: 'Yaxshi' } }]]);
 });
 
-test('review form eligibility includes only delivered matching order items', async () => {
+test('review eligibility follows each seller sub-order, not the whole order status', async () => {
+  const item = (id, productId, sellerOrderStatus) => ({ id, productId, name: 'A', quantity: 1, unitPrice: 1, sellerOrderStatus });
+  const order = (orderId, orderStatus, items) => ({ orderId, orderStatus, createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items });
   const response = { items: [
-    { orderId: 'done', orderStatus: 'DELIVERED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '31', productId: '6', name: 'A', quantity: 1, unitPrice: 1 }, { id: '32', productId: '7', name: 'B', quantity: 1, unitPrice: 1 }] },
-    { orderId: 'new', orderStatus: 'CONFIRMED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '33', productId: '6', name: 'A', quantity: 1, unitPrice: 1 }] },
-  ], total: 2, page: 1, limit: 100, totalPages: 1 };
+    order('done', 'DELIVERED', [item('31', '6', 'DELIVERED'), item('32', '7', 'DELIVERED')]),
+    // Ko'p sotuvchili: umumiy holat hali yakunlanmagan, lekin shu mahsulot sotuvchisi yetkazgan.
+    order('split', 'PARTIALLY_FULFILLED', [item('34', '6', 'DELIVERED'), item('35', '8', 'ON_THE_ROAD')]),
+    // Umumiy holat DELIVERED bo'lsa ham, shu mahsulot sotuvchisi hali yetkazmagan.
+    order('lagging', 'DELIVERED', [item('36', '6', 'ON_THE_ROAD')]),
+    order('new', 'CONFIRMED', [item('33', '6', 'CONFIRMED')]),
+  ], total: 4, page: 1, limit: 100, totalPages: 1 };
   const { reviewService } = loadTypeScript('src/services/review.service.ts', {
     '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
     '@/lib/api': { apiRequest: async () => response },
-    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer', hasAuthSession: () => true },
   });
-  assert.deepEqual(await reviewService.reviewableItems('6'), [{ orderItemId: '31', orderId: 'done' }]);
+  assert.deepEqual(await reviewService.reviewableItems('6'), [{ orderItemId: '31', orderId: 'done' }, { orderItemId: '34', orderId: 'split' }]);
 });
 
 test('guest and non-purchaser cannot obtain a reviewable order item', async () => {
@@ -79,7 +85,7 @@ test('guest and non-purchaser cannot obtain a reviewable order item', async () =
     '@/config/env': { env: {} },
     '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
     '@/lib/api': { apiRequest: async () => { requests++; } },
-    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null },
+    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null, hasAuthSession: () => false },
   }).reviewService;
   assert.deepEqual(await guest.reviewableItems('6'), []);
   assert.equal(requests, 0);
@@ -87,8 +93,8 @@ test('guest and non-purchaser cannot obtain a reviewable order item', async () =
   const buyer = loadTypeScript('src/services/review.service.ts', {
     '@/config/env': { env: {} },
     '@/generated/api-validators': { validateBuyerOrdersPageDto: () => true },
-    '@/lib/api': { apiRequest: async () => ({ items: [{ orderId: 'new', orderStatus: 'CONFIRMED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '33', productId: '6', name: 'A', quantity: 1, unitPrice: 1 }] }], total: 1, page: 1, limit: 100, totalPages: 1 }) },
-    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+    '@/lib/api': { apiRequest: async () => ({ items: [{ orderId: 'new', orderStatus: 'CONFIRMED', createdAt: '2026-09-15T10:00:00Z', subtotal: 1, deliveryFee: 0, totalAmount: 1, items: [{ id: '33', productId: '6', name: 'A', quantity: 1, unitPrice: 1, sellerOrderStatus: 'CONFIRMED' }] }], total: 1, page: 1, limit: 100, totalPages: 1 }) },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer', hasAuthSession: () => true },
   }).reviewService;
   assert.deepEqual(await buyer.reviewableItems('6'), []);
 });
@@ -99,7 +105,7 @@ test('invalid review rating never reaches the backend', async () => {
     '@/config/env': { env: {} },
     '@/generated/api-validators': {},
     '@/lib/api': { apiRequest: async () => { requests++; } },
-    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer' },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer', hasAuthSession: () => true },
   });
   for (const rating of [0, 6, 1.5, NaN]) await assert.rejects(reviewService.create('6', { orderItemId: '31', rating }));
   assert.equal(requests, 0);
@@ -268,6 +274,51 @@ test('real login merges the current guest cart before saving the authenticated s
   assert.equal(authService.getSession().phone, '+998901234567');
 });
 
+test('cookie rejimi: token tanada kelmasa login cookie sessiya bilan davom etadi', async (t) => {
+  const calls = [];
+  const stored = new Map();
+  const originalStorage = globalThis.localStorage;
+  const originalWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: () => {} };
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: (key) => stored.get(key), setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) } });
+  t.after(() => {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: originalStorage });
+    if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow;
+  });
+  const { authService } = loadTypeScript('src/services/auth.service.ts', {
+    '@/lib/api': { apiRequest: async () => ({ user: { id: '7', name: 'Ali', phone: '+998901234567' } }) },
+    '@/services/guest.service': { guestService: { mergeAfterAuth: async (token) => calls.push(['merge', token]) } },
+  });
+  const session = await authService.login('+998901234567', 'password');
+  assert.deepEqual(calls, [['merge', null]]);
+  assert.equal(session.authenticated, true);
+});
+
+test('cookie rejimi: guest merge Authorization yubormaydi va cookie sessiyani belgilaydi', async (t) => {
+  const calls = [];
+  const originalWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: (event) => calls.push(['event', event.type]) };
+  if (typeof globalThis.CustomEvent === 'undefined') globalThis.CustomEvent = class CustomEvent { constructor(type) { this.type = type; } };
+  t.after(() => { if (originalWindow === undefined) delete globalThis.window; else globalThis.window = originalWindow; });
+  const { guestService } = loadTypeScript('src/services/guest.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options) => { calls.push(['request', path, options]); return { merged: true }; } },
+    '@/lib/access-token': {
+      setAccessToken: () => calls.push(['token']),
+      clearAccessToken: () => calls.push(['clear-stale-token']),
+      markCookieSession: () => calls.push(['cookie-session']),
+      rotateGuestSessionId: () => calls.push(['rotate']),
+    },
+  });
+  await guestService.mergeAfterAuth(null);
+  assert.deepEqual(calls, [
+    ['clear-stale-token'],
+    ['request', '/guest/merge', { method: 'POST', headers: {} }],
+    ['cookie-session'],
+    ['rotate'],
+    ['event', 'elchi:guest-merged'],
+  ]);
+});
+
 test('buyer registration uses the backend contract and merges the guest cart before saving the session', async (t) => {
   const calls = [];
   const stored = new Map();
@@ -281,7 +332,7 @@ test('buyer registration uses the backend contract and merges the guest cart bef
   });
   const { authService } = loadTypeScript('src/services/auth.service.ts', {
     '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options]); return { accessToken: 'buyer-token', user: { id: '7', name: 'Ali', phone: '+998901234567' } }; } },
-    '@/lib/access-token': { getAccessToken: () => null },
+    '@/lib/access-token': { getAccessToken: () => null, hasAuthSession: () => false },
     '@/services/guest.service': { guestService: { mergeAfterAuth: async (token) => calls.push(['merge', token]) } },
   });
   const session = await authService.register({ name: ' Ali ', phone: '+998901234567', password: 'Secret123' });
@@ -305,7 +356,7 @@ test('password recovery and profile updates match backend request bodies', async
   });
   const { authService } = loadTypeScript('src/services/auth.service.ts', {
     '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options.body]); return path === '/auth/profile' ? { id: '7', name: 'Vali', phone: '+998909876543' } : undefined; } },
-    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer token' }), getAccessToken: () => 'token' },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer token' }), getAccessToken: () => 'token', hasAuthSession: () => true },
     '@/services/guest.service': { guestService: {} },
   });
   await authService.forgotPassword('+998901234567');
@@ -385,7 +436,7 @@ test('online checkout stays pending, skips COD confirmation and requests a provi
       if (path === '/payments') return { redirectUrl: 'https://checkout.payme.uz/order-1' };
       if (path.includes('/tracking')) return { orderId: 'online-1', payment: { provider: 'PAYME', status: 'PAID' } };
     } },
-    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null },
+    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null, hasAuthSession: () => false },
     './cart.service': { cartService: { get: async () => ({ items: [{ id: 'a', product, quantity: 1, shopId: '3' }] }), clear: async () => ({ items: [] }) } },
   });
   const address = { recipientName: 'Ali', phone: '+998901234567', address: 'Toshkent shahri, Chilonzor tumani', regionId: '10', districtId: '101' };
@@ -554,7 +605,7 @@ test('tracking adapter normalizes a mocked response and refreshes the saved orde
       calls.push([path, options]);
       return { orderId: 'order/42', orderStatus: 'in-transit', estimatedDeliveryAt: '2026-09-13T10:00:00Z', shipments: [{ shipmentId: 7, shopId: 3, shipmentStatus: 'out_for_delivery', trackingUrl: 'https://elchi.test/7' }] };
     } },
-    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer-token' }), getAccessToken: () => 'buyer-token' },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer-token' }), getAccessToken: () => 'buyer-token', hasAuthSession: () => true },
     './cart.service': { cartService: {} },
   });
   const tracking = await orderService.track('order/42');
@@ -580,7 +631,7 @@ test('authenticated buyer order history comes from backend and keeps unsynced lo
   const calls = [];
   const { orderService } = loadTypeScript('src/services/order.service.ts', {
     '@/lib/api': { apiRequest: async (path, options) => { calls.push([path, options]); return { items: [{ orderId: 'remote-1', createdAt: '2026-09-15T10:00:00Z', orderStatus: 'DELIVERED', subtotal: 100, deliveryFee: 10, totalAmount: 110, items: [{ productId: '7', name: 'Telefon', quantity: 2, unitPrice: 50 }] }], total: 1, page: 1, limit: 20, totalPages: 1 }; } },
-    '@/lib/access-token': { getAccessToken: () => 'buyer-token', authHeaders: () => ({ Authorization: 'Bearer buyer-token' }) },
+    '@/lib/access-token': { getAccessToken: () => 'buyer-token', hasAuthSession: () => true, authHeaders: () => ({ Authorization: 'Bearer buyer-token' }) },
     './cart.service': { cartService: {} },
   });
   const result = await orderService.listForCurrentBuyer();
@@ -598,7 +649,7 @@ test('guest order history remains local and does not call buyer endpoint', async
   let requests = 0;
   const { orderService } = loadTypeScript('src/services/order.service.ts', {
     '@/lib/api': { apiRequest: async () => { requests++; } },
-    '@/lib/access-token': { getAccessToken: () => null, authHeaders: () => ({}) },
+    '@/lib/access-token': { getAccessToken: () => null, hasAuthSession: () => false, authHeaders: () => ({}) },
     './cart.service': { cartService: {} },
   });
   assert.deepEqual(await orderService.listForCurrentBuyer(), { orders: [] });
@@ -699,7 +750,7 @@ function loadOrderServiceWithStorage(t, orders, apiRequest) {
   });
   const loaded = loadTypeScript('src/services/order.service.ts', {
     '@/lib/api': { apiRequest },
-    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null },
+    '@/lib/access-token': { authHeaders: () => ({}), getAccessToken: () => null, hasAuthSession: () => false },
     './cart.service': { cartService: {} },
   });
   return { ...loaded, saved: () => JSON.parse(stored.get('elchi_orders_v1')) };
@@ -870,7 +921,7 @@ test('to‘lov sahifasini ochib bo‘lmasa sabab aniq aytiladi, buyurtma saqlana
   let answer;
   const { orderService, paymentStartMessage } = loadTypeScript('src/services/order.service.ts', {
     '@/lib/api': { apiRequest: async () => { if (answer instanceof Error) throw answer; return answer; } },
-    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer x' }), getAccessToken: () => 'x' },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer x' }), getAccessToken: () => 'x', hasAuthSession: () => true },
     './cart.service': { cartService: {} },
   });
   const order = { id: 'o-1', total: 120, paymentProvider: 'PAYME' };
@@ -912,7 +963,7 @@ test('checkout online usulni faqat akkauntga kirgan xaridorga beradi', () => {
   assert.match(source, /const locked = method !== "cod" && !signedIn/);
   assert.match(source, /disabled=\{locked\}/);
   assert.match(source, /if \(paymentMethod !== "cod" && !signedIn\) \{ setError\(/);
-  assert.match(source, /href="\/login\?next=\/checkout"/);
+  assert.match(source, /\/login\?next=\$\{encodeURIComponent\(buyNow \? buyNowHref\(buyNow\.productId, buyNow\.variantId\) : "\/checkout"\)\}/, 'kirishdan keyin tez xarid tanlovi saqlanadi');
   assert.match(source, /\.\.\.onlinePaymentMethods\.map/);
 });
 
@@ -923,4 +974,61 @@ test('miqdor tugmalari optimistik yangilanishda bloklanmaydi (tez bosishlar yo�
     assert.ok(increase, `${file}: onIncrease topilmadi`);
     assert.doesNotMatch(increase, /run\(/, `${file}: oshirish run() ichida — tugma pending bo‘lib, bosishlar yo‘qoladi`);
   }
+});
+
+// Xaridor posilka yo'lga chiqquncha buyurtmani o'zi bekor qiladi: POST /orders/:id/refund.
+function loadCancelService(respond) {
+  const calls = [];
+  const loaded = loadTypeScript('src/services/order.service.ts', {
+    // Haqiqiy apiRequest kabi: javob berilgan validator bilan tekshiriladi.
+    '@/lib/api': { apiRequest: async (path, options) => {
+      calls.push([path, options]);
+      const payload = await respond(path, options);
+      if (options.validate && !options.validate(payload)) throw new Error('Backend javobi OpenAPI kontraktiga mos emas');
+      return payload;
+    } },
+    '@/lib/access-token': { authHeaders: () => ({ Authorization: 'Bearer buyer' }), getAccessToken: () => 'buyer', hasAuthSession: () => true },
+    './cart.service': { cartService: {} },
+  });
+  return { ...loaded, calls };
+}
+
+test('buyurtmani bekor qilish POST /orders/:id/refund ga sabab bilan yuboriladi', async () => {
+  const { orderService, calls } = loadCancelService(async () => ({ id: '42', status: 'REFUNDED', idempotent: false }));
+  assert.deepEqual(await orderService.cancel(' 42 ', '  Fikrimdan qaytdim  '), { id: '42', status: 'REFUNDED', idempotent: false });
+  assert.equal(calls[0][0], '/orders/42/refund');
+  assert.equal(calls[0][1].method, 'POST');
+  assert.deepEqual(calls[0][1].body, { reason: 'Fikrimdan qaytdim' });
+  assert.equal(calls[0][1].headers.Authorization, 'Bearer buyer');
+  // Sabab yozilmasa bo'sh tana ketadi — backend standart sababni o'zi yozadi.
+  await orderService.cancel('42');
+  assert.deepEqual(calls[1][1].body, {});
+});
+
+test('bekor qilishda noto‘g‘ri raqam yoki juda uzun sabab backendga yetib bormaydi', async () => {
+  const { orderService, calls } = loadCancelService(async () => ({ id: '42', status: 'CANCELLED', idempotent: false }));
+  await assert.rejects(orderService.cancel('   '), /raqami noto‘g‘ri/);
+  await assert.rejects(orderService.cancel('x'.repeat(129)), /raqami noto‘g‘ri/);
+  await assert.rejects(orderService.cancel('42', 'a'.repeat(501)), /500 belgidan oshmasin/);
+  assert.equal(calls.length, 0);
+  await orderService.cancel('42', 'a'.repeat(500));
+  assert.equal(calls.length, 1);
+});
+
+test('bekor qilish javobi OrderActionResultDto kontraktiga mos bo‘lmasa qabul qilinmaydi', async () => {
+  const { orderService } = loadCancelService(async () => ({ id: '42', status: 'SHIPPED' }));
+  await assert.rejects(orderService.cancel('42'), /kontraktiga mos emas/);
+});
+
+test('bekor qilish faqat posilka yo‘lga chiqmaguncha taklif qilinadi', () => {
+  const { canCancelOrder } = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest: async () => undefined },
+    './cart.service': { cartService: {} },
+  });
+  const tracking = (status, packages = []) => ({ orderId: '42', status, packages: packages.map((item, index) => ({ id: String(index), status: item })) });
+  assert.equal(canCancelOrder(tracking('Qabul qilindi')), true);
+  assert.equal(canCancelOrder(tracking('Yig‘ilmoqda', ['Yig‘ilmoqda', 'Qabul qilindi'])), true);
+  // Ko'p do'konli buyurtmada bitta posilka yo'lga chiqqan bo'lsa ham bekor qilinmaydi.
+  assert.equal(canCancelOrder(tracking('Qabul qilindi', ['Yo‘lda', 'Qabul qilindi'])), false);
+  for (const status of ['Yo‘lda', 'Yetkazildi', 'Bekor qilindi', 'Qaytarildi']) assert.equal(canCancelOrder(tracking(status)), false, status);
 });

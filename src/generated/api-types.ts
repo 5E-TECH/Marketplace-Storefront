@@ -644,7 +644,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bir nechta Elchi QR yorlig‘ini bitta PDFda olish */
+        /**
+         * Bir nechta Elchi QR yorlig‘ini bitta PDFda olish
+         * @description Yorlig‘i chiqmagan buyurtmalar partiyani yiqitmaydi: ular `X-Labels-Skipped` headerida (URI-encoded JSON) sababi bilan qaytadi. Birortasi ham chiqmasa 409.
+         */
         post: operations["SellerOrdersController_labelsBatch"];
         delete?: never;
         options?: never;
@@ -1250,8 +1253,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Seller-order Elchi QR yorlig‘ini PDF olish */
+        /**
+         * Buyurtmaning barcha posilka yorliqlari (bitta PDF)
+         * @description `:id` — admin ro‘yxatidagi buyurtma id’si (sales_order), boshqa admin endpointlari bilan bir xil. Har do‘kon posilkasi alohida 100x60 mm sahifa. Chiqmay qolgan posilkalar `X-Labels-Skipped` headerida (URI-encoded JSON); birortasi ham chiqmasa 409.
+         */
         get: operations["AdminOrdersController_label"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/orders/{id}/sellers/{sellerOrderId}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Buyurtmaning bitta posilkasi (do‘koni) yorlig‘i */
+        get: operations["AdminOrdersController_sellerOrderLabel"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1269,8 +1292,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bir nechta seller-order yorlig‘ini bitta PDF olish */
+        /**
+         * Bir nechta buyurtma yorliqlari bitta PDF da
+         * @description `orderIds` — sales_order id’lari. Yorlig‘i chiqmagan posilkalar partiyani yiqitmaydi: ular `X-Labels-Skipped` headerida sababi bilan qaytadi. Birortasi ham chiqmasa 409.
+         */
         post: operations["AdminOrdersController_labelsBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/orders/shipment-tokens/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Posilka QR tokenlarini Elchi bilan tenglashtirish (backfill)
+         * @description Tokeni yo‘q yoki Elchi’dagidan farq qiladigan posilkalarni tuzatadi. Avval `dryRun: true` bilan ko‘ring. Javobdagi `nextAfterId` null bo‘lguncha `afterId` bilan takrorlang.
+         */
+        post: operations["AdminOrdersController_syncShipmentTokens"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2383,15 +2429,15 @@ export interface components {
         AuthTokensDto: {
             user: components["schemas"]["AuthUserDto"];
             /**
-             * @description Himoyalangan endpointlar uchun Bearer access token
+             * @description Himoyalangan endpointlar uchun Bearer access token. `AUTH_TOKENS_IN_BODY=false` bo‘lsa qaytmaydi — faqat HttpOnly cookie’da
              * @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
              */
-            accessToken: string;
+            accessToken?: string;
             /**
-             * @description Sessiyani yangilash yoki logout qilish uchun refresh token
+             * @description Sessiyani yangilash yoki logout qilish uchun refresh token. `AUTH_TOKENS_IN_BODY=false` bo‘lsa qaytmaydi — faqat HttpOnly cookie’da
              * @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
              */
-            refreshToken: string;
+            refreshToken?: string;
         };
         AuthSuccessResponseDto: {
             /** @example 201 */
@@ -2428,10 +2474,10 @@ export interface components {
         };
         LoginSuccessResponseDto: {
             /**
-             * @description Himoyalangan endpointlar uchun Bearer access token
+             * @description Himoyalangan endpointlar uchun Bearer access token. `AUTH_TOKENS_IN_BODY=false` bo‘lsa qaytmaydi — faqat HttpOnly cookie’da
              * @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
              */
-            accessToken: string;
+            accessToken?: string;
         };
         RefreshTokenDto: {
             /** @description Cookie ishlatilmasa refresh token body orqali yuboriladi */
@@ -3447,6 +3493,20 @@ export interface components {
             expiresAt: string;
             user: components["schemas"]["ImpersonatedUserDto"];
         };
+        AdminShipmentTokensSyncDto: {
+            /**
+             * @description Shu seller-order id dan keyingilar
+             * @example 0
+             */
+            afterId?: string;
+            /** @example 20 */
+            limit?: number;
+            /**
+             * @description true — hech narsa yozilmaydi, faqat nima o‘zgarishi ko‘rsatiladi
+             * @example true
+             */
+            dryRun?: boolean;
+        };
         AdminOrderActionDto: {
             /** @example Mahsulot mavjud emas */
             reason: string;
@@ -3991,6 +4051,11 @@ export interface components {
             satoCode: string;
         };
         BuyerOrderListItemProductDto: {
+            /**
+             * @description sales_order_item ID — `POST /products/:productId/reviews` dagi `orderItemId`
+             * @example 31
+             */
+            id: string;
             /** @example 7 */
             productId: string;
             /** @example Mahsulot */
@@ -4001,6 +4066,12 @@ export interface components {
             unitPrice: number;
             /** @example null */
             imageUrl?: unknown;
+            /**
+             * @description Shu mahsulot tegishli sotuvchi sub-buyurtmasining holati. Sharh faqat `DELIVERED` bo‘lganda qabul qilinadi (ko‘p sotuvchili buyurtmada `orderStatus` bundan farq qilishi mumkin).
+             * @example DELIVERED
+             * @enum {string}
+             */
+            sellerOrderStatus: "PENDING" | "CONFIRMED" | "SHIPMENT_CREATED" | "RECEIVED" | "ON_THE_ROAD" | "DELIVERED" | "CANCELLED" | "RETURNED";
         };
         BuyerOrderListItemDto: {
             /** @example 42 */
@@ -4351,10 +4422,10 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Login muvaffaqiyatli; access token body’da, refresh token HttpOnly cookie’da qaytarildi */
+            /** @description Login muvaffaqiyatli; access token body’da va HttpOnly accessToken cookie’da, refresh token HttpOnly cookie’da qaytarildi */
             201: {
                 headers: {
-                    /** @description HttpOnly refreshToken cookie */
+                    /** @description HttpOnly accessToken va refreshToken cookie */
                     "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };
@@ -6690,7 +6761,43 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: {
+            /** @description Buyurtma topilmadi */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Birorta yorliq chiqmadi */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminOrdersController_sellerOrderLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                sellerOrderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Posilka topilmadi yoki shu buyurtmaga tegishli emas */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Posilka yoki QR token yo‘q */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6708,6 +6815,28 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ShippingLabelsBatchDto"];
+            };
+        };
+        responses: {
+            /** @description Birorta yorliq chiqmadi */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminOrdersController_syncShipmentTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminShipmentTokensSyncDto"];
             };
         };
         responses: {

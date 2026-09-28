@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ShopStorefront } from "@/components/storefront-home";
-import { parseCatalogQuery, type CatalogSearchParams } from "@/lib/catalog-query";
+import { CATALOG_PAGE_SIZE, parseCatalogQuery, type CatalogSearchParams } from "@/lib/catalog-query";
 import { productService } from "@/services/product.service";
 import { baseOpenGraph, clipDescription, defaultOpenGraphImages, listingSeo } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<CatalogSearchParams> };
-const getShop = cache((slug: string) => productService.getShop(slug, { page: 1, limit: 10 }));
+// Standart 1-sahifa (metadata bilan umumiy): hajmi `parseCatalogQuery` bilan bir xil, 2-sahifa 11–20 ni o'tkazib yubormasin.
+const getShop = cache((slug: string) => productService.getShop(slug, { page: 1, limit: CATALOG_PAGE_SIZE }));
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const [{ slug }, rawQuery] = await Promise.all([params, searchParams]);
