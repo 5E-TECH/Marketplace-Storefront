@@ -8,6 +8,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatDate, formatPrice } from "@/lib/format";
 import { canCancelOrder, isClosedOrder, MAX_CANCEL_REASON_LENGTH, orderService, paymentStartMessage } from "@/services/order.service";
 import type { Order, OrderStatus, OrderTracking } from "@/types/commerce";
+import { OrderReturns } from "./order-returns";
 import { Button, LoadingGrid, Modal, Price, StatePanel } from "./ui";
 
 const steps: OrderStatus[] = ["Qabul qilindi", "Yig‘ilmoqda", "Yo‘lda", "Yetkazildi"];
@@ -102,6 +103,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
       <label className="cancel-reason"><span>Sabab (ixtiyoriy)</span><textarea value={cancelReason} maxLength={MAX_CANCEL_REASON_LENGTH} rows={3} placeholder="Masalan: fikrimdan qaytdim" disabled={cancelling} onChange={(event) => setCancelReason(event.target.value)} data-autofocus/></label>
       {cancelError && <p className="form-error" role="alert">{cancelError}</p>}
     </Modal>
+    <OrderReturns orderId={tracking.orderId} delivered={tracking.status === "Yetkazildi" || tracking.packages.some((item) => item.status === "Yetkazildi")}/>
     {order && <div className="tracking-details"><h2>Buyurtma tafsilotlari</h2>{order.items.map((item) => <div key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<hr/><div><b>Jami</b><Price value={order.total}/></div><p>{order.customer.name} · {order.customer.phone}<br/>{order.customer.address}</p></div>}
   </section>;
 }

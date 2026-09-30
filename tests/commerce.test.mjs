@@ -7,30 +7,81 @@ import { loadTypeScript } from './load-typescript.mjs';
 
 const product = { id: 1, name: 'Telefon', price: 100, colors: ['black'], images: [] };
 
-test('featured shops are normalized and API failure stays isolated', async () => {
-  const calls = [];
-  const baseMocks = { '@/config/env': { env: { apiUrl: 'https://api.test/api/v1' } }, '@/generated/api-validators': {} };
-  const service = loadTypeScript('src/services/product.service.ts', {
-    ...baseMocks,
-    '@/lib/api': { ApiError: class ApiError extends Error {}, apiRequest: async (path, options) => { calls.push([path, options]); return { items: [{ id: 7, name: 'Baraka', slug: 'baraka-market', logoUrl: '/media/baraka.png', description: 'Saralangan mahsulotlar', rating: '4.8', productsCount: 23 }] }; } },
-  }).productService;
-  assert.deepEqual(await service.featuredShops(), [{ id: 7, name: 'Baraka', slug: 'baraka-market', logoUrl: 'https://api.test/media/baraka.png', description: 'Saralangan mahsulotlar', bannerUrl: undefined, address: undefined, rating: 4.8, productCount: 23 }]);
-  assert.equal(calls[0][0], '/storefront/shops/featured');
-  assert.deepEqual(calls[0][1], { next: { revalidate: 30 }, timeoutMs: 3000 });
+// Jonli FeaturedShopDto: mahsulotlar soni YO'Q (faqat nom, slug, logo, tavsif, reyting…).
+const featuredDto = (overrides = {}) => ({ id: '7', ownerUserId: '42', name: 'Baraka', slug: 'baraka-market', status: 'ACTIVE', description: 'Saralangan mahsulotlar', logoUrl: '/media/baraka.png', bannerUrl: null, phone: null, regionId: null, districtId: null, address: null, rating: 4.8, ordersCount: 3, isFeatured: true, tariffHome: 25000, tariffCenter: 15000, ...overrides });
+const loadFeatured = (apiRequest) => loadTypeScript('src/services/product.service.ts', {
+  '@/config/env': { env: { apiUrl: 'https://api.test/api/v1' } },
+  '@/generated/api-validators': {},
+  '@/lib/api': { ApiError: class ApiError extends Error {}, apiRequest },
+}).productService;
 
-  const unavailable = loadTypeScript('src/services/product.service.ts', {
-    ...baseMocks,
-    '@/lib/api': { ApiError: class ApiError extends Error {}, apiRequest: async () => { throw new Error('502'); } },
-  }).productService;
-  assert.deepEqual(await unavailable.featuredShops(), []);
+test('tavsiya etilgan do‘konlar keshsiz olinadi, mahsulotlar soni do‘kon sahifasidan to‘ldiriladi', async () => {
+  const calls = [];
+  const service = loadFeatured(async (path, options) => {
+    calls.push([path, options]);
+    if (path === '/storefront/shops/featured') return [featuredDto()];
+    const response = { shop: featuredDto(), products: { items: [{ id: 1 }], total: 23, page: 1, limit: 1, totalPages: 23 } };
+    if (options.validate && !options.validate(response)) throw new Error('invalid');
+    return response;
+  });
+  assert.deepEqual(await service.featuredShops(), [{ id: '7', name: 'Baraka', slug: 'baraka-market', logoUrl: 'https://api.test/media/baraka.png', description: 'Saralangan mahsulotlar', bannerUrl: undefined, address: undefined, rating: 4.8, productCount: 23 }]);
+  // Admin belgini qo'ysa/olsa keyingi yangilashda ko'rinishi uchun ro'yxat keshlanmaydi (next.revalidate yo'q → no-store).
+  assert.deepEqual(calls[0], ['/storefront/shops/featured', { timeoutMs: 3000 }]);
+  assert.equal(calls[1][0], '/storefront/shops/baraka-market');
+  assert.deepEqual(calls[1][1].params, { page: 1, limit: 1 });
 });
 
-test('featured shops block is conditional and links cards to the shop slug', () => {
-  const source = fs.readFileSync(new URL('../src/components/home-sections.tsx', import.meta.url), 'utf8');
-  assert.match(source, /if \(!shops\.length\) return null/);
-  assert.match(source, /Tavsiya etilgan do‘konlar/);
-  assert.match(source, /\/dokon\/\$\{encodeURIComponent\(shop\.slug\)\}/);
-  assert.match(source, /shop\.productCount/);
+test('backend mahsulotlar sonini bersa qo‘shimcha so‘rov ketmaydi; son olinmasa kartochka baribir chiqadi', async () => {
+  const calls = [];
+  const withCount = loadFeatured(async (path) => { calls.push(path); return [featuredDto({ productsCount: 5 })]; });
+  assert.equal((await withCount.featuredShops())[0].productCount, 5);
+  assert.deepEqual(calls, ['/storefront/shops/featured']);
+
+  const countFails = loadFeatured(async (path) => { if (path === '/storefront/shops/featured') return [featuredDto(), featuredDto({ id: '8', slug: 'ikkinchi', name: 'Ikkinchi' })]; throw new Error('timeout'); });
+  const shops = await countFails.featuredShops();
+  assert.deepEqual(shops.map((shop) => [shop.slug, shop.productCount]), [['baraka-market', undefined], ['ikkinchi', undefined]]);
+});
+
+test('tavsiya etilgan do‘konlar API xato bersa bo‘sh ro‘yxat qaytadi (bosh sahifa yiqilmaydi)', async () => {
+  const unavailable = loadFeatured(async () => { throw new Error('502'); });
+  assert.deepEqual(await unavailable.featuredShops(), []);
+  const broken = loadFeatured(async () => [{ id: '9', name: 'Slugsiz' }]);
+  assert.deepEqual(await broken.featuredShops(), []);
+});
+
+function renderFeatured(shops) {
+  const Icon = () => null;
+  const { FeaturedShops } = loadTypeScript('src/components/home-sections.tsx', {
+    'next/link': { __esModule: true, default: ({ href, children, ...props }) => React.createElement('a', { href, ...props }, children) },
+    'next/image': { __esModule: true, default: ({ src, alt, width, height }) => React.createElement('img', { src, alt, width, height }) },
+    'lucide-react': { ArrowRight: Icon, Package: Icon, Star: Icon },
+    '@/lib/product-storage': { getSafeImageSrc: (value) => value },
+    './product-grid': { ProductGrid: () => null },
+    './ui': { Container: ({ children }) => React.createElement('div', null, children) },
+    './category-icon': { CategoryIcon: () => null },
+  });
+  return renderToStaticMarkup(React.createElement(FeaturedShops, { shops }));
+}
+
+test('tavsiya etilgan do‘kon bo‘lmasa blok va sarlavha umuman chiqmaydi', () => {
+  assert.equal(renderFeatured([]), '');
+});
+
+test('do‘kon kartochkasida logo, nom, reyting, mahsulotlar soni va do‘kon sahifasiga havola bor', () => {
+  const html = renderFeatured([
+    { id: '7', name: 'Baraka', slug: 'baraka market', logoUrl: 'https://cdn.test/baraka.png', rating: 4.8, productCount: 23 },
+    { id: '8', name: 'yangi do‘kon', slug: 'yangi', rating: 0 },
+  ]);
+  assert.match(html, /<h2 id="featured-shops-title">Tavsiya etilgan do‘konlar<\/h2>/);
+  assert.match(html, /<a href="\/dokon\/baraka%20market" class="featured-shop-card">/);
+  assert.match(html, /<img src="https:\/\/cdn\.test\/baraka\.png"/);
+  assert.match(html, /<b>Baraka<\/b>/);
+  assert.match(html, /4\.8<\/span>/);
+  assert.match(html, /23 ta mahsulot/);
+  // Logosiz do'konda bosh harf, reytingsizda "Hali baholanmagan", soni noma'lum bo'lsa yozilmaydi.
+  assert.match(html, /href="\/dokon\/yangi"[^]*?<span class="featured-shop-logo">Y<\/span>/);
+  assert.match(html, /Hali baholanmagan/);
+  assert.equal(html.match(/ta mahsulot/g).length, 1);
 });
 
 test('catalog pagination exposes direct page links without client-side load more', () => {

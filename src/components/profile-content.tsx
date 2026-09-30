@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Heart, LogOut, MapPin, Package, Save, ShoppingBag, UserRound } from "lucide-react";
+import { Bell, ChevronRight, Heart, LogOut, MapPin, Package, Save, ShoppingBag, Undo2, UserRound } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { authService, type AuthSession } from "@/services/auth.service";
@@ -10,6 +10,8 @@ import { errorMessage } from "@/lib/errors";
 
 const links = [
   { href: "/profile/orders", icon: Package, title: "Buyurtmalarim", text: "Buyurtmalar tarixi va holati" },
+  { href: "/profile/returns", icon: Undo2, title: "Qaytarishlarim", text: "Qaytarish so‘rovlari va holati" },
+  { href: "/profile/notifications", icon: Bell, title: "Bildirishnomalar", text: "Qaytarish holati bo‘yicha xabarlar" },
   { href: "/favorites", icon: Heart, title: "Sevimlilar", text: "Saqlangan mahsulotlar" },
   { href: "/cart", icon: ShoppingBag, title: "Savatcha", text: "Tanlangan mahsulotlar" },
   { href: "/checkout", icon: MapPin, title: "Yetkazish", text: "Manzil va yetkazish narxi" },

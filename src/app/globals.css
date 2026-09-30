@@ -91,8 +91,8 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .header-nav-action > i { width: 24px; height: 28px; display: grid; place-items: center; position: relative; font-style: normal; }
 .header-nav-action svg { width: 20px; }
 .header-nav-action > b { font-weight: 600; }
-.header-favorite span, .header-cart span { position: absolute; top: -2px; right: -5px; min-width: 17px; height: 17px; display: grid; place-items: center; padding: 0 3px; border: 2px solid white; border-radius: 20px; background: var(--color-brand); color: white; font-size: 8px; font-weight: 700; }
-.header-favorite:has(span), .header-cart:has(span) { color: var(--color-brand); }
+.header-favorite span, .header-cart span, .header-notifications span { position: absolute; top: -2px; right: -5px; min-width: 17px; height: 17px; display: grid; place-items: center; padding: 0 3px; border: 2px solid white; border-radius: 20px; background: var(--color-brand); color: white; font-size: 8px; font-weight: 700; }
+.header-favorite:has(span), .header-cart:has(span), .header-notifications:has(span) { color: var(--color-brand); }
 /* Savatni yuklab bo'lmadi: son o'rniga ogohlantirish belgisi. */
 .header-cart span.is-warning, .floating-cart-icon b.is-warning { background: #b45309; color: white; }
 .header-cart:has(span.is-warning) { color: #b45309; }
@@ -182,8 +182,9 @@ a.banner-slide:focus-visible { outline: 3px solid var(--color-brand); outline-of
 .featured-shop-copy > b { overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
 .featured-shop-copy > small { display: -webkit-box; overflow: hidden; color: var(--color-muted); font-size: 14px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .featured-shop-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 3px; color: var(--color-muted); font-size: 13px; font-weight: 650; }
-.featured-shop-meta > span { display: inline-flex; align-items: center; gap: 4px; }
+.featured-shop-meta > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .featured-shop-meta > span:first-child { color: #d99500; }
+.featured-shop-meta > .featured-shop-unrated { color: var(--color-muted); }
 .featured-shop-card > svg { flex: 0 0 auto; color: var(--color-brand); }
 .products-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
 .product-card { min-width: 0; display: flex; overflow: hidden; flex-direction: column; border: 1px solid var(--color-line); border-radius: var(--radius-md); background: white; transition: box-shadow .2s, transform .2s; }
@@ -579,6 +580,69 @@ body:has(.catalog-mega) .floating-cart { display: none; }
 .tracking-packages a { color: var(--color-brand); font-size: 14px; font-weight: 700; }
 .tracking-details h2, .tracking-packages h2 { font-size: 17px; }
 .tracking-details hr { border: 0; border-top: 1px solid var(--color-line); }
+/* Qaytarish (C4.2): buyurtma sahifasidagi blok, forma, ro'yxat va so'rov sahifasi. */
+.order-returns { margin-bottom: 18px; padding: 20px 24px; border: 1px solid var(--color-line); border-radius: 18px; background: white; }
+.order-returns__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.order-returns__head > div { flex: 1 1 260px; min-width: 0; }
+.order-returns__head h2 { margin: 0 0 4px; font-size: 17px; }
+.order-returns__head p { margin: 0; color: var(--color-muted); font-size: 14px; line-height: 1.5; }
+.order-returns .form-success, .order-returns .form-error { margin: 14px 0 0; }
+.order-returns__list, .returns-list { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
+.order-returns__list a, .returns-list a { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 16px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); color: inherit; }
+.order-returns__list a:hover, .returns-list a:hover { border-color: var(--color-line-strong); }
+.order-returns__list a > span:first-child, .returns-list__main { display: flex; flex: 1 1 220px; min-width: 0; flex-direction: column; gap: 3px; }
+.order-returns__list small, .returns-list__main small { color: var(--color-muted); font-size: 13px; overflow-wrap: anywhere; }
+.return-status { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #3446b8; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.return-status--in_review { background: #fff6e5; color: #9a5b00; }
+.return-status--approved { background: var(--color-success-soft); color: var(--color-success); }
+.return-status--rejected { background: var(--color-brand-soft); color: var(--color-brand); }
+.return-status--refunded { background: #e8f7f7; color: #0f6f73; }
+.modal--return { width: min(560px, 100%); }
+.return-items { display: grid; gap: 10px; margin: 0 0 16px; padding: 0; border: 0; }
+.return-items legend { margin-bottom: 8px; padding: 0; font-size: 13px; font-weight: 700; }
+.return-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid var(--color-line); border-radius: 12px; }
+.return-item label { display: flex; flex: 1 1 220px; min-width: 0; align-items: flex-start; gap: 10px; cursor: pointer; }
+.return-item input[type="checkbox"] { width: 18px; height: 18px; flex: none; margin-top: 2px; accent-color: var(--color-brand); }
+.return-item label > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.return-item b { font-size: 14px; overflow-wrap: anywhere; }
+.return-item small { color: var(--color-muted); font-size: 12px; }
+.return-field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.return-field span { font-size: 13px; font-weight: 700; }
+.return-field select, .return-field textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--color-line); border-radius: 10px; outline: none; background: #fff; color: var(--color-text); font: inherit; font-size: 14px; }
+.return-field select { min-height: 46px; cursor: pointer; }
+.return-field textarea { min-height: 84px; resize: vertical; }
+.return-field select:focus, .return-field textarea:focus { border-color: var(--color-brand); box-shadow: 0 0 0 3px rgb(239 35 51 / 9%); }
+.return-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; font-size: 14px; font-weight: 700; }
+.returns-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; color: var(--color-muted); font-size: 14px; }
+.return-detail .page-heading a { color: var(--color-muted); font-size: 14px; font-weight: 700; }
+.return-detail__status small, .return-detail__status p { color: var(--color-muted); font-size: 14px; }
+.return-detail__status h2 { margin: 6px 0; }
+.return-detail__status .return-status { font-size: 14px; }
+.return-detail__rejected { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: var(--color-brand-soft); }
+.return-detail__rejected p { margin: 6px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.return-detail__text { max-width: 60%; overflow-wrap: anywhere; text-align: right; white-space: pre-wrap; }
+.return-detail__label { color: var(--color-muted); font-size: 14px; }
+/* "Ko'rib chiqish" o'tkazib yuborilganda uch bosqich (mobil qoida pastda baribir bir ustun qiladi). */
+.tracking-steps--3 { grid-template-columns: repeat(3, 1fr); }
+.notifications-page .page-heading > button:disabled { color: var(--color-muted); cursor: default; }
+.notifications-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.notifications-list button { width: 100%; display: grid; gap: 4px; padding: 14px 16px 14px 30px; position: relative; border: 1px solid var(--color-line); border-radius: 12px; background: white; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.notifications-list button:hover { border-color: var(--color-line-strong); }
+.notifications-list button.is-unread { background: var(--color-surface); }
+.notifications-list button.is-unread::before { content: ""; position: absolute; top: 20px; left: 13px; width: 8px; height: 8px; border-radius: 50%; background: var(--color-brand); }
+.notifications-list b { font-size: 15px; }
+.notifications-list span { color: var(--color-ink-soft); font-size: 14px; overflow-wrap: anywhere; }
+.notifications-list small { color: var(--color-muted); font-size: 12px; }
+.return-history { display: grid; gap: 14px; margin: 0; padding: 0 0 0 18px; }
+.return-history li { display: flex; flex-direction: column; gap: 3px; }
+.return-history li::marker { color: var(--color-brand); }
+.return-history small { color: var(--color-muted); font-size: 13px; }
+.return-history p { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 520px) {
+  .order-returns { padding: 16px; }
+  .order-returns__head .button { width: 100%; }
+  .return-detail__text { max-width: 100%; }
+}
 
 /* Catalog page */
 .catalog-page { min-height: 65vh; padding: 55px 0 25px; }
@@ -748,7 +812,7 @@ body:has(.catalog-mega) .floating-cart { display: none; }
   .header .header-actions { display: flex; margin-left: auto; }
   .header .search { width: 100%; max-width: none; height: 42px; display: flex; position: absolute; left: 0; right: 0; bottom: var(--space-2); padding: 0 var(--space-4); justify-content: flex-start; }
   .header .search input { display: block; font-size: 15px; }
-  .header .header-favorite, .header .header-cart { width: 42px; height: 42px; padding: 0; justify-content: center; border-radius: 50%; }
+  .header .header-favorite, .header .header-cart, .header .header-notifications { width: 42px; height: 42px; padding: 0; justify-content: center; border-radius: 50%; }
   .header .user-action { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 50%; }
   .header .user-action span { display: none; }
   .header .category-strip .container { height: 40px; }
