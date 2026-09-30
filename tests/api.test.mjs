@@ -135,6 +135,38 @@ test('generic proxy allows buyer order cancellation only as POST', async () => {
   assert.deepEqual(calls, [['POST', '/orders/order-1/refund']]);
 });
 
+test('generic proxy allows buyer return requests: create as POST, list and detail as GET', async () => {
+  const calls = [];
+  const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/backend-proxy': { proxyBackend: async (request, path) => { calls.push([request.method, path]); return new Response(null, { status: 200 }); } },
+  });
+  const at = (...path) => ({ params: Promise.resolve({ path }) });
+  assert.equal((await route.POST({ method: 'POST' }, at('orders', '62', 'returns'))).status, 200);
+  assert.equal((await route.GET({ method: 'GET' }, at('returns'))).status, 200);
+  assert.equal((await route.GET({ method: 'GET' }, at('returns', '1'))).status, 200);
+  // Sotuvchi/admin amallari storefront proxy orqali ochilmaydi.
+  assert.equal((await route.POST({ method: 'POST' }, at('returns', '1'))).status, 405);
+  assert.equal((await route.GET({ method: 'GET' }, at('orders', '62', 'returns'))).status, 405);
+  assert.equal((await route.POST({ method: 'POST' }, at('seller', 'returns', '1', 'approve'))).status, 404);
+  assert.deepEqual(calls, [['POST', '/orders/62/returns'], ['GET', '/returns'], ['GET', '/returns/1']]);
+});
+
+test('generic proxy allows buyer notifications: list GET, read and read-all PATCH', async () => {
+  const calls = [];
+  const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/backend-proxy': { proxyBackend: async (request, path) => { calls.push([request.method, path]); return new Response(null, { status: 200 }); } },
+  });
+  const at = (...path) => ({ params: Promise.resolve({ path }) });
+  assert.equal((await route.GET({ method: 'GET' }, at('notifications'))).status, 200);
+  assert.equal((await route.PATCH({ method: 'PATCH' }, at('notifications', '11', 'read'))).status, 200);
+  assert.equal((await route.PATCH({ method: 'PATCH' }, at('notifications', 'read-all'))).status, 200);
+  assert.equal((await route.DELETE({ method: 'DELETE' }, at('notifications', '11'))).status, 404);
+  assert.equal((await route.POST({ method: 'POST' }, at('notifications'))).status, 405);
+  assert.deepEqual(calls, [['GET', '/notifications'], ['PATCH', '/notifications/11/read'], ['PATCH', '/notifications/read-all']]);
+});
+
 test('generic proxy allows public review reads and authenticated review writes', async () => {
   const calls = [];
   const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
