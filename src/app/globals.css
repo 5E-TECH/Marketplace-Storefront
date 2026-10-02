@@ -882,6 +882,28 @@ body:has(.catalog-mega) .floating-cart { display: none; }
 button:focus-visible, a:focus-visible { outline: 3px solid rgba(227,6,19,.28); outline-offset: 2px; }
 input:focus-visible, textarea:focus-visible { outline: none; }
 .form-grid input:focus-visible, .form-grid textarea:focus-visible { border-color: var(--color-brand); box-shadow: 0 0 0 3px rgba(227,6,19,.12); }
+/* Qidiruv qutisining istalgan joyiga bosilganda klaviatura ochiladi (input butun balandlikni egallaydi). */
+.search input { align-self: stretch; }
+
+/* Telefon (sensorli ekran yoki mobil kenglik): bosish nishoni kamida 44px. Ikonka tugmalarining ko'rinishi
+   o'zgarmaydi — atrofiga ko'rinmas 44px maydon qo'shiladi; matnli havolalar balandligi oshiriladi. */
+@media (pointer: coarse), (max-width: 720px) {
+  .product-bottom button, .search-clear, .quantity button, .cart-row-actions > button, .cart-toolbar button, .favorite-inline, .pagination-pages a, .pagination-arrow,
+  .breadcrumbs a, .catalog-breadcrumbs a, .detail-rating a, .seller-title h3 a, .section-header a { position: relative; }
+  .favorite::after, .product-bottom button::after, .search-clear::after, .quantity button::after, .cart-row-actions > button::after, .cart-toolbar button::after, .favorite-inline::after, .pagination-pages a::after, .pagination-arrow::after,
+  .breadcrumbs a::after, .catalog-breadcrumbs a::after, .detail-rating a::after, .seller-title h3 a::after, .section-header a::after {
+    content: ""; position: absolute; top: 50%; left: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+  }
+  /* Banner nuqtalari bir-biriga yaqin: 44px maydon qo'shnisini yopardi. Shaffof chegara nuqtani o'zgartirmay
+     bosish maydonini 29px qiladi, oraliq chegaradan olinadi. */
+  .banner-dots { gap: 0; bottom: 8px; }
+  .banner-dots button, .banner-dots button[aria-current="true"] { box-sizing: content-box; border: 10px solid transparent; background-clip: padding-box; }
+  /* Kategoriya qatori balandligi qotirilgan (mobilda 40px) — havola butun qatorni egallaydi. */
+  .category-strip a, .category-strip button { align-self: stretch; }
+  .back-button, .product-buy-now { min-height: 44px; }
+  .footer-grid > div { gap: 0; }
+  .footer-grid a:not(.logo) { min-height: 44px; display: inline-flex; align-items: center; }
+}
 
 
 /* Shared storefront states */

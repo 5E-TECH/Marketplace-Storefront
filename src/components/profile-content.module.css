@@ -35,6 +35,8 @@
 .note { color: var(--color-muted); font-size: 13px; line-height: 1.5; text-align: center; }
 .authLinks { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; font-weight: 700; }
 .authLinks a { color: var(--color-brand); }
+/* Telefonda "Akkaunt ochish", "Parolni unutdingizmi?" barmoq bilan bosiladigan balandlikda. */
+@media (pointer: coarse), (max-width: 720px) { .authLinks a { min-height: 44px; display: inline-flex; align-items: center; } }
 .guestActions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
 .guestActions .error { flex-basis: 100%; }
 .profileForm { display: grid; gap: 16px; margin-top: 22px; padding: 28px; border: 1px solid var(--color-line); border-radius: 20px; background: #fff; }
