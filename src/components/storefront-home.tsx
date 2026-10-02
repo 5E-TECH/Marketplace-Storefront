@@ -35,15 +35,15 @@ export function StorefrontHome({ query, catalog, featuredShops = [], banners = [
   </main>;
 }
 
-export function CategoryStorefront({ category, categories, query, catalog }: { category: CatalogCategory; categories: CatalogCategory[]; query: ProductQuery; catalog: CatalogResult }) {
-  const shownCategories = category.children.length ? category.children : categories;
+export function CategoryStorefront({ category, query, catalog }: { category: CatalogCategory; categories?: CatalogCategory[]; query: ProductQuery; catalog: CatalogResult }) {
   const basePath = `/katalog/${category.slug}`;
   return <main>
     <Container>
       <Breadcrumbs items={[{ label: "Bosh sahifa", href: "/" }, { label: "Katalog", href: "/katalog" }, { label: category.name }]}/>
       <header className="catalog-hero"><CategoryIcon name={category.name} iconUrl={category.iconUrl}/><div><h1>{category.name}</h1><p>{catalog.total} ta mahsulot</p></div></header>
     </Container>
-    <CategoryGrid categories={shownCategories}/>
+    {/* Faqat haqiqiy kichik kategoriyalar: bolasi yo'q kategoriyada boshqa (va o'zi) kategoriyalarni “kichik” qilib ko'rsatmaymiz. */}
+    {category.children.length > 0 && <CategoryGrid categories={category.children}/>}
     <Container><PriceFilterForm action={basePath} query={query} submitLabel="Ko‘rsatish" resetHref={basePath}/></Container>
     <Products products={catalog.data} total={catalog.total} query={query} basePath={basePath} title={`${category.name} mahsulotlari`} apiError={catalog.error}/>
     <CatalogPagination query={query} catalog={catalog} basePath={basePath}/>

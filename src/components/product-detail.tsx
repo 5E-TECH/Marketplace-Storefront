@@ -52,7 +52,7 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
       <section className="detail-summary">
         {product.shop?.name && <div className="detail-brand">{product.shop.name}</div>}
         <h1>{product.name}</h1>
-        <div className="detail-rating">{(reviews.error ? product.rating : reviews.rating) > 0 && <span><Star fill="currentColor"/> {reviews.error ? product.rating : reviews.rating.toFixed(1)}</span>}<a href="#reviews">{(reviews.error ? product.reviews : reviews.total) > 0 ? `${reviews.error ? product.reviews : reviews.total} ta sharh` : "Hali sharh yo‘q"}</a></div>
+        <div className="detail-rating">{(reviews.error ? product.rating : reviews.rating) > 0 && <span><Star fill="currentColor"/> {(reviews.error ? product.rating : reviews.rating).toFixed(1)}</span>}<a href="#reviews">{(reviews.error ? product.reviews : reviews.total) > 0 ? `${reviews.error ? product.reviews : reviews.total} ta sharh` : "Hali sharh yo‘q"}</a></div>
         {product.description && <p className="detail-lead">{product.description}</p>}
 
         {product.colors.length > 0 && <div className="option-block"><div className="option-title"><b>Rang</b><span>{selectedVariant?.name ?? selectedColor}</span></div><div className="color-options">{product.colors.map((color, index) => <button className={activeColor === index ? "active" : ""} onClick={() => setActiveColor(index)} key={color} aria-label={`${color} rang`}><i style={{ background: color }}/>{activeColor === index && <Check/>}</button>)}</div></div>}

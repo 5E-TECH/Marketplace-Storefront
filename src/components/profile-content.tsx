@@ -14,7 +14,7 @@ const links = [
   { href: "/profile/notifications", icon: Bell, title: "Bildirishnomalar", text: "Qaytarish holati bo‘yicha xabarlar" },
   { href: "/favorites", icon: Heart, title: "Sevimlilar", text: "Saqlangan mahsulotlar" },
   { href: "/cart", icon: ShoppingBag, title: "Savatcha", text: "Tanlangan mahsulotlar" },
-  { href: "/checkout", icon: MapPin, title: "Yetkazish", text: "Manzil va yetkazish narxi" },
+  { href: "/checkout", icon: MapPin, title: "Rasmiylashtirish", text: "Savatdagi mahsulotlarga buyurtma berish" },
 ] as const;
 
 function ProfileHero({ session, pending, onLogout }: { session: AuthSession; pending: boolean; onLogout: () => void }) {

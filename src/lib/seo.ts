@@ -31,6 +31,12 @@ export function clipDescription(text: string, max = 158): string {
   return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 20)).replace(/[\s,.;:—-]+$/, "")}…`;
 }
 
+/** Sahifalangan ro'yxatda har sahifaning sarlavhasi o'ziga xos bo'lsin (2-sahifa 1-sahifani takrorlamasin). */
+export function pagedTitle(title: string, rawQuery: CatalogSearchParams): string {
+  const page = parseCatalogQuery(rawQuery).page ?? 1;
+  return page > 1 ? `${title} — ${page}-sahifa` : title;
+}
+
 /**
  * Katalog ro'yxatlari uchun canonical va robots.
  * Sahifalash o'z canonical'iga ega; saralash, narx filtri va qidiruv natijalari

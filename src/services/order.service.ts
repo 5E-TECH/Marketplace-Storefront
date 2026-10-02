@@ -136,9 +136,30 @@ const normalizeBuyerOrder = (value: unknown, index: number): Order => {
   };
 };
 
+// Barcha sahifalar olinadi: eng yangi 20 tadan eskisi tarixdan, "Qayta to'lash"dan va kuzatishdan tushib qolmasin.
+const ORDERS_PAGE_SIZE = 50;
 const remoteOrders = async (): Promise<Order[]> => {
-  const page = await apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page: 1, limit: 20 }, validate: validateBuyerOrdersPageDto });
-  return page.items.map(normalizeBuyerOrder);
+  const request = (page: number) => apiRequest<BuyerOrdersResponse>("/orders", { method: "GET", headers: authHeaders(), params: { page, limit: ORDERS_PAGE_SIZE }, validate: validateBuyerOrdersPageDto });
+  const first = await request(1);
+  const rest = first.totalPages > 1 ? await Promise.all(Array.from({ length: first.totalPages - 1 }, (_, index) => request(index + 2))) : [];
+  return [first, ...rest].flatMap((page) => page.items).map(normalizeBuyerOrder);
+};
+
+/** `GET /orders/{orderId}` — xaridor yoki guest (X-Session-Id) buyurtmasi tafsilotlari, brauzer nusxasiga bog'liq emas. */
+export type OrderDetails = { id: string; buyerName?: string; address?: string; total: number; deliveryFee: number; items: { key: string; name: string; quantity: number; lineTotal: number }[] };
+const normalizeOrderDetails = (response: unknown): OrderDetails => {
+  const root = object(response);
+  const id = root.id;
+  if ((typeof id !== "string" && typeof id !== "number") || !Array.isArray(root.sellerOrders)) throw new Error("Backend buyurtma tafsilotlarini noto‘g‘ri qaytardi");
+  const items = root.sellerOrders.flatMap((shop) => {
+    const rows = object(shop).items;
+    return Array.isArray(rows) ? rows.map((value, index) => {
+      const item = object(value);
+      const quantity = Number(item.quantity);
+      return { key: `${String(item.productId)}:${String(item.variantId ?? index)}`, name: optionalText(item.productName) ?? "Mahsulot", quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1, lineTotal: money(item.lineTotal, "lineTotal") };
+    }) : [];
+  });
+  return { id: String(id), buyerName: optionalText(root.buyerName), address: optionalText(root.deliveryAddress), total: money(root.totalAmount, "totalAmount"), deliveryFee: money(root.deliveryFee, "deliveryFee"), items };
 };
 /** Tracking javobidagi to'lov holati. Buyurtma sahifasi uni brauzer nusxasidan ustun qo'yadi. */
 const normalizeTrackingPayment = (root: Record<string, unknown>): TrackingPayment | undefined => {
@@ -202,6 +223,15 @@ export const orderService = {
     } catch (error) {
       return { orders: local, error: errorMessage(error, "Buyurtmalarni backenddan yuklab bo‘lmadi") };
     }
+  },
+  async details(orderId: string): Promise<OrderDetails> {
+    const id = orderId.trim();
+    if (!id || id.length > 128) throw new Error("Buyurtma raqami noto‘g‘ri");
+    return normalizeOrderDetails(await apiRequest(`/orders/${encodeURIComponent(id)}`, { method: "GET", headers: authHeaders() }));
+  },
+  /** Logout: brauzerdagi buyurtma nusxalari (ism, telefon, manzil) keyingi foydalanuvchiga ko'rinmasin. */
+  forgetLocal(): void {
+    if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY);
   },
   async getLocal(orderId: string): Promise<Order | null> { return readLocal().find((order) => order.id === orderId) ?? null; },
   /** To'lov sahifasidan orqaga qaytilganda checkout bo'sh savat emas, shu buyurtmani ko'rsatishi uchun. */

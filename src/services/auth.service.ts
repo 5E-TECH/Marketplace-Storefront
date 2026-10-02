@@ -1,6 +1,7 @@
 import { apiRequest } from "@/lib/api";
 import { authHeaders, clearAccessToken, hasAuthSession, rotateGuestSessionId } from "@/lib/access-token";
 import { guestService } from "@/services/guest.service";
+import { orderService } from "@/services/order.service";
 
 export type AuthSession = { userId?: string; name?: string; phone: string; verifiedAt: string; authenticated: true };
 export type RegisterInput = { name: string; phone: string; password: string };
@@ -94,6 +95,8 @@ export const authService = {
   },
   clearSession(): void {
     localStorage.removeItem(SESSION_KEY);
+    // Umumiy qurilmada keyingi foydalanuvchi oldingi buyurtmalarni (ism, telefon, manzil) ko'rmasin.
+    orderService.forgetLocal();
     clearAccessToken();
     rotateGuestSessionId();
     notify("elchi:auth-changed");

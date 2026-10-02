@@ -688,7 +688,7 @@ test('authenticated buyer order history comes from backend and keeps unsynced lo
   const result = await orderService.listForCurrentBuyer();
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], '/orders');
-  assert.deepEqual({ method: calls[0][1].method, headers: calls[0][1].headers, params: calls[0][1].params }, { method: 'GET', headers: { Authorization: 'Bearer buyer-token' }, params: { page: 1, limit: 20 } });
+  assert.deepEqual({ method: calls[0][1].method, headers: calls[0][1].headers, params: calls[0][1].params }, { method: 'GET', headers: { Authorization: 'Bearer buyer-token' }, params: { page: 1, limit: 50 } });
   assert.equal(typeof calls[0][1].validate, 'function');
   assert.deepEqual(result.orders.map((order) => order.id), ['remote-1', 'local-2']);
   assert.equal(result.orders[0].status, 'Yetkazildi');

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatPrice } from "@/lib/format";
-import { canCancelOrder, isClosedOrder, MAX_CANCEL_REASON_LENGTH, orderService, paymentStartMessage } from "@/services/order.service";
+import { type OrderDetails, canCancelOrder, isClosedOrder, MAX_CANCEL_REASON_LENGTH, orderService, paymentStartMessage } from "@/services/order.service";
 import type { Order, OrderStatus, OrderTracking } from "@/types/commerce";
 import { OrderReturns } from "./order-returns";
 import { Button, LoadingGrid, Modal, Price, StatePanel } from "./ui";
@@ -16,6 +16,8 @@ const terminal = new Set<OrderStatus>(["Bekor qilindi", "Qaytarildi", "Yetkazild
 
 export function OrderTrackingContent({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<Order | null>(null);
+  // Tafsilotlar backenddan (GET /orders/:id): boshqa qurilmada ham, brauzer nusxasi bo'lmasa ham to'liq.
+  const [details, setDetails] = useState<OrderDetails | null>(null);
   const [tracking, setTracking] = useState<OrderTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,6 +50,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
   useEffect(() => {
     let active = true;
     void orderService.find(orderId).then((found) => { if (active) setOrder(found); }).catch(() => { /* Tracking holati baribir ko'rsatiladi. */ });
+    void orderService.details(orderId).then((found) => { if (active) setDetails(found); }).catch(() => { /* Brauzer nusxasi bo'lsa o'sha ko'rsatiladi. */ });
     return () => { active = false; };
   }, [orderId]);
   useEffect(() => {
@@ -58,7 +61,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
   }, [load]);
   if (loading) return <section className="tracking-page"><LoadingGrid count={3} label="Buyurtma holati yuklanmoqda"/></section>;
-  if (!tracking) return <StatePanel kind="error" icon={<Package/>} title={notFound ? "Buyurtma topilmadi" : "Buyurtma holatini yuklab bo‘lmadi"} description={`#${orderId} — ${error || "Buyurtma ma’lumoti mavjud emas."}`} action={<><Button onClick={() => void load()}>Qayta urinish</Button><Link className="button button--secondary" href="/profile/orders">Buyurtmalarim</Link></>}/>;
+  if (!tracking) return <StatePanel headingLevel={1} kind="error" icon={<Package/>} title={notFound ? "Buyurtma topilmadi" : "Buyurtma holatini yuklab bo‘lmadi"} description={`#${orderId} — ${error || "Buyurtma ma’lumoti mavjud emas."}`} action={<><Button onClick={() => void load()}>Qayta urinish</Button><Link className="button button--secondary" href="/profile/orders">Buyurtmalarim</Link></>}/>;
   const current = steps.indexOf(tracking.status);
   // Backend holati brauzer nusxasidan ustun: refunddan keyin yoki boshqa qurilmada ham to'g'ri ko'rinadi.
   const paymentStatus = tracking.payment?.status ?? order?.paymentStatus;
@@ -104,6 +107,7 @@ export function OrderTrackingContent({ orderId }: { orderId: string }) {
       {cancelError && <p className="form-error" role="alert">{cancelError}</p>}
     </Modal>
     <OrderReturns orderId={tracking.orderId} delivered={tracking.status === "Yetkazildi" || tracking.packages.some((item) => item.status === "Yetkazildi")}/>
-    {order && <div className="tracking-details"><h2>Buyurtma tafsilotlari</h2>{order.items.map((item) => <div key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<hr/><div><b>Jami</b><Price value={order.total}/></div><p>{order.customer.name} · {order.customer.phone}<br/>{order.customer.address}</p></div>}
+    {details ? <div className="tracking-details"><h2>Buyurtma tafsilotlari</h2>{details.items.map((item) => <div key={item.key}><span>{item.name} × {item.quantity}</span><Price value={item.lineTotal}/></div>)}<div><span>Yetkazish</span><Price value={details.deliveryFee}/></div><hr/><div><b>Jami</b><Price value={details.total}/></div>{(details.buyerName || details.address) && <p>{[details.buyerName, order?.customer.phone].filter(Boolean).join(" · ")}{details.address && <><br/>{details.address}</>}</p>}</div>
+      : order && order.items.length > 0 && <div className="tracking-details"><h2>Buyurtma tafsilotlari</h2>{order.items.map((item) => <div key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<hr/><div><b>Jami</b><Price value={order.total}/></div>{(order.customer.name || order.customer.address) && <p>{[order.customer.name, order.customer.phone].filter(Boolean).join(" · ")}{order.customer.address && <><br/>{order.customer.address}</>}</p>}</div>}
   </section>;
 }

@@ -50,6 +50,7 @@ export function CheckoutContent() {
   const [form, setForm] = useState(emptyForm);
   const [preview, setPreview] = useState<DeliveryPreview | null>(null);
   const [previewPending, setPreviewPending] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const [pending, setPending] = useState(false);
   const [completed, setCompleted] = useState<Order | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
@@ -127,6 +128,7 @@ export function CheckoutContent() {
   useEffect(() => {
     const requestId = ++previewRequest.current;
     setPreview(null);
+    setPreviewFailed(false);
     if (!selectionReady || !selectedItems.length || selectedItems.length !== cart.items.length || !canPreview(form)) { setPreviewPending(false); return; }
     const timer = window.setTimeout(async () => {
       setPreviewPending(true);
@@ -135,7 +137,7 @@ export function CheckoutContent() {
         const next = await orderService.preview(address);
         if (previewRequest.current === requestId) { setPreview(next); setError(""); }
       } catch (caught) {
-        if (previewRequest.current === requestId) setError(errorMessage(caught, "Yetkazib berish narxini hisoblab bo‘lmadi"));
+        if (previewRequest.current === requestId) { setPreviewFailed(true); setError(errorMessage(caught, "Yetkazib berish narxini hisoblab bo‘lmadi")); }
       } finally {
         if (previewRequest.current === requestId) setPreviewPending(false);
       }
@@ -241,24 +243,24 @@ export function CheckoutContent() {
   };
 
   if (completed) return <section className={`checkout-success${completed.payment === "card" ? " checkout-success--pending" : ""}`}><span>{completed.payment === "card" ? <WalletCards/> : <CheckCircle2/>}</span><p>{completed.payment === "card" ? "TO‘LOV KUTILMOQDA" : "BUYURTMA QABUL QILINDI"}</p><h1>{completed.payment === "card" ? "Buyurtma yaratildi" : "Rahmat!"}</h1><b>Buyurtma raqami: {completed.id}</b>{completed.warning && <p role="alert">{completed.warning}</p>}{error && <p className="form-error" role="alert">{error}</p>}<small>{completed.payment === "card" ? `${completed.paymentProvider === "PAYME" ? "Payme" : "Click"} orqali to‘lov yakunlanmaguncha buyurtma to‘langan hisoblanmaydi. Sahifa ochilmasa qayta urinishingiz mumkin.` : "Buyurtmangiz qabul qilindi. Sotuvchi uni tayyorlab, kuryerga topshiradi — holatini “Buyurtmalarim” bo‘limida kuzatib borasiz."}</small><div>{completed.payment === "card" && <button className="button button--primary" type="button" disabled={paymentPending} onClick={() => void openPayment(completed)}><ExternalLink/>{paymentPending ? "To‘lov sahifasi ochilmoqda…" : "To‘lovni davom ettirish"}</button>}<Link className={completed.payment === "card" ? "button button--secondary" : "button button--primary"} href={`/orders/${encodeURIComponent(completed.id)}`}>Buyurtmani kuzatish</Link><Link className="button button--secondary" href="/">Bosh sahifa</Link></div></section>;
-  if (unconfirmed) return <StatePanel kind="error" icon={<ShoppingCart/>} title={`#${unconfirmed.id} buyurtmasi tasdiqlanmadi`} description={`${error ? `${error}. ` : ""}Buyurtma yaratildi, lekin tasdiqlash so‘rovi yetib bormadi. Mahsulotlar buyurtmaga o‘tgan — qayta tasdiqlang.`} action={<>
+  if (unconfirmed) return <StatePanel headingLevel={1} kind="error" icon={<ShoppingCart/>} title={`#${unconfirmed.id} buyurtmasi tasdiqlanmadi`} description={`${error ? `${error}. ` : ""}Buyurtma yaratildi, lekin tasdiqlash so‘rovi yetib bormadi. Mahsulotlar buyurtmaga o‘tgan — qayta tasdiqlang.`} action={<>
     <Button loading={pending} onClick={() => void retryConfirm()}>Qayta tasdiqlash</Button>
     <Link className="button button--secondary" href={`/orders/${encodeURIComponent(unconfirmed.id)}`}>Buyurtmani kuzatish</Link>
   </>}/>;
   if (cart.loading && !cart.items.length) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
-  if (cart.error) return <StatePanel kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={cart.error} action={<Button onClick={() => void cart.refresh()}>Qayta urinish</Button>}/>;
+  if (cart.error) return <StatePanel headingLevel={1} kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={cart.error} action={<Button onClick={() => void cart.refresh()}>Qayta urinish</Button>}/>;
   if (!selectionReady) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
-  if (!cart.items.length && unpaid) return <StatePanel icon={<WalletCards/>} title={`#${unpaid.id} buyurtmasi to‘lovni kutmoqda`} description={error || `Buyurtma yaratilgan, lekin to‘lov yakunlanmagan. ${unpaid.paymentProvider === "CLICK" ? "Click" : "Payme"} sahifasida to‘lovni yakunlang yoki buyurtma sahifasidan keyinroq to‘lang.`} action={<>
+  if (!cart.items.length && unpaid) return <StatePanel headingLevel={1} icon={<WalletCards/>} title={`#${unpaid.id} buyurtmasi to‘lovni kutmoqda`} description={error || `Buyurtma yaratilgan, lekin to‘lov yakunlanmagan. ${unpaid.paymentProvider === "CLICK" ? "Click" : "Payme"} sahifasida to‘lovni yakunlang yoki buyurtma sahifasidan keyinroq to‘lang.`} action={<>
     <Button disabled={paymentPending} onClick={() => void openPayment(unpaid)}><ExternalLink/>{paymentPending ? "Ochilmoqda…" : "To‘lovni davom ettirish"}</Button>
     <Link className="button button--secondary" href={`/orders/${encodeURIComponent(unpaid.id)}`}>Buyurtmani kuzatish</Link>
     <Link className="button button--secondary" href="/#products">Yangi xarid</Link>
   </>}/>;
-  if (!cart.items.length) return <StatePanel icon={<ShoppingCart/>} title="Rasmiylashtirish uchun savatcha bo‘sh" description="Avval katalogdan mahsulot tanlang — keyin bu yerda buyurtmani rasmiylashtirasiz." action={<Link className="button button--primary" href="/#products">Mahsulot tanlash</Link>}/>;
-  if (!selectedItems.length && buyNow) return <StatePanel icon={<ShoppingCart/>} title="Bu mahsulot savatda topilmadi" description={`${error ? `${error}. ` : ""}Mahsulot sahifasiga qaytib, “Buyurtma berish” tugmasini qayta bosing yoki savatdagi mahsulotlarni rasmiylashtiring.`} action={<>
+  if (!cart.items.length) return <StatePanel headingLevel={1} icon={<ShoppingCart/>} title="Rasmiylashtirish uchun savatcha bo‘sh" description="Avval katalogdan mahsulot tanlang — keyin bu yerda buyurtmani rasmiylashtirasiz." action={<Link className="button button--primary" href="/#products">Mahsulot tanlash</Link>}/>;
+  if (!selectedItems.length && buyNow) return <StatePanel headingLevel={1} icon={<ShoppingCart/>} title="Bu mahsulot savatda topilmadi" description={`${error ? `${error}. ` : ""}Mahsulot sahifasiga qaytib, “Buyurtma berish” tugmasini qayta bosing yoki savatdagi mahsulotlarni rasmiylashtiring.`} action={<>
     <Link className="button button--primary" href={`/product/${encodeURIComponent(buyNow.productId)}`}>Mahsulotga qaytish</Link>
     <Button variant="secondary" disabled={pending} onClick={checkoutWholeCart}>Savatni rasmiylashtirish</Button>
   </>}/>;
-  if (!selectedItems.length) return <StatePanel icon={<ShoppingCart/>} title="Buyurtma uchun mahsulot tanlanmagan" description={`${error ? `${error}. ` : ""}Savatchaga qaytib, buyurtma qilmoqchi bo‘lgan mahsulotlarni belgilang.`} action={<Link className="button button--primary" href="/cart">Savatchaga qaytish</Link>}/>;
+  if (!selectedItems.length) return <StatePanel headingLevel={1} icon={<ShoppingCart/>} title="Buyurtma uchun mahsulot tanlanmagan" description={`${error ? `${error}. ` : ""}Savatchaga qaytib, buyurtma qilmoqchi bo‘lgan mahsulotlarni belgilang.`} action={<Link className="button button--primary" href="/cart">Savatchaga qaytish</Link>}/>;
 
   return <section className="checkout-page"><div className="page-heading"><div><h1>Buyurtmani rasmiylashtirish</h1></div></div><form onSubmit={submit} className="checkout-layout"><div className="checkout-forms">
     {buyNow && cart.items.length > selectedItems.length && <div className="checkout-buy-now" role="status"><p><b>Faqat shu mahsulot rasmiylashtirilmoqda.</b> Savatdagi boshqa {cart.items.length - selectedItems.length} ta mahsulot savatda qoladi.</p><button type="button" disabled={pending} onClick={checkoutWholeCart}>Butun savatni rasmiylashtirish</button></div>}
@@ -268,7 +270,7 @@ export function CheckoutContent() {
       <SelectField label="Viloyat yoki shahar" name="region" value={form.regionId} options={regionOptions} onChange={changeRegion} placeholder="Viloyat yoki shaharni tanlang" disabled={regionsPending} loading={regionsPending} required autoComplete="address-level1"/>
       <SelectField label="Tuman" name="district" value={form.districtId} options={districtOptions} onChange={changeDistrict} placeholder={form.regionId ? "Tumanni tanlang" : "Avval viloyatni tanlang"} disabled={!form.regionId || districtsPending} loading={districtsPending} required autoComplete="address-level2"/>
       <label className="form-wide"><span>Ko‘cha, uy va xonadon</span><textarea name="street" value={form.street} onChange={(event) => change("street", event.target.value)} required minLength={5} autoComplete="street-address" placeholder="Ko‘cha, uy va xonadon raqami"/></label>
-    </div><p className="delivery-preview-status" aria-live="polite">{previewPending ? "Yetkazish narxi hisoblanmoqda…" : preview ? `Yetkazish avtomatik hisoblandi: ${formatPrice(preview.deliveryFee)} so‘m` : selectedItems.length !== cart.items.length ? "Tanlangan mahsulotlar uchun yetkazish narxi buyurtma berishda hisoblanadi" : "Manzil to‘liq kiritilgach yetkazish narxi avtomatik hisoblanadi"}</p></fieldset>
+    </div><p className="delivery-preview-status" aria-live="polite">{previewPending ? "Yetkazish narxi hisoblanmoqda…" : preview ? `Yetkazish avtomatik hisoblandi: ${formatPrice(preview.deliveryFee)} so‘m` : previewFailed ? "Yetkazish narxini hisoblab bo‘lmadi — “Buyurtma berish” bosilganda qayta urinib ko‘riladi" : selectedItems.length !== cart.items.length ? "Tanlangan mahsulotlar uchun yetkazish narxi buyurtma berishda hisoblanadi" : "Manzil to‘liq kiritilgach yetkazish narxi avtomatik hisoblanadi"}</p></fieldset>
     <fieldset><legend><WalletCards/> To‘lov usuli</legend><div className="payment-options">
       {paymentChoices.map(({ method, title, note }) => { const locked = method !== "cod" && !signedIn; return <label className={`payment-option${paymentMethod === method ? " active" : ""}${locked ? " is-disabled" : ""}`} key={method}>
         <input type="radio" name="paymentMethod" value={method} checked={paymentMethod === method} disabled={locked} onChange={() => setPaymentMethod(method)}/>
@@ -280,5 +282,5 @@ export function CheckoutContent() {
     {regionsError && <div className="form-error form-error--action" role="alert"><span>Viloyatlar ro‘yxatini yuklab bo‘lmadi. {regionsError}</span><button type="button" onClick={() => setRegionsReload((value) => value + 1)}>Qayta urinish</button></div>}
     {districtsError && <div className="form-error form-error--action" role="alert"><span>Tumanlar ro‘yxatini yuklab bo‘lmadi. {districtsError}</span><button type="button" onClick={() => setDistrictsReload((value) => value + 1)}>Qayta urinish</button></div>}
     {error && <p className="form-error" role="alert">{error}</p>}
-  </div><aside className="order-summary"><h2>Sizning buyurtmangiz</h2>{selectedItems.map((item) => <div className="checkout-line" key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<p><span>Mahsulotlar</span><Price value={selectedSubtotal}/></p><p><span>Yetkazish</span>{preview ? <Price value={preview.deliveryFee}/> : <b>{previewPending ? "Hisoblanmoqda…" : "Manzil bo‘yicha"}</b>}</p>{preview && <p><span>Posilkalar</span><b>{preview.packages.length || 1} ta</b></p>}<hr/><p className="order-total"><span>Jami</span><Price value={selectedSubtotal + (preview?.deliveryFee ?? 0)}/></p><Button disabled={pending || previewPending || cart.loading || !canPreview(form)} type="submit" loading={pending}><Truck/> {paymentMethod === "cod" ? "Buyurtma berish" : "Buyurtma yaratish va to‘lash"}</Button><small>{buyNow ? "Faqat shu mahsulot buyurtma qilinadi." : "Faqat savatchada belgilangan mahsulotlar buyurtma qilinadi."} Yetkazish narxi manzil asosida hisoblanadi.</small></aside></form></section>;
+  </div><aside className="order-summary"><h2>Sizning buyurtmangiz</h2>{selectedItems.map((item) => <div className="checkout-line" key={item.id}><span>{item.product.name} × {item.quantity}</span><Price value={item.product.price * item.quantity}/></div>)}<p><span>Mahsulotlar</span><Price value={selectedSubtotal}/></p><p><span>Yetkazish</span>{preview ? <Price value={preview.deliveryFee}/> : <b>{previewPending ? "Hisoblanmoqda…" : "Manzil bo‘yicha"}</b>}</p>{preview && preview.packages.length > 0 && <p><span>Posilkalar</span><b>{preview.packages.length} ta</b></p>}<hr/><p className="order-total"><span>Jami</span><Price value={selectedSubtotal + (preview?.deliveryFee ?? 0)}/></p><Button disabled={pending || previewPending || cart.loading || !canPreview(form)} type="submit" loading={pending}><Truck/> {paymentMethod === "cod" ? "Buyurtma berish" : "Buyurtma yaratish va to‘lash"}</Button><small>{buyNow ? "Faqat shu mahsulot buyurtma qilinadi." : "Faqat savatchada belgilangan mahsulotlar buyurtma qilinadi."} Yetkazish narxi manzil asosida hisoblanadi.</small></aside></form></section>;
 }

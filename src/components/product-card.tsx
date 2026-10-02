@@ -57,7 +57,7 @@ export const ProductCard = memo(function ProductCard({ product }: { product: Pro
     <div className="product-info">
       <span className="eyebrow">{product.shop?.name ?? product.category}</span>
       <Link href={`/product/${product.id}`} prefetch={false}><h3>{product.name}</h3></Link>
-      {(product.rating > 0 || product.reviews > 0) && <div className="rating"><Star size={14} fill="currentColor"/><b>{product.rating}</b><span>({product.reviews})</span></div>}
+      {product.rating > 0 && <div className="rating"><Star size={14} fill="currentColor"/><b>{product.rating.toFixed(1)}</b>{product.reviews > 0 && <span>({product.reviews})</span>}</div>}
       <div className="product-bottom">
         <Price value={product.price} oldValue={product.oldPrice}/>
         {cartItem

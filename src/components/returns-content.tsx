@@ -13,7 +13,7 @@ import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 const PAGE_SIZE = 10;
 
 function LoginRequired({ next }: { next: string }) {
-  return <StatePanel icon={<PackageOpen/>} title="Akkauntingizga kiring" description="Qaytarish so‘rovlari akkauntingizga bog‘langan. Ularni ko‘rish uchun tizimga kiring." action={<Link className="button button--primary" href={`/login?next=${encodeURIComponent(next)}`}>Kirish</Link>}/>;
+  return <StatePanel headingLevel={1} icon={<PackageOpen/>} title="Akkauntingizga kiring" description="Qaytarish so‘rovlari akkauntingizga bog‘langan. Ularni ko‘rish uchun tizimga kiring." action={<Link className="button button--primary" href={`/login?next=${encodeURIComponent(next)}`}>Kirish</Link>}/>;
 }
 
 /** Xaridorning barcha qaytarish so'rovlari: holati, tovarlari, summasi. */
@@ -33,8 +33,8 @@ export function ReturnsContent() {
 
   if (signedIn === false) return <LoginRequired next="/profile/returns"/>;
   if (!result && !error) return <LoadingGrid count={3} label="Qaytarish so‘rovlari yuklanmoqda"/>;
-  if (!result) return <StatePanel kind="error" title="Qaytarish so‘rovlarini yuklab bo‘lmadi" description={error} action={<Button loading={loading} onClick={() => void load(page)}><RefreshCw/> Qayta urinish</Button>}/>;
-  if (!result.items.length) return <StatePanel icon={<PackageOpen/>} title="Qaytarish so‘rovlari yo‘q" description="Yetkazilgan tovarni qaytarmoqchi bo‘lsangiz, buyurtma sahifasida “Qaytarish so‘rovi” tugmasini bosing." action={<Link className="button button--primary" href="/profile/orders">Buyurtmalarim</Link>}/>;
+  if (!result) return <StatePanel headingLevel={1} kind="error" title="Qaytarish so‘rovlarini yuklab bo‘lmadi" description={error} action={<Button loading={loading} onClick={() => void load(page)}><RefreshCw/> Qayta urinish</Button>}/>;
+  if (!result.items.length) return <StatePanel headingLevel={1} icon={<PackageOpen/>} title="Qaytarish so‘rovlari yo‘q" description="Yetkazilgan tovarni qaytarmoqchi bo‘lsangiz, buyurtma sahifasida “Qaytarish so‘rovi” tugmasini bosing." action={<Link className="button button--primary" href="/profile/orders">Buyurtmalarim</Link>}/>;
   return <section className="returns-page">
     <div className="page-heading"><div><h1>Qaytarishlarim</h1></div><button type="button" onClick={() => void load(page)} disabled={loading}><RefreshCw/> {loading ? "Yangilanmoqda…" : "Yangilash"}</button></div>
     {error && <p className="form-error" role="alert">{error}</p>}
@@ -82,7 +82,7 @@ export function ReturnDetailContent({ returnId }: { returnId: string }) {
 
   if (signedIn === false) return <LoginRequired next={`/profile/returns/${returnId}`}/>;
   if (!value && !error) return <LoadingGrid count={2} label="Qaytarish so‘rovi yuklanmoqda"/>;
-  if (!value) return <StatePanel kind="error" title="So‘rovni yuklab bo‘lmadi" description={`#${returnId} — ${error}`} action={<><Button loading={loading} onClick={() => void load()}>Qayta urinish</Button><Link className="button button--secondary" href="/profile/returns">Qaytarishlarim</Link></>}/>;
+  if (!value) return <StatePanel headingLevel={1} kind="error" title="So‘rovni yuklab bo‘lmadi" description={`#${returnId} — ${error}`} action={<><Button loading={loading} onClick={() => void load()}>Qayta urinish</Button><Link className="button button--secondary" href="/profile/returns">Qaytarishlarim</Link></>}/>;
   const { steps, current } = returnSteps(value);
   return <section className="return-detail">
     <div className="page-heading"><div><Link href="/profile/returns">← Qaytarishlarim</Link><h1>Qaytarish #{value.id}</h1></div><button type="button" onClick={() => void load()} disabled={loading}><RefreshCw/> {loading ? "Yangilanmoqda…" : "Yangilash"}</button></div>

@@ -48,8 +48,8 @@ export function CartContent() {
     saveCartSelection(next, items);
   };
   if (loading && !items.length) return <LoadingGrid count={4} label="Savatcha yuklanmoqda"/>;
-  if (error && !items.length) return <StatePanel kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={error} action={<Button onClick={() => void refresh()}>Qayta urinish</Button>}/>;
-  if (!items.length) return <StatePanel icon={<ShoppingCart/>} title="Savatchangiz bo‘sh" description="Mahsulot yonidagi “+” tugmasini bosing — tanlovingiz shu yerda saqlanadi." action={<Link className="button button--primary" href="/#products">Xaridni boshlash</Link>}/>;
+  if (error && !items.length) return <StatePanel headingLevel={1} kind="error" icon={<ShoppingCart/>} title="Savatchani yuklab bo‘lmadi" description={error} action={<Button onClick={() => void refresh()}>Qayta urinish</Button>}/>;
+  if (!items.length) return <StatePanel headingLevel={1} icon={<ShoppingCart/>} title="Savatchangiz bo‘sh" description="Mahsulot yonidagi “+” tugmasini bosing — tanlovingiz shu yerda saqlanadi." action={<Link className="button button--primary" href="/#products">Xaridni boshlash</Link>}/>;
   return <section className="cart-page">
     <div className="page-heading"><div><h1>Savatingiz, <em>{quantity} mahsulot</em></h1></div></div>
     <div className="cart-page-layout"><div className="cart-main">
