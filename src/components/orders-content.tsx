@@ -40,7 +40,7 @@ export function OrdersContent() {
   };
 
   if (!orders) return <LoadingGrid count={3} label="Buyurtmalar yuklanmoqda"/>;
-  if (!orders.length) return <StatePanel kind={error ? "error" : "empty"} icon={<Package/>}
+  if (!orders.length) return <StatePanel headingLevel={1} kind={error ? "error" : "empty"} icon={<Package/>}
     title={error ? "Buyurtmalarni yuklab bo‘lmadi" : "Buyurtmalar hali yo‘q"}
     description={error ? `Buyurtmalarni serverdan yuklab bo‘lmadi. ${error}` : "Birinchi buyurtmangiz shu yerda ko‘rinadi."}
     action={error

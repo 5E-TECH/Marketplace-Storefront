@@ -8,12 +8,15 @@ type StatePanelProps = {
   action?: ReactNode;
   icon?: ReactNode;
   compact?: boolean;
+  /** Panel sahifaning yagona kontenti bo'lsa (bo'sh savatcha va h.k.) sarlavha sahifa h1'i bo'ladi. */
+  headingLevel?: 1 | 2;
 };
 
-export function StatePanel({ kind = "empty", title, description, action, icon, compact = false }: StatePanelProps) {
+export function StatePanel({ kind = "empty", title, description, action, icon, compact = false, headingLevel = 2 }: StatePanelProps) {
+  const Heading = headingLevel === 1 ? "h1" : "h2";
   return <section className={`state-panel state-panel--${kind}${compact ? " state-panel--compact" : ""}`} role={kind === "error" ? "alert" : "status"}>
     <span className="state-panel__icon">{icon ?? (kind === "error" ? <AlertCircle/> : <Inbox/>)}</span>
-    <h2>{title}</h2>
+    <Heading>{title}</Heading>
     <p>{description}</p>
     {action && <div className="state-panel__action">{action}</div>}
   </section>;

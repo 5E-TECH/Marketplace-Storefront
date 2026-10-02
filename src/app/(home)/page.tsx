@@ -3,7 +3,7 @@ import { StorefrontHome } from "@/components/storefront-home";
 import { parseCatalogQuery, type CatalogSearchParams } from "@/lib/catalog-query";
 import { productService } from "@/services/product.service";
 import { bannerService } from "@/services/banner.service";
-import { absoluteUrl, baseOpenGraph, defaultOpenGraphImages, jsonLd, listingSeo, SITE_NAME, siteUrl } from "@/lib/seo";
+import { absoluteUrl, baseOpenGraph, defaultOpenGraphImages, jsonLd, listingSeo, pagedTitle, SITE_NAME, siteUrl } from "@/lib/seo";
 
 type Props = { searchParams: Promise<CatalogSearchParams> };
 
@@ -22,7 +22,7 @@ const ownPageCanonical = (params: CatalogSearchParams): string | undefined => {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
   const { alternates, ...seo } = listingSeo("/", params);
-  return { title: { absolute: "Elchi Market — O‘zbekistondagi onlayn marketplace" }, description, ...seo, ...(ownPageCanonical(params) ? {} : { alternates }), openGraph: { ...baseOpenGraph, title: "Elchi Market — onlayn marketplace", description, url: "/", images: defaultOpenGraphImages } };
+  return { title: { absolute: pagedTitle("Elchi Market — O‘zbekistondagi onlayn marketplace", params) }, description, ...seo, ...(ownPageCanonical(params) ? {} : { alternates }), openGraph: { ...baseOpenGraph, title: "Elchi Market — onlayn marketplace", description, url: "/", images: defaultOpenGraphImages } };
 }
 
 const organizationLd = [

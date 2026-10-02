@@ -25,6 +25,7 @@ const routes: [RegExp, string[]][] = [
   [/^\/checkout\/[^/]+\/confirm$/, ["POST"]],
   [/^\/payments$/, ["POST"]],
   [/^\/orders$/, ["GET"]],
+  [/^\/orders\/[^/]+$/, ["GET"]],
   [/^\/orders\/[^/]+\/tracking$/, ["GET"]],
   [/^\/orders\/[^/]+\/refund$/, ["POST"]],
   [/^\/orders\/[^/]+\/returns$/, ["POST"]],

@@ -4,7 +4,7 @@ import { CategoryStorefront } from "@/components/storefront-home";
 import { parseCatalogQuery, type CatalogSearchParams } from "@/lib/catalog-query";
 import { categoryService, findCategoryBySlug } from "@/services/category.service";
 import { productService } from "@/services/product.service";
-import { baseOpenGraph, clipDescription, defaultOpenGraphImages, listingSeo } from "@/lib/seo";
+import { baseOpenGraph, clipDescription, defaultOpenGraphImages, listingSeo, pagedTitle } from "@/lib/seo";
 import type { CategoryResult } from "@/types/commerce";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<CatalogSearchParams> };
@@ -22,7 +22,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const category = requireCategory(categories, slug);
   const basePath = `/katalog/${encodeURIComponent(category.slug)}`;
   const description = clipDescription(`${category.name}: Elchi Market’dagi do‘konlardan mahsulotlar va narxlar. Narx bo‘yicha saralang, savatchaga qo‘shing va O‘zbekiston bo‘ylab yetkazib berish bilan buyurtma qiling.`);
-  return { title: category.name, description, ...listingSeo(basePath, rawQuery), openGraph: { ...baseOpenGraph, title: category.name, description, url: basePath, images: defaultOpenGraphImages } };
+  return { title: pagedTitle(category.name, rawQuery), description, ...listingSeo(basePath, rawQuery), openGraph: { ...baseOpenGraph, title: category.name, description, url: basePath, images: defaultOpenGraphImages } };
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {

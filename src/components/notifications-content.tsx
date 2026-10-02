@@ -47,9 +47,9 @@ export function NotificationsContent() {
     catch (caught) { setError(errorMessage(caught, "Bildirishnomalarni o‘qilgan qilib bo‘lmadi")); }
   };
 
-  if (signedIn === false) return <StatePanel icon={<Bell/>} title="Akkauntingizga kiring" description="Bildirishnomalar akkauntingizga keladi. Ularni ko‘rish uchun tizimga kiring." action={<Link className="button button--primary" href="/login?next=%2Fprofile%2Fnotifications">Kirish</Link>}/>;
+  if (signedIn === false) return <StatePanel headingLevel={1} icon={<Bell/>} title="Akkauntingizga kiring" description="Bildirishnomalar akkauntingizga keladi. Ularni ko‘rish uchun tizimga kiring." action={<Link className="button button--primary" href="/login?next=%2Fprofile%2Fnotifications">Kirish</Link>}/>;
   if (!result && !error) return <LoadingGrid count={3} label="Bildirishnomalar yuklanmoqda"/>;
-  if (!result) return <StatePanel kind="error" title="Bildirishnomalarni yuklab bo‘lmadi" description={error} action={<Button loading={loading} onClick={() => void load(page)}><RefreshCw/> Qayta urinish</Button>}/>;
+  if (!result) return <StatePanel headingLevel={1} kind="error" title="Bildirishnomalarni yuklab bo‘lmadi" description={error} action={<Button loading={loading} onClick={() => void load(page)}><RefreshCw/> Qayta urinish</Button>}/>;
   const pages = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
   return <section className="notifications-page">
     <div className="page-heading"><div><h1>Bildirishnomalar</h1></div><button type="button" onClick={() => void markAll()} disabled={!result.unreadCount}>Barchasini o‘qilgan qilish</button></div>

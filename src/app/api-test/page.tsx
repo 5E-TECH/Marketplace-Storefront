@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { apiRequest, ApiError } from "@/lib/api";
 import { validateStorefrontProductsPageDto } from "@/generated/api-validators";
 import { ApiTestClient } from "./test-client";
@@ -7,6 +8,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "API tekshiruvi", description: "Elchi Market storefront va backend API ulanishini tekshirish sahifasi.", robots: { index: false, follow: false } };
 
 export default async function ApiTestPage() {
+  // Diagnostika sahifasi: production'da faqat ENABLE_API_TEST=1 bo'lsa ochiq (dev serverda doim).
+  if (process.env.NODE_ENV === "production" && process.env.ENABLE_API_TEST !== "1") notFound();
   let catalog;
   let error = "";
   try {

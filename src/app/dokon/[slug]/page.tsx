@@ -4,7 +4,7 @@ import { cache } from "react";
 import { ShopStorefront } from "@/components/storefront-home";
 import { CATALOG_PAGE_SIZE, parseCatalogQuery, type CatalogSearchParams } from "@/lib/catalog-query";
 import { productService } from "@/services/product.service";
-import { baseOpenGraph, clipDescription, defaultOpenGraphImages, listingSeo } from "@/lib/seo";
+import { baseOpenGraph, clipDescription, defaultOpenGraphImages, listingSeo, pagedTitle } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<CatalogSearchParams> };
 // Standart 1-sahifa (metadata bilan umumiy): hajmi `parseCatalogQuery` bilan bir xil, 2-sahifa 11–20 ni o'tkazib yubormasin.
@@ -20,7 +20,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const basePath = `/dokon/${encodeURIComponent(shop.slug)}`;
   // Logotip kvadrat — katta kartochkada cho'zilib ketmasin.
   const images = shop.logoUrl ? [{ url: shop.logoUrl, alt: shop.name }] : defaultOpenGraphImages;
-  return { title: shop.name, description, ...listingSeo(basePath, rawQuery), openGraph: { ...baseOpenGraph, title: shop.name, description, url: basePath, images }, twitter: { card: shop.logoUrl ? "summary" : "summary_large_image" } };
+  return { title: pagedTitle(shop.name, rawQuery), description, ...listingSeo(basePath, rawQuery), openGraph: { ...baseOpenGraph, title: shop.name, description, url: basePath, images }, twitter: { card: shop.logoUrl ? "summary" : "summary_large_image" } };
 }
 
 export default async function ShopPage({ params, searchParams }: Props) {
