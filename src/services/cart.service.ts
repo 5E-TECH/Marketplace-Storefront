@@ -21,6 +21,45 @@ const getCartProduct = (productId: string): Promise<unknown> => {
   return value;
 };
 const isCached = (productId: string): boolean => (productCache.get(productId)?.expiresAt ?? 0) > Date.now();
+
+/**
+ * Savatdagi mahsulotlar ma'lumoti (nom, rasm, variantlar) brauzerda 30 daqiqa saqlanadi: sahifa yangilanganda
+ * savat har mahsulot uchun alohida GET kutmasdan darhol tayyor bo'ladi. Narx baribir `unitPriceSnapshot`dan olinadi.
+ * Faqat savatdagi mahsulotlar yoziladi (katalog kartalari emas) — yozuv kichik va savat bilan birga tozalanadi.
+ */
+const STORED_PRODUCTS_KEY = "elchi_cart_products_v1";
+const STORED_PRODUCTS_TTL = 30 * 60_000;
+const storedAt = new Map<string, number>();
+let restored = false;
+const storage = (): Storage | null => {
+  try { return typeof localStorage === "undefined" ? null : localStorage; } catch { return null; }
+};
+const restoreStoredProducts = (): void => {
+  if (restored) return;
+  restored = true;
+  const store = storage();
+  if (!store) return;
+  try {
+    const saved = object(JSON.parse(store.getItem(STORED_PRODUCTS_KEY) ?? "null"));
+    for (const [productId, entry] of Object.entries(saved)) {
+      const { savedAt, product } = object(entry);
+      if (typeof savedAt !== "number" || !product || savedAt + STORED_PRODUCTS_TTL <= Date.now() || isCached(productId)) continue;
+      storedAt.set(productId, savedAt);
+      productCache.set(productId, { expiresAt: savedAt + STORED_PRODUCTS_TTL, value: Promise.resolve(product) });
+    }
+  } catch { /* Buzilgan yozuv — mahsulotlar backenddan olinadi. */ }
+};
+const storeProducts = (products: Map<string, unknown>): void => {
+  const store = storage();
+  if (!store) return;
+  const now = Date.now();
+  // Saqlangan vaqt yangilanmaydi: savatda turgan mahsulot ham 30 daqiqada bir backenddan yangilanadi.
+  const entries = Object.fromEntries([...products].map(([productId, product]) => {
+    if (!storedAt.has(productId)) storedAt.set(productId, now);
+    return [productId, { savedAt: storedAt.get(productId), product }];
+  }));
+  try { store.setItem(STORED_PRODUCTS_KEY, JSON.stringify(entries)); } catch { /* Joy yo'q yoki taqiqlangan — keyingi safar backenddan olinadi. */ }
+};
 /**
  * Katalog kartalari mahsulotni keshga ko'rsatilgach yozadi. Bosh sahifa oqim bilan keladi (`loading.tsx`
  * Suspense): React kontentni `load`dan keyin ochadi, savat esa undan oldin yuklanadi — darhol so'ralsa har
@@ -70,6 +109,8 @@ const waitForPageProducts = async (productIds: string[]): Promise<void> => {
 const cacheCartProduct = (product: AddCartInput["product"]) => {
   const productId = String(product.id);
   productCache.set(productId, { expiresAt: Date.now() + PRODUCT_CACHE_TTL, value: Promise.resolve(product) });
+  // Kartadan kelgan ma'lumot yangi — brauzerdagi nusxa ham shu vaqtdan hisoblanadi.
+  storedAt.delete(productId);
   productWaiters.get(productId)?.forEach((resolve) => resolve());
   productWaiters.delete(productId);
 };
@@ -78,18 +119,23 @@ const normalizeCart = async (response: unknown): Promise<Cart> => {
   const root = object(response);
   const data = object(root.data ?? response);
   const rawItems = Array.isArray(data.items) ? data.items : Array.isArray(root.items) ? root.items : [];
-  // The contract returns product IDs and price snapshots, not embedded products.
+  // Kontrakt har qatorda nom (`productName`, savatga qo'shilgandagi surat) va rasm (`imageUrl`) beradi. Mahsulotning o'zi
+  // (do'kon nomi, variant qoldig'i, eski narx) alohida olinadi — u yuklanmasa ham qator nomi va rasmi bilan ko'rinadi.
   const productIds = [...new Set(rawItems.filter((input) => !object(input).product && !object(object(input).variant).product).map((input) => String(object(input).productId)))];
+  restoreStoredProducts();
   await waitForPageProducts(productIds);
+  const loaded = new Map<string, unknown>();
   const products = new Map<string, unknown>(await Promise.all(productIds.map(async (productId) => {
     try {
       const product = await getCartProduct(productId);
+      loaded.set(productId, product);
       return [productId, product] as const;
     } catch {
-      // Bitta mahsulot yuklanmasa butun savatcha yiqilmasin: narx snapshot'dan olinadi, nomi vaqtincha raqam bilan.
+      // Bitta mahsulot yuklanmasa butun savatcha yiqilmasin: narx snapshot'dan, nom va rasm savat qatoridan olinadi.
       return [productId, { id: productId, name: `Mahsulot #${productId}` }] as const;
     }
   })));
+  storeProducts(loaded);
   const items = rawItems.map((input): CartItem | null => {
     const item = object(input);
     const variant = object(item.variant);
@@ -101,7 +147,10 @@ const normalizeCart = async (response: unknown): Promise<Cart> => {
     const rawShopId = item.shopId ?? product.shop?.id;
     const rawPrice = [item.unitPriceSnapshot, item.unitPrice, variant.price, product.price].find((value) => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)) && Number(value) >= 0);
     const quantity = Number(item.quantity);
-    return { id: String(itemId), productId, variantId: typeof variantId === "string" || typeof variantId === "number" ? variantId : undefined, shopId: typeof rawShopId === "string" || typeof rawShopId === "number" ? rawShopId : "marketplace", product: { ...product, price: Number(rawPrice ?? 0) }, quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1, color: String(item.color ?? variant.color ?? product.colors[0] ?? "") };
+    // Nom — narx kabi savatga qo'shilgandagi surat (buyurtmaga ham shu o'tadi); rasm — variant rasmi, u bo'lmasa asosiysi.
+    const name = typeof item.productName === "string" && item.productName.trim() ? item.productName.trim() : product.name;
+    const image = typeof item.imageUrl === "string" && item.imageUrl.trim() ? item.imageUrl.trim() : product.image;
+    return { id: String(itemId), productId, variantId: typeof variantId === "string" || typeof variantId === "number" ? variantId : undefined, shopId: typeof rawShopId === "string" || typeof rawShopId === "number" ? rawShopId : "marketplace", product: { ...product, name, image, price: Number(rawPrice ?? 0) }, quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1, color: String(item.color ?? variant.color ?? product.colors[0] ?? "") };
   }).filter((item): item is CartItem => item !== null);
   const cartId = data.id ?? data.cartId;
   return { id: typeof cartId === "string" ? cartId : undefined, items };

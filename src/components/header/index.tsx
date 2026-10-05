@@ -13,8 +13,13 @@ import { Container } from "../ui";
 import { CatalogOverlay } from "./catalog-overlay";
 import { HeaderSearch } from "./header-search";
 
-const STRIP_LIMIT = 6;
+const STRIP_LIMIT = 7;
 const badge = (count: number) => count > 99 ? "99+" : String(count);
+
+/** Logotip: brend belgisi (favicon bilan bir xil "e") va so'z belgisi. */
+export function Logo({ className = "" }: { className?: string }) {
+  return <Link className={`logo ${className}`.trim()} href="/" aria-label="Elchi Market bosh sahifa"><i className="logo-mark" aria-hidden>e</i><span>elchi</span><b>market</b></Link>;
+}
 
 export function Header({ categories }: { categories: CatalogCategory[] }) {
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -45,25 +50,25 @@ export function Header({ categories }: { categories: CatalogCategory[] }) {
 
   return <header className="header">
     <div className="utility-bar"><Container>
-      <span><MapPin/> O‘zbekiston bo‘ylab yetkazib beramiz</span>
-      <nav aria-label="Tezkor havolalar"><Link href="/profile/orders">Buyurtmalarim</Link><Link href="/favorites">Saralanganlar</Link><Link href="/katalog">Barcha kategoriyalar</Link></nav>
+      <span><MapPin/> O‘zbekiston bo‘ylab yetkazib beramiz · qabul qilganda to‘lash</span>
+      <nav aria-label="Tezkor havolalar"><Link href="/profile/orders">Buyurtmalarim</Link><Link href="/profile/returns">Qaytarish</Link><Link href="/katalog">Barcha kategoriyalar</Link></nav>
     </Container></div>
     <Container className="nav-wrap">
       <button className="icon-button menu-button" type="button" aria-label={catalogOpen ? "Katalogni yopish" : "Katalogni ochish"} onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu">{catalogOpen ? <X/> : <Menu/>}</button>
-      <Link className="logo" href="/" aria-label="Elchi Market bosh sahifa"><span>elchi</span><b>market</b></Link>
-      <button className="catalog-button" type="button" onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu"><Grid2X2/>{catalogOpen ? "Yopish" : "Katalog"}</button>
+      <Logo/>
+      <button className={`catalog-button${catalogOpen ? " is-open" : ""}`} type="button" onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu">{catalogOpen ? <X/> : <Grid2X2/>}{catalogOpen ? "Yopish" : "Katalog"}</button>
+      <HeaderSearch/>
       <div className="header-actions">
-        <HeaderSearch/>
         <Link className="header-nav-action header-favorite" href="/favorites" aria-label={`Sevimlilar: ${favorites.count}`}><i><Heart fill={favorites.count ? "currentColor" : "none"}/>{favorites.count > 0 && <span>{badge(favorites.count)}</span>}</i><b>Sevimlilar</b></Link>
         {authenticated && <Link className="header-nav-action header-notifications" href="/profile/notifications" aria-label={unread ? `Bildirishnomalar: ${unread} ta o‘qilmagan` : "Bildirishnomalar"}><i><Bell/>{unread > 0 && <span>{badge(unread)}</span>}</i><b>Xabarlar</b></Link>}
-        <Link className="user-action" href={authenticated ? "/profile" : "/login"} aria-label={authenticated ? "Profil" : "Kirish"}><UserRound/><span>{authenticated ? "Profil" : "Kirish"}</span></Link>
+        <Link className="header-nav-action user-action" href={authenticated ? "/profile" : "/login"} aria-label={authenticated ? "Profil" : "Kirish"}><i><UserRound/></i><b>{authenticated ? "Profil" : "Kirish"}</b></Link>
         <Link className="header-nav-action header-cart" href="/cart" aria-label={cartUnavailable ? "Savatchani yuklab bo‘lmadi" : cart.quantity ? `Savatcha: ${cart.quantity} ta mahsulot` : "Savatcha"} aria-busy={cart.loading || undefined}><i><ShoppingCart/>{cartUnavailable ? <span className="is-warning" aria-hidden>!</span> : cart.quantity > 0 && <span>{badge(cart.quantity)}</span>}</i><b>Savat</b></Link>
       </div>
     </Container>
-    <div className="category-strip"><Container>
-      {categories.slice(0, STRIP_LIMIT).map((category) => <Link href={`/katalog/${category.slug}`} onClick={closeCatalog} key={category.id}><CategoryIcon name={category.name} iconUrl={category.iconUrl}/>{category.name}</Link>)}
-      <button type="button" className={catalogOpen ? "active" : ""} onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu">Yana <ChevronDown/></button>
-    </Container></div>
+    <nav className="category-strip" aria-label="Kategoriyalar"><Container>
+      {categories.slice(0, STRIP_LIMIT).map((category) => <Link href={`/katalog/${encodeURIComponent(category.slug)}`} onClick={closeCatalog} key={category.id}><CategoryIcon name={category.name} iconUrl={category.iconUrl}/>{category.name}</Link>)}
+      <button type="button" className={catalogOpen ? "active" : ""} onClick={() => setCatalogOpen((value) => !value)} aria-expanded={catalogOpen} aria-controls="catalog-menu">Barchasi <ChevronDown/></button>
+    </Container></nav>
     <CatalogOverlay categories={categories} open={catalogOpen} onClose={closeCatalog}/>
   </header>;
 }

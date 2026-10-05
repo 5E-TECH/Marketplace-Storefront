@@ -252,3 +252,114 @@ test('contract cart rows keep price snapshots and resolve each product only once
   assert.deepEqual(cartTotals(cart.items), { quantity: 3, subtotal: 400 });
   assert.deepEqual(calls, ['/cart', `/storefront/products/${product.id}`]);
 });
+
+function withWindow(t, value = {}) {
+  const previousWindow = globalThis.window;
+  globalThis.window = { dispatchEvent: () => true, ...value };
+  t.after(() => { if (previousWindow === undefined) delete globalThis.window; else globalThis.window = previousWindow; });
+  return globalThis.window;
+}
+
+test('CSRF: brauzer so‘rovlari X-Requested-With bilan ketadi, SSR uni o‘zi yasamaydi', async (t) => {
+  const seen = [];
+  t.mock.method(globalThis, 'fetch', async (url, options) => { seen.push(options.headers.get('X-Requested-With')); return Response.json({}); });
+  await client().apiRequest('/cart/items', { method: 'POST', body: {} });
+  withWindow(t);
+  const browser = loadTypeScript('src/lib/api.ts', { '@/config/env': config, '@/lib/access-token': { sessionHeaders: () => ({}), hasAuthSession: () => false } });
+  await browser.apiRequest('/cart/items', { method: 'POST', body: {} });
+  assert.deepEqual(seen, [null, 'XMLHttpRequest']);
+});
+
+test('401: bitta refresh (parallel so‘rovlar uchun ham), eski Bearer’siz qayta yuborish, cookie rejimiga o‘tish', async (t) => {
+  withWindow(t);
+  const calls = [];
+  let cookieMode = 0;
+  let authorized = false;
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    calls.push([options.method ?? 'GET', url, options.headers.get('Authorization')]);
+    if (url === '/api/backend/auth/refresh') { authorized = true; return Response.json({ statusCode: 200, data: {} }); }
+    return authorized ? Response.json({ data: { ok: true } }) : Response.json({ message: 'Token muddati tugagan' }, { status: 401 });
+  });
+  const { apiRequest } = loadTypeScript('src/lib/api.ts', { '@/config/env': config, '@/lib/access-token': {
+    sessionHeaders: () => ({}), hasAuthSession: () => true, markCookieSession: () => { cookieMode += 1; }, setAccessToken: () => assert.fail('cookie rejimida token saqlanmaydi'),
+  } });
+  const results = await Promise.all([apiRequest('/orders', { headers: { Authorization: 'Bearer eski' } }), apiRequest('/favorites')]);
+  assert.deepEqual(results, [{ ok: true }, { ok: true }]);
+  assert.equal(calls.filter(([, url]) => url.endsWith('/auth/refresh')).length, 1, 'refresh bir marta');
+  assert.equal(cookieMode, 1);
+  assert.deepEqual(calls.filter(([, url]) => url === '/api/backend/orders').map(([, , auth]) => auth), ['Bearer eski', null], 'qayta so‘rovda eski token yo‘q');
+});
+
+test('401: refresh tanada token qaytarsa u saqlanadi; refresh rad etilsa sessiya tugaydi; auth yo‘llari refresh qilinmaydi', async (t) => {
+  const events = [];
+  withWindow(t, { dispatchEvent: (event) => { events.push(event.type); return true; } });
+  let refreshOk = true;
+  const tokens = [];
+  const urls = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    urls.push(url);
+    if (url === '/api/backend/auth/refresh') return refreshOk ? Response.json({ data: { accessToken: 'yangi' } }) : Response.json({ message: 'Refresh yaroqsiz' }, { status: 401 });
+    return Response.json({ message: 'Ruxsat yo‘q' }, { status: 401 });
+  });
+  const { apiRequest } = loadTypeScript('src/lib/api.ts', { '@/config/env': config, '@/lib/access-token': {
+    sessionHeaders: () => ({}), hasAuthSession: () => true, markCookieSession: () => assert.fail('token kelgan'), setAccessToken: (token) => tokens.push(token),
+  } });
+  await assert.rejects(apiRequest('/orders'), (error) => error.status === 401);
+  assert.deepEqual(tokens, ['yangi']);
+  assert.deepEqual(urls, ['/api/backend/orders', '/api/backend/auth/refresh', '/api/backend/orders'], 'faqat bir marta qayta urinadi');
+  refreshOk = false;
+  urls.length = 0;
+  await assert.rejects(apiRequest('/orders'), (error) => error.status === 401);
+  assert.deepEqual(urls, ['/api/backend/orders', '/api/backend/auth/refresh']);
+  assert.ok(events.includes('elchi:auth-expired'));
+  urls.length = 0;
+  await assert.rejects(apiRequest('/auth/login', { method: 'POST', body: {} }), (error) => error.status === 401);
+  assert.deepEqual(urls, ['/api/backend/auth/login'], 'noto‘g‘ri parolda refresh yo‘q');
+});
+
+test('proxy CSRF, X-Forwarded-For (o‘zgartirmasdan) va X-Forwarded-Proto ni uzatadi, o‘zi qo‘shmaydi', async () => {
+  const forwarded = [];
+  const { proxyBackend } = loadTypeScript('src/lib/backend-proxy.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/api': { ApiError: class ApiError extends Error {}, apiResponse: async (_path, options) => { forwarded.push(options.headers); return Response.json({}); } },
+  });
+  const request = (headers) => ({ method: 'POST', headers: new Headers(headers), text: async () => '{}', nextUrl: { searchParams: new URLSearchParams() } });
+  await proxyBackend(request({ 'X-Requested-With': 'XMLHttpRequest', 'X-Forwarded-For': '203.0.113.9, 62.164.155.87', 'X-Forwarded-Proto': 'https' }), '/cart/items');
+  assert.equal(forwarded[0].get('x-requested-with'), 'XMLHttpRequest');
+  assert.equal(forwarded[0].get('x-forwarded-for'), '203.0.113.9, 62.164.155.87', 'mijoz yozgan qiymat ham, haqiqiy IP ham o‘z joyida');
+  assert.equal(forwarded[0].get('x-forwarded-proto'), 'https');
+  await proxyBackend(request({}), '/cart/items');
+  assert.equal(forwarded[1].get('x-requested-with'), null, 'boshqa saytdan kelgan forma uchun sarlavha yasalmaydi');
+  assert.equal(forwarded[1].get('x-forwarded-for'), null);
+});
+
+test('generic proxy allows session refresh only as POST', async () => {
+  const paths = [];
+  const route = loadTypeScript('src/app/api/backend/[...path]/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
+    '@/lib/backend-proxy': { proxyBackend: async (_request, path) => { paths.push(path); return Response.json({}); } },
+  });
+  assert.equal((await route.POST({ method: 'POST' }, { params: Promise.resolve({ path: ['auth', 'refresh'] }) })).status, 200);
+  assert.equal((await route.GET({ method: 'GET' }, { params: Promise.resolve({ path: ['auth', 'refresh'] }) })).status, 405);
+  assert.deepEqual(paths, ['/auth/refresh']);
+});
+
+test('savat qatori nomi va rasmi kontraktdan (productName, imageUrl); mahsulot yuklanmasa ham ko‘rinadi', async () => {
+  const cartResponse = { ...fixture(schemas.CartDto), items: [
+    { ...fixture(schemas.CartItemDto), id: '1', productId: 'p1', productName: 'Smartfon X 128GB', imageUrl: 'https://cdn.test/v1.webp' },
+    { ...fixture(schemas.CartItemDto), id: '2', productId: 'p2', productName: 'Choy', imageUrl: null },
+  ] };
+  const { cartService } = loadTypeScript('src/services/cart.service.ts', { '@/lib/api': {
+    apiRequest: async (path, options) => {
+      if (path === '/cart') { assert.ok(options.validate(cartResponse), 'kontrakt validatori yangi maydonlarni qabul qiladi'); return cartResponse; }
+      if (path === '/storefront/products/p1') return { ...product, id: 'p1', name: 'Jonli nom', images: ['https://cdn.test/main.webp'] };
+      throw new Error('mahsulot topilmadi');
+    },
+    ApiError: class extends Error {},
+  } });
+  const [first, second] = (await cartService.get()).items;
+  assert.equal(first.product.name, 'Smartfon X 128GB', 'savatga qo‘shilgandagi nom (buyurtmaga ham shu o‘tadi)');
+  assert.equal(first.product.image, 'https://cdn.test/v1.webp', 'variant rasmi');
+  assert.equal(second.product.name, 'Choy', 'mahsulot so‘rovi yiqilsa ham “Mahsulot #id” emas');
+  assert.equal(second.product.image, '/placeholder-product.svg');
+});

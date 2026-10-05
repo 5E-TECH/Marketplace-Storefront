@@ -25,7 +25,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [categories, products] = await Promise.all([categoryService.list(), allProducts()]);
   if (categories.error) throw new Error(categories.error);
   const categoryEntries = flattenCategories(categories.data).map((category) => ({ url: absoluteUrl(`/katalog/${encodeURIComponent(category.slug)}`), changeFrequency: "daily" as const, priority: 0.8 }));
-  const productEntries = products.map((product) => ({ url: absoluteUrl(`/product/${encodeURIComponent(String(product.id))}`), lastModified: validDate(product.updatedAt || product.createdAt), changeFrequency: "daily" as const, priority: 0.9 }));
+  // Rasm ham xaritada: mahsulot Google Rasmlar qidiruvida chiqadi.
+  const productEntries = products.map((product) => ({ url: absoluteUrl(`/product/${encodeURIComponent(String(product.id))}`), lastModified: validDate(product.updatedAt || product.createdAt), changeFrequency: "daily" as const, priority: 0.9, ...(/^https?:\/\//.test(product.image) ? { images: [product.image] } : {}) }));
   const shops = new Map(products.filter((product) => product.shop?.slug).map((product) => [product.shop!.slug, product.shop!]));
   const shopEntries = [...shops.values()].map((shop) => ({ url: absoluteUrl(`/dokon/${encodeURIComponent(shop.slug)}`), changeFrequency: "daily" as const, priority: 0.8 }));
   return [{ url: absoluteUrl("/"), changeFrequency: "hourly", priority: 1 }, { url: absoluteUrl("/katalog"), changeFrequency: "daily", priority: 0.8 }, ...categoryEntries, ...shopEntries, ...productEntries];

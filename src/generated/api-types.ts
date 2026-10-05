@@ -1478,7 +1478,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Savatdagi har bir posilka uchun dostavka narxi */
+        /**
+         * Savatdagi har bir posilka uchun dostavka narxi
+         * @description `cartItemIds` berilsa faqat shu qatorlar hisoblanadi — `POST /checkout` ga aynan shu tanlov yuboriladi.
+         */
         post: operations["CheckoutController_preview"];
         delete?: never;
         options?: never;
@@ -1495,7 +1498,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Savatni do‘konlar bo‘yicha ajratib buyurtma yaratish */
+        /**
+         * Savatni do‘konlar bo‘yicha ajratib buyurtma yaratish
+         * @description `cartItemIds` berilsa faqat shu savat qatorlari buyurtmaga o‘tadi va savatdan o‘chadi, qolganlari savatda qoladi. Berilmasa — butun savat. Savatda yo‘q id → 404. Idempotency-Key bitta tanlovga tegishli: tanlov o‘zgarsa yangi kalit yuboring.
+         */
         post: operations["CheckoutController_create"];
         delete?: never;
         options?: never;
@@ -2009,6 +2015,117 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/notifications/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Avtomatik xabar shablonlari */
+        get: operations["AdminNotificationsController_templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/notifications/templates/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Shablonni tahrirlash
+         * @description Faqat shablon `variables` ro‘yxatidagi `{nomi}` o‘zgaruvchilari; boshqasi 400. Keyingi xabardan boshlab ishlatiladi.
+         */
+        patch: operations["AdminNotificationsController_updateTemplate"];
+        trace?: never;
+    };
+    "/api/v1/admin/notifications/templates/{key}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Shablonni standart matnga qaytarish */
+        post: operations["AdminNotificationsController_resetTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/broadcast/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ommaviy xabarni oldindan ko‘rish
+         * @description Qabul qiluvchilar sonini va `previewToken` ni qaytaradi. Hech narsa yuborilmaydi.
+         */
+        post: operations["AdminNotificationsController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/broadcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ommaviy xabar yuborish (faqat SUPERADMIN)
+         * @description Faqat `preview` bergan token bilan: xabar yoki qabul qiluvchilar soni o‘zgargan bo‘lsa 409. Bir xil token ikkinchi marta yubormaydi (`idempotent: true`). Yuborish fonda — holati `GET /admin/broadcasts` da.
+         */
+        post: operations["AdminNotificationsController_send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/broadcasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ommaviy xabarlar tarixi va yuborish holati */
+        get: operations["AdminNotificationsController_broadcasts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/team": {
         parameters: {
             query?: never;
@@ -2120,7 +2237,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Elchi posilkalari holati va tracking ro‘yxati */
+        /**
+         * Elchi posilkalari va Elchi’ga topshirilmagan buyurtmalar
+         * @description `shipmentState`: `all` (sukut), `created` — posilkasi bor, `missing` — tasdiqlangan/to‘langan, lekin posilkasi yaratilmagan (qotib qolgan). Qatorda `orderStatus` va `paymentMethod` ham bor.
+         */
         get: operations["AdminIntegrationController_shipments"];
         put?: never;
         post?: never;
@@ -2615,6 +2735,78 @@ export interface paths {
          * @description APPROVED → REFUNDED. `amount` berilmasa so‘rovdagi tovarlar summasi to‘liq qaytariladi, kichikroq summa — qisman refund. Online to‘lovda provayder to‘lovidan shu summa qaytariladi; COD da pul xaridorga qo‘lda qaytariladi va `comment` majburiy. Ikkala holatda summa (komissiya ulushi qaytarilgan holda) sotuvchi hisobidan yechiladi. Sifatli tovar omborga qaytadi (`restock`). Idempotent: takror chaqiruv pulni ikkinchi marta qaytarmaydi.
          */
         post: operations["AdminReturnsController_refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/seller/finance/ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Do‘kon ledger yozuvlari (sotuv, komissiya, payout, refund) */
+        get: operations["SellerFinanceController_ledger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/seller/finance/payouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Do‘kon payout’lari */
+        get: operations["SellerFinanceController_payouts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/seller/finance/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Moliya jamlanmasi: balans, payout’lar, COD reconciliation
+         * @description `dateFrom`/`dateTo` faqat davr ko‘rsatkichlariga ta’sir qiladi (`paidPayoutAmount`, `cod`); balans va kutilayotgan payout — hozirgi holat.
+         */
+        get: operations["SellerFinanceController_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/seller/finance/payout-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payout chastotasi va keyingi to‘lov kuni */
+        get: operations["SellerFinanceController_getPayoutSchedule"];
+        /** Payout chastotasini tanlash (DAILY | WEEKLY | MONTHLY) */
+        put: operations["SellerFinanceController_updatePayoutSchedule"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3812,6 +4004,16 @@ export interface components {
             unitPriceSnapshot: number;
             /** @example 250000 */
             lineTotal: number;
+            /**
+             * @description Savatga qo‘shilgan paytdagi nom (narx kabi surat) — buyurtmaga ham shu nom o‘tadi
+             * @example Smartfon X 128GB
+             */
+            productName: string;
+            /**
+             * @description Variant rasmi, u bo‘lmasa mahsulotning asosiy rasmi. Katalogdan jonli olinadi
+             * @example https://api.elchimarket.uz/media/products/35/main.webp
+             */
+            imageUrl: string | null;
         };
         CartDto: {
             /** @example 5 */
@@ -3861,11 +4063,27 @@ export interface components {
         };
         DeliveryPreviewDto: {
             address: components["schemas"]["CheckoutAddressDto"];
+            /**
+             * @description Faqat shu savat qatorlari (`GET /cart` → `items[].id`). Berilmasa — butun savat. Buyurtmadan keyin tanlangan qatorlar savatdan o‘chadi, qolganlari savatda qoladi.
+             * @example [
+             *       "10",
+             *       "12"
+             *     ]
+             */
+            cartItemIds?: string[];
         };
         CreateCheckoutDto: {
+            address: components["schemas"]["CheckoutAddressDto"];
+            /**
+             * @description Faqat shu savat qatorlari (`GET /cart` → `items[].id`). Berilmasa — butun savat. Buyurtmadan keyin tanlangan qatorlar savatdan o‘chadi, qolganlari savatda qoladi.
+             * @example [
+             *       "10",
+             *       "12"
+             *     ]
+             */
+            cartItemIds?: string[];
             /** @enum {string} */
             paymentMethod: "online" | "cod";
-            address: components["schemas"]["CheckoutAddressDto"];
         };
         CreatePaymentDto: {
             /** @example 42 */
@@ -3972,6 +4190,152 @@ export interface components {
             /** @example 2026-08-27T08:00:00.000Z */
             occurredAt: string;
         };
+        FinanceLedgerEntryDto: {
+            /** @example 501 */
+            id: string;
+            /** @example 7 */
+            shopId: string;
+            /**
+             * @example SALE
+             * @enum {string}
+             */
+            entryType: "SALE" | "COD_SALE" | "COD_SETTLEMENT" | "COMMISSION" | "PAYOUT" | "REFUND" | "ADJUST";
+            /**
+             * @description Musbat — sotuvchiga kirim, manfiy — yechim
+             * @example 250000
+             */
+            amount: number;
+            /**
+             * @description Shu yozuvdan keyingi balans
+             * @example 1180000
+             */
+            balanceAfter: number;
+            /**
+             * @description seller_order | cod_seller_order | seller_order_refund | return_request | payout
+             * @example seller_order
+             */
+            referenceType: string;
+            /** @example 1203 */
+            referenceId: string;
+            /**
+             * Format: date-time
+             * @example 2026-09-28T10:15:00.000Z
+             */
+            createdAt: string;
+        };
+        FinanceLedgerPageDto: {
+            items: components["schemas"]["FinanceLedgerEntryDto"][];
+            /** @example 42 */
+            total: number;
+            /** @example 1 */
+            page: number;
+            /** @example 20 */
+            limit: number;
+            /** @example 3 */
+            totalPages: number;
+        };
+        FinancePayoutDto: {
+            /** @example 88 */
+            id: string;
+            /** @example 7 */
+            shopId: string;
+            /** @example 225000 */
+            amount: number;
+            /**
+             * @example PENDING
+             * @enum {string}
+             */
+            status: "PENDING" | "APPROVED" | "HELD" | "PAID";
+            /** @example null */
+            method: string | null;
+            /**
+             * @description Payout qaysi posilka (sales_order_seller) uchun ochilgan
+             * @example 1203
+             */
+            referenceId: string;
+            /**
+             * Format: date-time
+             * @example null
+             */
+            paidAt: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-09-28T10:15:00.000Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @example 2026-09-28T10:15:00.000Z
+             */
+            updatedAt: string;
+        };
+        FinancePayoutPageDto: {
+            items: components["schemas"]["FinancePayoutDto"][];
+            /** @example 12 */
+            total: number;
+            /** @example 1 */
+            page: number;
+            /** @example 20 */
+            limit: number;
+            /** @example 1 */
+            totalPages: number;
+        };
+        FinanceReconciliationReportDto: {
+            /**
+             * @description Elchi hisob-kitob qilgan COD posilkalar
+             * @example 14
+             */
+            settlementsCount: number;
+            /** @example 3400000 */
+            expectedCodAmount: number;
+            /** @example 3400000 */
+            collectedCodAmount: number;
+            /**
+             * @description collected − expected
+             * @example 0
+             */
+            difference: number;
+            /**
+             * @description COD sotuvlardan komissiya
+             * @example 340000
+             */
+            expectedCommission: number;
+            /**
+             * @description Online payout’lardan ushlab qolingan qismi
+             * @example 200000
+             */
+            nettedCommission: number;
+            /**
+             * @description Hali undirilmagan komissiya
+             * @example 140000
+             */
+            outstandingCommission: number;
+        };
+        FinanceCommissionDto: {
+            /** @example 1 */
+            id: string;
+            /** @example null */
+            shopId: string | null;
+            /** @example null */
+            categoryId: string | null;
+            /**
+             * @example PERCENT
+             * @enum {string}
+             */
+            type: "PERCENT" | "FIXED";
+            /** @example 10 */
+            value: number;
+            /**
+             * Format: date-time
+             * @example 2026-09-01T00:00:00.000Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @example 2026-09-01T00:00:00.000Z
+             */
+            updatedAt: string;
+        };
         CreateCommissionDto: {
             /** @enum {string} */
             scope: "global" | "category" | "shop";
@@ -4042,6 +4406,107 @@ export interface components {
         HideProductDto: {
             /** @example Mahsulot rasmi yoki tavsifi qoidalarga zid */
             reason: string;
+        };
+        NotificationTemplateDto: {
+            /** @example shop_approved */
+            key: string;
+            /** @example Do‘kon tasdiqlandi */
+            name: string;
+            /** @example Admin do‘konni tasdiqlaganda sotuvchiga */
+            description: string;
+            /**
+             * @description Shablonda ishlatish mumkin bo‘lgan o‘zgaruvchilar
+             * @example {
+             *       "shopName": "Do‘kon nomi"
+             *     }
+             */
+            variables: unknown;
+            title: string;
+            body: string;
+            /** @description false — standart matn */
+            customized: boolean;
+            defaultTitle: string;
+            defaultBody: string;
+            updatedAt: string | null;
+        };
+        UpdateNotificationTemplateDto: {
+            /** @example Do‘kon tasdiqlandi */
+            title: string;
+            /**
+             * @description O‘zgaruvchilar `{nomi}` ko‘rinishida; faqat shablon ro‘yxatidagilari
+             * @example {shopName} do‘koningiz faol holatga o‘tdi.
+             */
+            body: string;
+        };
+        BroadcastPreviewDto: {
+            /**
+             * @example sellers
+             * @enum {string}
+             */
+            audience: "all" | "sellers" | "buyers";
+            /**
+             * @description In-app doim. Qo‘shimcha kanallar ixtiyoriy.
+             * @example []
+             */
+            channels?: ("sms" | "email")[];
+            /** @example Yangi aksiya */
+            title: string;
+            /** @example Bugundan 20% chegirma! */
+            body: string;
+        };
+        BroadcastPreviewResultDto: {
+            /** @enum {string} */
+            audience: "all" | "sellers" | "buyers";
+            channels: ("sms" | "email")[];
+            title: string;
+            body: string;
+            /** @example 42 */
+            recipientsCount: number;
+            /** @description Yuborishda qaytarilishi shart */
+            previewToken: string;
+        };
+        BroadcastSendDto: {
+            /**
+             * @example sellers
+             * @enum {string}
+             */
+            audience: "all" | "sellers" | "buyers";
+            /**
+             * @description In-app doim. Qo‘shimcha kanallar ixtiyoriy.
+             * @example []
+             */
+            channels?: ("sms" | "email")[];
+            /** @example Yangi aksiya */
+            title: string;
+            /** @example Bugundan 20% chegirma! */
+            body: string;
+            /** @description `POST /admin/broadcast/preview` javobidagi token — aynan ko‘rib chiqilgan xabar yuboriladi */
+            previewToken: string;
+        };
+        BroadcastDto: {
+            id: string;
+            /** @enum {string} */
+            audience: "all" | "sellers" | "buyers";
+            channels: ("sms" | "email")[];
+            title: string;
+            body: string;
+            recipientsCount: number;
+            sentCount: number;
+            /** @enum {string} */
+            status: "QUEUED" | "SENDING" | "DONE" | "FAILED";
+            createdBy: string | null;
+            createdAt: string;
+            finishedAt: string | null;
+            lastError: string | null;
+            /** @description true — shu token bilan allaqachon yuborilgan (ikki marta bosish) */
+            idempotent?: boolean;
+        };
+        BroadcastsPageDto: {
+            items: components["schemas"]["BroadcastDto"][];
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
         };
         AdminTeamMemberDto: {
             /** @example 7 */
@@ -4478,16 +4943,27 @@ export interface components {
         AdminStockItemDto: {
             /** @example 88 */
             variantId: string;
+            /** @example 12 */
+            productId: unknown;
             /** @example iPhone 16 Pro */
-            productName: string;
+            productName: unknown;
             /** @example Qora / 256 GB */
             variantName: unknown;
             /** @example IPHONE-16-BLACK-256 */
-            sku: string;
+            sku: unknown;
+            /**
+             * @description true — katalogda variant topilmadi (o‘chirilgan). Qator baribir qaytadi.
+             * @example false
+             */
+            catalogMissing: boolean;
+            /** @example 15 */
+            shopId: string;
             /** @example 3 */
             warehouseId: string;
             /** @example Asosiy ombor */
             warehouseName: string;
+            /** @example true */
+            warehouseActive: boolean;
             /** @example 15 */
             onHand: number;
             /** @example 3 */
@@ -4496,8 +4972,12 @@ export interface components {
             available: number;
             /** @example 5 */
             lowStockThreshold: number;
+        };
+        AdminCatalogWarningDto: {
             /** @example 15 */
             shopId: string;
+            /** @example Mikroservis belgilangan vaqtda javob bermadi */
+            reason: string;
         };
         AdminStockPageDto: {
             items: components["schemas"]["AdminStockItemDto"][];
@@ -4509,13 +4989,34 @@ export interface components {
             limit: number;
             /** @example 2 */
             totalPages: number;
+            warnings: components["schemas"]["AdminCatalogWarningDto"][];
+            /**
+             * @description true — qidiruvga mos variant juda ko‘p, natija qisqartirildi; so‘rovni aniqlashtiring
+             * @example false
+             */
+            searchTruncated: boolean;
         };
         AdminStockMovementItemDto: {
+            /** @example 88 */
+            variantId: string;
+            /** @example 12 */
+            productId: unknown;
+            /** @example iPhone 16 Pro */
+            productName: unknown;
+            /** @example Qora / 256 GB */
+            variantName: unknown;
+            /** @example IPHONE-16-BLACK-256 */
+            sku: unknown;
+            /**
+             * @description true — katalogda variant topilmadi (o‘chirilgan). Qator baribir qaytadi.
+             * @example false
+             */
+            catalogMissing: boolean;
             id: string;
             shopId: string;
-            variantId: string;
             warehouseId: string;
             warehouseName: string;
+            warehouseActive: boolean;
             /** @enum {string} */
             type: "INBOUND" | "OUTBOUND" | "RESERVE" | "RELEASE" | "COMMIT" | "ADJUST" | "TRANSFER";
             quantity: number;
@@ -4534,6 +5035,7 @@ export interface components {
             page: number;
             limit: number;
             totalPages: number;
+            warnings: components["schemas"]["AdminCatalogWarningDto"][];
         };
         ReturnRequestItemInputDto: {
             /**
@@ -4731,6 +5233,68 @@ export interface components {
             restock?: boolean;
             /** @example Karta orqali qaytarildi, chek #123 */
             comment?: string;
+        };
+        SellerFinanceSummaryDto: {
+            /** @example 7 */
+            shopId: string;
+            /**
+             * @description Joriy ledger balansi: musbat — platforma sotuvchiga qarzdor, manfiy — sotuvchining komissiya qarzi (keyingi payout’dan ushlanadi). Davrga bog‘liq emas
+             * @example 1180000
+             */
+            balance: number;
+            /**
+             * @description To‘lanishi kutilayotgan payout’lar (PENDING + APPROVED), hozirgi holat
+             * @example 450000
+             */
+            pendingPayoutAmount: number;
+            /**
+             * @description Ushlab turilgan payout’lar (HELD)
+             * @example 0
+             */
+            heldPayoutAmount: number;
+            /**
+             * @description Davr ichida to‘langan payout’lar (paid_at bo‘yicha)
+             * @example 2300000
+             */
+            paidPayoutAmount: number;
+            /** @description COD reconciliation — /admin/finance/reports bilan bir xil, davr bo‘yicha */
+            cod: components["schemas"]["FinanceReconciliationReportDto"];
+            /**
+             * @example WEEKLY
+             * @enum {string}
+             */
+            payoutSchedule: "DAILY" | "WEEKLY" | "MONTHLY";
+            /** @example 2026-10-05 */
+            nextPayoutDate: string;
+        };
+        PayoutScheduleDto: {
+            /**
+             * @example WEEKLY
+             * @enum {string}
+             */
+            frequency: "DAILY" | "WEEKLY" | "MONTHLY";
+            /**
+             * @description Do‘kon hali tanlamagan — platforma default’i (WEEKLY)
+             * @example true
+             */
+            isDefault: boolean;
+            /**
+             * @description Bugungi tushum o‘tadigan eng yaqin to‘lov kuni (Asia/Tashkent, bugundan keyin): DAILY — ertaga, WEEKLY — dushanba, MONTHLY — oyning 1-kuni
+             * @example 2026-10-05
+             */
+            nextPayoutDate: string;
+            /**
+             * Format: date-time
+             * @example null
+             */
+            updatedAt: string | null;
+        };
+        UpdatePayoutScheduleDto: {
+            /**
+             * @example WEEKLY
+             * @enum {string}
+             */
+            frequency: "DAILY" | "WEEKLY" | "MONTHLY";
         };
     };
     responses: never;
@@ -8006,6 +8570,8 @@ export interface operations {
                 shopId?: string;
                 page?: number;
                 limit?: number;
+                dateFrom?: string;
+                dateTo?: string;
             };
             header?: never;
             path?: never;
@@ -8017,7 +8583,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FinanceLedgerPageDto"];
+                };
             };
         };
     };
@@ -8039,16 +8607,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FinancePayoutPageDto"];
+                };
             };
         };
     };
     "AdminFinanceController_reconciliation[0]": {
         parameters: {
             query?: {
-                shopId?: string;
                 dateFrom?: string;
                 dateTo?: string;
+                shopId?: string;
             };
             header?: never;
             path?: never;
@@ -8060,16 +8630,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FinanceReconciliationReportDto"];
+                };
             };
         };
     };
     "AdminFinanceController_reconciliation[1]": {
         parameters: {
             query?: {
-                shopId?: string;
                 dateFrom?: string;
                 dateTo?: string;
+                shopId?: string;
             };
             header?: never;
             path?: never;
@@ -8081,7 +8653,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FinanceReconciliationReportDto"];
+                };
             };
         };
     };
@@ -8097,6 +8671,22 @@ export interface operations {
         requestBody?: never;
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancePayoutDto"];
+                };
+            };
+            /** @description Payout topilmadi */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description To‘langan payout o‘zgarmaydi */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8119,6 +8709,22 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content: {
+                    "application/json": components["schemas"]["FinancePayoutDto"];
+                };
+            };
+            /** @description Payout topilmadi */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description To‘langan payout o‘zgarmaydi */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content?: never;
             };
         };
@@ -8135,6 +8741,22 @@ export interface operations {
         requestBody?: never;
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancePayoutDto"];
+                };
+            };
+            /** @description Payout topilmadi */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description APPROVED emas yoki ledger balansi yetarli emas */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8155,7 +8777,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FinanceCommissionDto"][];
+                };
             };
         };
     };
@@ -8176,7 +8800,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["FinanceCommissionDto"];
+                };
             };
         };
     };
@@ -8196,6 +8822,15 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceCommissionDto"];
+                };
+            };
+            /** @description Komissiya topilmadi */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8408,6 +9043,259 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminNotificationsController_templates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplateDto"][];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminNotificationsController_updateTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNotificationTemplateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplateDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminNotificationsController_resetTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplateDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminNotificationsController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastPreviewDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastPreviewResultDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminNotificationsController_send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastSendDto"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminNotificationsController_broadcasts: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BroadcastsPageDto"];
+                };
             };
             401: {
                 headers: {
@@ -8707,6 +9595,8 @@ export interface operations {
             query?: {
                 page?: components["schemas"]["Object"];
                 limit?: components["schemas"]["Object"];
+                /** @description created — Elchi posilkasi bor; missing — Elchi’ga topshirilmagan, lekin topshirilishi kerak (buyurtma tasdiqlangan/to‘langan, sub-buyurtma yakunlanmagan); all — hammasi */
+                shipmentState?: "all" | "created" | "missing";
                 shopId?: string;
                 status?: "PENDING" | "CONFIRMED" | "SHIPMENT_CREATED" | "RECEIVED" | "ON_THE_ROAD" | "DELIVERED" | "CANCELLED" | "RETURNED";
                 shipmentId?: string;
@@ -8719,7 +9609,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description { items, total, page, limit, totalPages } */
+            /** @description { items: [{ id, salesOrderId, shopId, shipmentId|null, status, orderStatus, paymentMethod, codAmount, buyerName, createdAt, updatedAt, ... }], total, page, limit, totalPages } */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -9220,6 +10110,8 @@ export interface operations {
                 page?: components["schemas"]["Object"];
                 limit?: components["schemas"]["Object"];
                 shopId?: string;
+                /** @description true — faqat faol, false — faqat o‘chirilgan omborlar */
+                warehouseActive?: boolean;
             };
             header?: never;
             path?: never;
@@ -9258,6 +10150,8 @@ export interface operations {
             query?: {
                 page?: components["schemas"]["Object"];
                 limit?: components["schemas"]["Object"];
+                /** @description true — faqat faol, false — faqat o‘chirilgan omborlar */
+                warehouseActive?: boolean;
                 shopId?: string;
                 warehouseId?: string;
                 variantId?: string;
@@ -9741,6 +10635,124 @@ export interface operations {
             };
             /** @description So‘rov topilmadi */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SellerFinanceController_ledger: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                dateFrom?: string;
+                dateTo?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceLedgerPageDto"];
+                };
+            };
+        };
+    };
+    SellerFinanceController_payouts: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                status?: "PENDING" | "APPROVED" | "HELD" | "PAID";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancePayoutPageDto"];
+                };
+            };
+        };
+    };
+    SellerFinanceController_summary: {
+        parameters: {
+            query?: {
+                dateFrom?: string;
+                dateTo?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SellerFinanceSummaryDto"];
+                };
+            };
+        };
+    };
+    SellerFinanceController_getPayoutSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutScheduleDto"];
+                };
+            };
+        };
+    };
+    SellerFinanceController_updatePayoutSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePayoutScheduleDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutScheduleDto"];
+                };
+            };
+            /** @description Noma’lum chastota */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

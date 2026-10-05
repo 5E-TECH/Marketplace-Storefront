@@ -4,14 +4,13 @@ import { Check, CheckCircle2, ExternalLink, MapPin, ShoppingCart, Truck, WalletC
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/providers/cart-provider";
-import { buyNowHref, buyNowSelection, carryCartSelection, clearCartSelection, readBuyNowTarget, readCartSelection, type BuyNowTarget } from "@/lib/cart-selection";
+import { buyNowHref, buyNowSelection, clearCartSelection, readBuyNowTarget, readCartSelection, type BuyNowTarget } from "@/lib/cart-selection";
 import { formatPrice } from "@/lib/format";
-import { cartService } from "@/services/cart.service";
 import { authService } from "@/services/auth.service";
 import { OrderNotConfirmedError, orderService, paymentStartMessage } from "@/services/order.service";
 import { onlinePaymentMethods } from "@/config/payments";
 import { locationService, type DistrictOption, type RegionOption } from "@/services/location.service";
-import type { Cart, CartItem, CheckoutAddress, DeliveryPreview, Order, PaymentMethod } from "@/types/commerce";
+import type { CheckoutAddress, DeliveryPreview, Order, PaymentMethod } from "@/types/commerce";
 import { Button, LoadingGrid, Price, StatePanel } from "./ui";
 import { SelectField, type SelectOption } from "./select-field";
 import { PaymentBrand } from "./payment-brand";
@@ -81,6 +80,12 @@ export function CheckoutContent() {
     return cart.items.filter((item) => selected.has(item.id));
   }, [cart.items, selectedIds]);
   const selectedSubtotal = useMemo(() => selectedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0), [selectedItems]);
+  // Backendga aynan shu qatorlar ketadi: preview ham, buyurtma ham faqat tanlanganlar bo'yicha (`cartItemIds`).
+  const selectionKey = selectedItems.map((item) => item.id).join(",");
+  const cartItemIds = useMemo(() => selectionKey ? selectionKey.split(",") : [], [selectionKey]);
+  // Idempotency-Key bitta tanlovga tegishli: tanlov o'zgarsa eski kalit bilan backend oldingi javobni qaytarardi.
+  // Bir xil tanlovni qayta yuborish (tarmoq uzilgandan keyin) esa o'sha kalit bilan ketadi — buyurtma ikkilanmaydi.
+  useEffect(() => { idempotencyKey.current = newIdempotencyKey(); }, [selectionKey]);
 
   useEffect(() => {
     // Savat yuklanmagan (xato) bo'lsa tanlov hisoblanmaydi — "Qayta urinish"dan keyin haqiqiy savatdan olinadi.
@@ -129,12 +134,12 @@ export function CheckoutContent() {
     const requestId = ++previewRequest.current;
     setPreview(null);
     setPreviewFailed(false);
-    if (!selectionReady || !selectedItems.length || selectedItems.length !== cart.items.length || !canPreview(form)) { setPreviewPending(false); return; }
+    if (!selectionReady || !cartItemIds.length || !canPreview(form)) { setPreviewPending(false); return; }
     const timer = window.setTimeout(async () => {
       setPreviewPending(true);
       try {
         await flushCart();
-        const next = await orderService.preview(address);
+        const next = await orderService.preview(address, cartItemIds);
         if (previewRequest.current === requestId) { setPreview(next); setError(""); }
       } catch (caught) {
         if (previewRequest.current === requestId) { setPreviewFailed(true); setError(errorMessage(caught, "Yetkazib berish narxini hisoblab bo‘lmadi")); }
@@ -143,7 +148,7 @@ export function CheckoutContent() {
       }
     }, 650);
     return () => window.clearTimeout(timer);
-  }, [address, cart.items.length, flushCart, form, selectedItems.length, selectionReady]);
+  }, [address, cartItemIds, flushCart, form, selectionReady]);
 
   const change = (field: keyof CheckoutForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -168,12 +173,6 @@ export function CheckoutContent() {
     setPreview(null);
     setSelectedIds(readCartSelection(cart.items));
     setError("");
-  };
-  // Vaqtincha olib tashlangan (belgilanmagan) qatorlar qaytariladi; yangi id'larga xaridor belgilari ko'chiriladi.
-  const restoreDeferred = async (items: CartItem[], snapshot: CartItem[]): Promise<void> => {
-    let latest: Cart | null = null;
-    for (const item of items) latest = await cartService.add({ product: item.product, quantity: item.quantity, color: item.color, variantId: item.variantId });
-    if (latest) carryCartSelection(snapshot, latest.items);
   };
   const finishOrder = async (order: Order) => {
     // Tez xarid savatdagi belgilarni saqlaydi; oddiy checkout'dan keyin esa tanlov tozalanadi.
@@ -209,29 +208,15 @@ export function CheckoutContent() {
     if (pending || previewPending || cart.loading) return;
     if (paymentMethod !== "cod" && !signedIn) { setError("Online to‘lash uchun akkauntingizga kiring yoki “Qabul qilganda” usulini tanlang."); return; }
     setPending(true); setError("");
-    const selected = new Set(selectedIds);
-    const snapshot = cart.items;
-    const deferredItems = snapshot.filter((item) => !selected.has(item.id));
-    let deferredRemoved = false;
     try {
       await flushCart();
-      for (const item of deferredItems) await cartService.remove(item.id);
-      deferredRemoved = true;
-      const delivery = await orderService.preview(address);
+      // Tanlanmagan qatorlar savatda qoladi: backend faqat `cartItemIds` ni buyurtmaga o'tkazib, savatdan o'chiradi.
+      const delivery = await orderService.preview(address, cartItemIds);
       setPreview(delivery);
-      const order = await orderService.create(address, idempotencyKey.current, delivery, paymentMethod);
-      deferredRemoved = false;
-      try { await restoreDeferred(deferredItems, snapshot); }
-      catch { order.warning = [order.warning, "Belgilanmagan mahsulotlarning ayrimlarini savatga qayta tiklab bo‘lmadi."].filter(Boolean).join(" "); }
+      const order = await orderService.create(address, idempotencyKey.current, delivery, paymentMethod, cartItemIds);
       await finishOrder(order);
       if (paymentMethod !== "cod") await openPayment(order);
     } catch (caught) {
-      if (deferredRemoved) {
-        try {
-          await restoreDeferred(deferredItems, snapshot);
-          await cart.refresh();
-        } catch { /* Original checkout error is more useful to the buyer. */ }
-      }
       if (caught instanceof OrderNotConfirmedError) {
         // Kalit ishlatib bo'lindi (buyurtma bor): keyingi har qanday yangi urinish yangi kalit bilan ketadi.
         idempotencyKey.current = newIdempotencyKey();
@@ -270,7 +255,7 @@ export function CheckoutContent() {
       <SelectField label="Viloyat yoki shahar" name="region" value={form.regionId} options={regionOptions} onChange={changeRegion} placeholder="Viloyat yoki shaharni tanlang" disabled={regionsPending} loading={regionsPending} required autoComplete="address-level1"/>
       <SelectField label="Tuman" name="district" value={form.districtId} options={districtOptions} onChange={changeDistrict} placeholder={form.regionId ? "Tumanni tanlang" : "Avval viloyatni tanlang"} disabled={!form.regionId || districtsPending} loading={districtsPending} required autoComplete="address-level2"/>
       <label className="form-wide"><span>Ko‘cha, uy va xonadon</span><textarea name="street" value={form.street} onChange={(event) => change("street", event.target.value)} required minLength={5} autoComplete="street-address" placeholder="Ko‘cha, uy va xonadon raqami"/></label>
-    </div><p className="delivery-preview-status" aria-live="polite">{previewPending ? "Yetkazish narxi hisoblanmoqda…" : preview ? `Yetkazish avtomatik hisoblandi: ${formatPrice(preview.deliveryFee)} so‘m` : previewFailed ? "Yetkazish narxini hisoblab bo‘lmadi — “Buyurtma berish” bosilganda qayta urinib ko‘riladi" : selectedItems.length !== cart.items.length ? "Tanlangan mahsulotlar uchun yetkazish narxi buyurtma berishda hisoblanadi" : "Manzil to‘liq kiritilgach yetkazish narxi avtomatik hisoblanadi"}</p></fieldset>
+    </div><p className="delivery-preview-status" aria-live="polite">{previewPending ? "Yetkazish narxi hisoblanmoqda…" : preview ? `Yetkazish avtomatik hisoblandi: ${formatPrice(preview.deliveryFee)} so‘m` : previewFailed ? "Yetkazish narxini hisoblab bo‘lmadi — “Buyurtma berish” bosilganda qayta urinib ko‘riladi" : "Manzil to‘liq kiritilgach yetkazish narxi avtomatik hisoblanadi"}</p></fieldset>
     <fieldset><legend><WalletCards/> To‘lov usuli</legend><div className="payment-options">
       {paymentChoices.map(({ method, title, note }) => { const locked = method !== "cod" && !signedIn; return <label className={`payment-option${paymentMethod === method ? " active" : ""}${locked ? " is-disabled" : ""}`} key={method}>
         <input type="radio" name="paymentMethod" value={method} checked={paymentMethod === method} disabled={locked} onChange={() => setPaymentMethod(method)}/>

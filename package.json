@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev --turbopack -p 3001",
+    "dev:webpack": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
     "start:prod": "next start -p 3002",

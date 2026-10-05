@@ -13,13 +13,15 @@ type Props = { item: CartItem; selected: boolean; onSelect: (id: string, selecte
 export function CartItemRow({ item, selected, onSelect, onUpdate, onRemove }: Props) {
   const { pending, run } = useAsyncAction();
   const variant = item.product.variants?.find((candidate) => String(candidate.id) === String(item.variantId));
+  // Yagona variant backendda "Default" deb nomlanadi — xaridorga ma'nosiz, faqat haqiqiy tanlov ko'rsatiladi.
+  const variantLabel = (item.product.variants?.length ?? 0) > 1 && variant?.name && !/^default$/i.test(variant.name.trim()) ? variant.name : undefined;
   const oldTotal = item.product.oldPrice ? item.product.oldPrice * item.quantity : undefined;
   return <article className="cart-page-item" data-testid="cart-item">
     <label className="cart-checkbox"><input type="checkbox" checked={selected} onChange={(event) => onSelect(item.id, event.target.checked)} aria-label={`${item.product.name} mahsulotini tanlash`}/><span/></label>
     <Link className="cart-item-image" href={`/product/${item.productId}`} prefetch={false}><Image src={getSafeImageSrc(item.product.image)} alt={item.product.name} fill sizes="(max-width: 720px) 92px, 130px"/></Link>
     <div className="cart-item-details">
       <Link href={`/product/${item.productId}`} prefetch={false}><h2>{item.product.name}</h2></Link>
-      {variant?.name && <small>Variant: {variant.name}</small>}
+      {variantLabel && <small>Variant: {variantLabel}</small>}
       {item.color && <span className="item-color">Rang <i style={{ background: item.color }}/></span>}
       <div className="cart-row-actions">
         <QuantityStepper value={item.quantity} decreaseAction="remove" max={variant?.stock} disabled={pending}

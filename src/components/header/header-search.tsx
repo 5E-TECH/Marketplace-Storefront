@@ -67,14 +67,15 @@ function SearchField({ initialQuery }: { initialQuery: string }) {
     }
   };
 
-  return <form className="search" role="search" onSubmit={submit}>
-    <Search size={18}/>
+  return <form className="search" role="search" action="/qidiruv" onSubmit={submit}>
+    <Search className="search-icon" size={18} aria-hidden/>
     <input id="header-search" name="q" role="combobox" value={query} onChange={(event) => setQuery(event.target.value)}
       onFocus={() => setFocused(true)} onBlur={() => window.setTimeout(() => setFocused(false), 150)}
       aria-label="Mahsulot qidirish" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="search-suggestions" aria-expanded={open}
       aria-activedescendant={suggestions[active] ? `search-option-${suggestions[active].id}` : undefined}
-      onKeyDown={onKeyDown} autoComplete="off" placeholder="Nima qidiryapsiz?"/>
+      onKeyDown={onKeyDown} autoComplete="off" enterKeyHint="search" placeholder="Nima qidiryapsiz?"/>
     {query && <button className="search-clear" type="button" onClick={() => { setQuery(""); setSuggestions([]); }} aria-label="Qidiruvni tozalash"><X/></button>}
+    <button className="search-submit" type="submit" aria-label="Qidirish"><Search aria-hidden/><span>Qidirish</span></button>
     {open && <div className="search-suggestions" id="search-suggestions">
       {loading ? <p role="status">Qidirilmoqda...</p> : suggestions.length ? <div role="listbox" aria-label="Qidiruv takliflari">
         {suggestions.map((item, index) => <Link href={`/product/${item.id}`} id={`search-option-${item.id}`} role="option" aria-selected={index === active}

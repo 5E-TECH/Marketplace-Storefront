@@ -51,7 +51,7 @@ Brauzer `X-Session-Id` va mavjud bo‘lsa `Authorization: Bearer ...` yuboradi. 
 
 ## Seller/admin
 
-`product-admin.service.ts`: `/products`, `/products/my`, `/products/:id` va `/products/:productId/variants` operatsiyalari. Request va response DTO’lari generatsiya qilingan tiplarga bog‘langan. Haqiqiy access token tashqaridan beriladi; seller UI hozir yo‘q.
+Bu repoda sotuvchi/admin operatsiyalari yo‘q: storefront faqat xaridor endpointlarini chaqiradi (`/api/backend/*` ruxsat ro‘yxati). Sotuvchi va admin ekranlari — `Marketplace-FrontEnd` (kabinet) repozitoriysida. `src/types/storefront-api.ts` dagi `ProductCreateInput` kabi seller DTO turlari faqat generatsiya qilingan kontraktdan qolgan.
 
 ## Xaridor akkaunti
 
@@ -168,7 +168,18 @@ Payme/Click callbacklari brauzerga bog‘liq bo‘lmasligi kerak: imzo backendda
 
 ## Tovarni qaytarish (C4.2) — backend uchun texnik topshiriq
 
-**Holat:** bu funksiya backendda umuman yo‘q. 2026-09-23 da jonli `api.elchimarket.uz` da 32 ta yo‘l tekshirildi (`returns`, `return-requests`, `refund-requests`, `claims`, `disputes`, `exchanges` va ularning `seller/`, `admin/`, `buyer/`, `orders/{id}/` variantlari) — uchtasidan boshqa hammasi `404`.
+> **2026-10-03 holati: backendda amalga oshirilgan, storefront ulangan.** Haqiqiy kontrakt (`contract/openapi.json`) quyidagi taklifdan farq qiladi va storefront (`return.service.ts`) unga tayanadi:
+>
+> - xaridor: `POST /orders/{orderId}/returns` (javob — `CreateReturnRequestsResultDto`, har do‘kon posilkasi uchun alohida so‘rov), `GET /returns`, `GET /returns/{id}` (tarix bilan);
+> - sotuvchi: `GET /seller/returns`, `GET /seller/returns/{id}`, `POST /seller/returns/{id}/review|approve|reject`;
+> - admin: `GET /admin/returns`, `GET /admin/returns/{id}`, `POST /admin/returns/{id}/approve|reject|refund`;
+> - holatlar: `SUBMITTED` → `IN_REVIEW` → `APPROVED` → `REFUNDED`, yoki `REJECTED`;
+> - sabablar: `DEFECTIVE`, `DAMAGED`, `INCOMPLETE`, `WRONG_ITEM`, `NOT_AS_DESCRIBED`, `CHANGED_MIND`, `OTHER` (`OTHER` da izoh majburiy);
+> - muddat: yetkazilgandan keyin `RETURN_WINDOW_DAYS` (standart **10**) kun.
+>
+> Quyidagi matn — 2026-09-23 dagi dastlabki topshiriq, tarix uchun saqlangan; endpoint nomlari va enumlar uchun OpenAPI manba hisoblanadi.
+
+**Dastlabki holat (2026-09-23):** bu funksiya backendda umuman yo‘q edi. 2026-09-23 da jonli `api.elchimarket.uz` da 32 ta yo‘l tekshirildi (`returns`, `return-requests`, `refund-requests`, `claims`, `disputes`, `exchanges` va ularning `seller/`, `admin/`, `buyer/`, `orders/{id}/` variantlari) — uchtasidan boshqa hammasi `404`.
 
 Tekshirish usuli: bu backendda mavjud lekin rol yetmagan yo‘l `403`, ma’lumot xato bo‘lsa `400`, mavjud bo‘lmagani `404` qaytaradi.
 

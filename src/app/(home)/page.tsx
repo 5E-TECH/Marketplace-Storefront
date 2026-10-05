@@ -3,11 +3,11 @@ import { StorefrontHome } from "@/components/storefront-home";
 import { parseCatalogQuery, type CatalogSearchParams } from "@/lib/catalog-query";
 import { productService } from "@/services/product.service";
 import { bannerService } from "@/services/banner.service";
-import { absoluteUrl, baseOpenGraph, defaultOpenGraphImages, jsonLd, listingSeo, pagedTitle, SITE_NAME, siteUrl } from "@/lib/seo";
+import { absoluteUrl, baseOpenGraph, defaultOpenGraphImages, jsonLd, listingSeo, pagedTitle, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteUrl } from "@/lib/seo";
 
 type Props = { searchParams: Promise<CatalogSearchParams> };
 
-const description = "Elchi Market — O‘zbekistondagi do‘konlarning mahsulotlari bitta joyda. Elektronika, kiyim, uy-ro‘zg‘or va oziq-ovqatni toping, buyurtma bering, uyingizgacha yetkazib beramiz.";
+const description = SITE_DESCRIPTION;
 
 /**
  * Next bosh sahifa ("/") canonical'idan so'rov qismini tashlab yuboradi, shuning uchun
@@ -22,11 +22,11 @@ const ownPageCanonical = (params: CatalogSearchParams): string | undefined => {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
   const { alternates, ...seo } = listingSeo("/", params);
-  return { title: { absolute: pagedTitle("Elchi Market — O‘zbekistondagi onlayn marketplace", params) }, description, ...seo, ...(ownPageCanonical(params) ? {} : { alternates }), openGraph: { ...baseOpenGraph, title: "Elchi Market — onlayn marketplace", description, url: "/", images: defaultOpenGraphImages } };
+  return { title: { absolute: pagedTitle(SITE_TITLE, params) }, description, ...seo, ...(ownPageCanonical(params) ? {} : { alternates }), openGraph: { ...baseOpenGraph, title: "Elchi Market — onlayn do‘kon va marketplace", description, url: "/", images: defaultOpenGraphImages } };
 }
 
 const organizationLd = [
-  { "@context": "https://schema.org", "@type": "Organization", name: SITE_NAME, url: siteUrl(), logo: absoluteUrl("/icon.png") },
+  { "@context": "https://schema.org", "@type": "Organization", name: SITE_NAME, url: siteUrl(), logo: absoluteUrl("/icon.png"), description: SITE_DESCRIPTION, areaServed: { "@type": "Country", name: "O‘zbekiston" } },
   { "@context": "https://schema.org", "@type": "WebSite", name: SITE_NAME, url: siteUrl(), inLanguage: "uz", potentialAction: { "@type": "SearchAction", target: `${siteUrl()}/qidiruv?q={search_term_string}`, "query-input": "required name=search_term_string" } },
 ];
 

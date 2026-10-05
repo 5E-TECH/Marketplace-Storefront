@@ -14,6 +14,8 @@ npm run dev
 
 Frontend: http://localhost:3001. `.env.local` ichida backend manzilini belgilang. Katalog, kategoriyalar va mahsulot sahifalari backend ma’lumotidan ishlaydi.
 
+`npm run dev` Turbopack bilan ishlaydi: sahifa birinchi ochilganda bir necha yuz millisekundda compile bo‘ladi (webpack dev’da bir necha soniya). Muammo bo‘lsa eski rejim: `npm run dev:webpack`. Dev server har doim production’dan sekin — saytning haqiqiy tezligini `npm run build && npm start` bilan tekshiring.
+
 ```sh
 npm run check       # TypeScript, ESLint, regression testlar, production build
 npm start           # Production: 3001

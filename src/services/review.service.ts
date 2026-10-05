@@ -37,8 +37,8 @@ export const normalizeReviews = (response: unknown): ProductReviewsResult => {
 };
 
 export const reviewService = {
-  async list(productId: string | number, page = 1, limit = 5): Promise<ProductReviewsResult> {
-    return normalizeReviews(await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "GET", params: { page, limit } }));
+  async list(productId: string | number, page = 1, limit = 5, timeoutMs?: number): Promise<ProductReviewsResult> {
+    return normalizeReviews(await apiRequest(`/storefront/products/${encodeURIComponent(String(productId))}/reviews`, { method: "GET", params: { page, limit }, ...(timeoutMs ? { timeoutMs } : {}) }));
   },
   async create(productId: string | number, input: { orderItemId: string; rating: number; comment?: string }): Promise<void> {
     const orderItemId = input.orderItemId.trim();
