@@ -1,5 +1,5 @@
 import { env } from "@/config/env";
-import { hasAuthSession, sessionHeaders } from "@/lib/access-token";
+import { hasAuthSession, markCookieSession, sessionHeaders, setAccessToken } from "@/lib/access-token";
 
 export type ApiErrorKind = "network" | "timeout" | "aborted" | "not_found" | "http" | "invalid_response" | "configuration";
 export class ApiError extends Error {
@@ -55,7 +55,12 @@ export async function apiResponse(path: string, options: TransportOptions = {}):
   const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   const signal = init.signal ? AbortSignal.any([init.signal, controller.signal]) : controller.signal;
   const headers = new Headers({ Accept: "application/json" });
-  if (!server) new Headers(sessionHeaders()).forEach((value, key) => headers.set(key, value));
+  // CSRF: backend cookie bilan kelgan POST/PATCH/DELETE ni shu sarlavhasiz rad etadi (ochiq route'da — anonim bajaradi).
+  // Faqat brauzer qo'shadi; Next proksisi uni o'zi yasamaydi, brauzerdan kelganini uzatadi.
+  if (!server) {
+    headers.set("X-Requested-With", "XMLHttpRequest");
+    new Headers(sessionHeaders()).forEach((value, key) => headers.set(key, value));
+  }
   new Headers(init.headers).forEach((value, key) => headers.set(key, value));
   try {
     const response = await fetch(url, { ...init, cache: init.cache ?? (init.next ? undefined : "no-store"), headers, signal });
@@ -68,12 +73,41 @@ export async function apiResponse(path: string, options: TransportOptions = {}):
   } finally { clearTimeout(timeout); }
 }
 
+/** Bu yo'llarda 401 — oddiy javob (noto'g'ri parol, tugagan refresh); ularni refresh bilan qaytarish cheksiz siklga olib keladi. */
+const SESSION_PATHS = /^\/auth\/(?:login|register|refresh|logout|forgot-password|reset-password)$/;
+let pendingRefresh: Promise<boolean> | null = null;
+
+/**
+ * Access token (cookie yoki Bearer) muddati tugaganda HttpOnly refresh cookie orqali yangilaydi. Bir vaqtda kelgan
+ * 401'lar bitta so'rovni kutadi. `AUTH_TOKENS_IN_BODY=false` da javobda token yo'q — sessiya cookie rejimiga o'tadi.
+ */
+function refreshSession(): Promise<boolean> {
+  pendingRefresh ??= (async () => {
+    try {
+      const response = await apiResponse("/auth/refresh", { method: "POST" });
+      if (!response.ok) return false;
+      const root = object(await response.json().catch(() => null));
+      const token = object(Object.hasOwn(root, "data") ? root.data : root).accessToken;
+      if (typeof token === "string" && token) setAccessToken(token);
+      else markCookieSession();
+      return true;
+    } catch { return false; }
+  })().finally(() => { pendingRefresh = null; });
+  return pendingRefresh;
+}
+
 /** JSON API entry point. Unwraps the backend envelope, then validates the payload. */
 export async function apiRequest<T = unknown>(path: string, options: ApiOptions<T> = {}): Promise<T> {
   const { body, validate, ...init } = options;
   const headers = new Headers(init.headers);
   if (body !== undefined) headers.set("Content-Type", "application/json");
-  const response = await apiResponse(path, { ...init, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const send = (requestHeaders: Headers) => apiResponse(path, { ...init, headers: requestHeaders, body: body === undefined ? undefined : JSON.stringify(body) });
+  let response = await send(headers);
+  if (response.status === 401 && typeof window !== "undefined" && hasAuthSession() && !SESSION_PATHS.test(path) && await refreshSession()) {
+    // Chaqiruvchi bergan eski Bearer yangisini bosib ketmasin: transport joriy tokenni (yoki cookie'ni) o'zi qo'yadi.
+    headers.delete("Authorization");
+    response = await send(headers);
+  }
   const content = await response.text();
   let data: unknown;
   let validJson = false;

@@ -92,6 +92,8 @@ const CANCELLABLE_STATUSES = new Set<OrderStatus>(["Qabul qilindi", "Yig‘ilmoq
 export const canCancelOrder = (tracking: OrderTracking): boolean =>
   CANCELLABLE_STATUSES.has(tracking.status) && tracking.packages.every((item) => CANCELLABLE_STATUSES.has(item.status));
 export const MAX_CANCEL_REASON_LENGTH = 500;
+/** Kontrakt: `CreateCheckoutDto.cartItemIds` — maxItems 100. */
+const MAX_CHECKOUT_ITEMS = 100;
 const optionalText = (value: unknown): string | undefined => typeof value === "string" && value.trim() ? value.trim() : undefined;
 const safeHttpUrl = (value: unknown): string | undefined => {
   const text = optionalText(value);
@@ -207,9 +209,16 @@ const normalizeTracking = (response: unknown): OrderTracking => {
   };
 };
 
-const previewDelivery = async (address: CheckoutAddress): Promise<DeliveryPreview> => {
+/** Tanlangan savat qatorlari (`GET /cart` → `items[].id`). Bo'sh bo'lsa — butun savat (backend shunday kelishgan). */
+const selectionBody = (cartItemIds?: string[]): { cartItemIds?: string[] } => {
+  if (!cartItemIds?.length) return {};
+  if (cartItemIds.length > MAX_CHECKOUT_ITEMS) throw new Error(`Bir buyurtmada ko‘pi bilan ${MAX_CHECKOUT_ITEMS} ta savat qatori bo‘ladi`);
+  return { cartItemIds: [...new Set(cartItemIds.map(String))] };
+};
+
+const previewDelivery = async (address: CheckoutAddress, cartItemIds?: string[]): Promise<DeliveryPreview> => {
   validateAddress(address);
-  return normalizePreview(await apiRequest("/checkout/delivery-preview", { method: "POST", body: { address } }));
+  return normalizePreview(await apiRequest("/checkout/delivery-preview", { method: "POST", body: { address, ...selectionBody(cartItemIds) } }));
 };
 
 export const orderService = {
@@ -280,24 +289,31 @@ export const orderService = {
     return apiRequest(`/orders/${encodeURIComponent(id)}/refund`, { method: "POST", headers: authHeaders(), body: text ? { reason: text } : {}, validate: validateOrderActionResultDto });
   },
   preview: previewDelivery,
-  async create(address: CheckoutAddress, idempotencyKey: string, preview?: DeliveryPreview, paymentMethod: PaymentMethod = "cod"): Promise<Order> {
+  /**
+   * `cartItemIds` berilsa faqat shu savat qatorlari buyurtmaga o'tadi va backend ularni savatdan o'zi o'chiradi —
+   * qolganlari savatda qoladi. Berilmasa — butun savat. Idempotency-Key bitta tanlovga tegishli.
+   */
+  async create(address: CheckoutAddress, idempotencyKey: string, preview?: DeliveryPreview, paymentMethod: PaymentMethod = "cod", cartItemIds?: string[]): Promise<Order> {
     validateAddress(address);
     if (!idempotencyKey || idempotencyKey.length > 128) throw new Error("Buyurtma kaliti noto‘g‘ri");
+    const selection = selectionBody(cartItemIds);
     const cart = await cartService.get();
+    const selected = selection.cartItemIds ? new Set(selection.cartItemIds) : null;
+    const items = selected ? cart.items.filter((item) => selected.has(item.id)) : cart.items;
     if (!cart.items.length) throw new Error("Savatcha bo‘sh");
-    const delivery = preview ?? await previewDelivery(address);
+    if (!items.length) throw new Error("Tanlangan mahsulotlar savatda topilmadi. Savatni yangilab, qayta tanlang");
+    const delivery = preview ?? await previewDelivery(address, selection.cartItemIds);
     const online = paymentMethod !== "cod";
-    const created = await apiRequest<unknown>("/checkout", { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: { paymentMethod: online ? "online" : "cod", address } });
+    const created = await apiRequest<unknown>("/checkout", { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body: { paymentMethod: online ? "online" : "cod", address, ...selection } });
     const id = orderIdFrom(created);
-    const order: Order = { id, createdAt: new Date().toISOString(), status: "Qabul qilindi", customer: { name: address.recipientName, phone: address.phone, address: address.address }, items: cart.items, subtotal: delivery.subtotal, delivery: delivery.deliveryFee, total: delivery.totalAmount, payment: online ? "card" : "cash", paymentProvider: paymentMethod === "payme" ? "PAYME" : paymentMethod === "click" ? "CLICK" : undefined, paymentStatus: online ? "PENDING" : undefined };
+    const order: Order = { id, createdAt: new Date().toISOString(), status: "Qabul qilindi", customer: { name: address.recipientName, phone: address.phone, address: address.address }, items, subtotal: delivery.subtotal, delivery: delivery.deliveryFee, total: delivery.totalAmount, payment: online ? "card" : "cash", paymentProvider: paymentMethod === "payme" ? "PAYME" : paymentMethod === "click" ? "CLICK" : undefined, paymentStatus: online ? "PENDING" : undefined };
     if (!online) {
       try { await apiRequest(`/checkout/${encodeURIComponent(id)}/confirm`, { method: "POST" }); }
       catch (error) { throw new OrderNotConfirmedError(order, errorMessage(error, "Buyurtmani tasdiqlab bo‘lmadi")); }
     }
     try { saveLocal(order); }
     catch { order.warning = `Buyurtma qabul qilindi. Brauzerda saqlab bo‘lmadi; buyurtma raqamini yozib oling: ${id}.`; }
-    try { await cartService.clear(cart); }
-    catch { order.warning = [order.warning, "Buyurtma yaratildi, lekin savatchani tozalab bo‘lmadi. Buyurtmani qayta yubormang."].filter(Boolean).join(" "); }
+    // Savatni frontend tozalamaydi: buyurtmaga o'tgan qatorlarni backend o'zi o'chiradi, tanlanmaganlari savatda qoladi.
     return order;
   },
   /**

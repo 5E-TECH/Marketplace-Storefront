@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/config/env";
 import { ApiError, apiResponse } from "@/lib/api";
 
-const FORWARDED_HEADERS = ["authorization", "cookie", "accept-language", "x-session-id", "idempotency-key", "content-type"] as const;
+/**
+ * - `x-requested-with` — CSRF: backend cookie'li POST/PATCH/DELETE ni shusiz rad etadi; proksi uni o'zi qo'shmaydi.
+ * - `x-forwarded-for` — o'zgartirmasdan (qo'shmasdan, kesmasdan): backend ichki tarmoq manzillarini tashlab, birinchi
+ *   ommaviy IP'ni mijozniki deb oladi — login limiti va audit shu IP bo'yicha (backend docs/C4.8-TRUST-PROXY.md).
+ * - `x-forwarded-proto` — HTTPS'da backend cookie'ni `Secure` bilan yozadi.
+ */
+const FORWARDED_HEADERS = ["authorization", "cookie", "accept-language", "x-session-id", "idempotency-key", "content-type", "x-requested-with", "x-forwarded-for", "x-forwarded-proto"] as const;
 
 const PROXY_PREFIX = "/api/backend";
 

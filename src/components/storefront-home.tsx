@@ -7,6 +7,7 @@ import { paginationItems } from "@/lib/pagination";
 import type { Banner, CatalogCategory, CatalogResult, ProductQuery, StorefrontShop } from "@/types/commerce";
 import { CategoryGrid, FeaturedShops, Products } from "./home-sections";
 import { BannerCarousel } from "./banner-carousel";
+import { ServiceHighlights } from "./service-highlights";
 import { ProductGrid } from "./product-grid";
 import { Container } from "./ui";
 import { CategoryIcon } from "./category-icon";
@@ -24,11 +25,13 @@ function CatalogPagination({ query, catalog, basePath }: { query: ProductQuery; 
 }
 
 export function StorefrontHome({ query, catalog, featuredShops = [], banners = [] }: { query: ProductQuery; catalog: CatalogResult; featuredShops?: StorefrontShop[]; banners?: Banner[] }) {
-  return <main>
+  // Keyingi sahifa, saralash yoki qidiruvda foydalanuvchi to'g'ridan-to'g'ri ro'yxatni ko'rsin.
+  const landing = (query.page ?? 1) === 1 && !query.search && query.sort === "createdAt:desc";
+  return <main className="home-page">
     {/* Sahifa sarlavhasi qidiruv tizimi va ekran o'quvchi uchun; ko'rinadigan qism — bannerlar. */}
-    <h1 className="sr-only">Elchi Market — O‘zbekistondagi onlayn marketplace</h1>
-    {/* Keyingi sahifa, saralash yoki qidiruvda foydalanuvchi to'g'ridan-to'g'ri ro'yxatni ko'rsin. */}
-    {(query.page ?? 1) === 1 && !query.search && query.sort === "createdAt:desc" && <Container><BannerCarousel banners={banners}/></Container>}
+    <h1 className="sr-only">Elchi Market — O‘zbekistondagi onlayn do‘kon va marketplace</h1>
+    {landing && <Container><BannerCarousel banners={banners}/></Container>}
+    {landing && <ServiceHighlights/>}
     <FeaturedShops shops={featuredShops}/>
     <Products products={catalog.data} total={catalog.total} query={query} basePath="/" apiError={catalog.error}/>
     <CatalogPagination query={query} catalog={catalog} basePath="/"/>
@@ -36,7 +39,7 @@ export function StorefrontHome({ query, catalog, featuredShops = [], banners = [
 }
 
 export function CategoryStorefront({ category, query, catalog }: { category: CatalogCategory; categories?: CatalogCategory[]; query: ProductQuery; catalog: CatalogResult }) {
-  const basePath = `/katalog/${category.slug}`;
+  const basePath = `/katalog/${encodeURIComponent(category.slug)}`;
   return <main>
     <Container>
       <Breadcrumbs items={[{ label: "Bosh sahifa", href: "/" }, { label: "Katalog", href: "/katalog" }, { label: category.name }]}/>

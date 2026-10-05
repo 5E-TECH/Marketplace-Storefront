@@ -10,7 +10,7 @@ import { CategoryIcon } from "./category-icon";
 
 export function CategoryGrid({ categories }: { categories: CatalogCategory[] }) {
   if (!categories.length) return null;
-  return <Container><section className="category-grid" aria-label="Kategoriyalar">{categories.slice(0, 6).map((category) => <Link href={`/katalog/${category.slug}`} className="category-card" key={category.id}><CategoryIcon className="category-card-icon" name={category.name} iconUrl={category.iconUrl}/><span><b>{category.name}</b></span><ArrowRight size={18}/></Link>)}</section></Container>;
+  return <Container><section className="category-grid" aria-label="Kategoriyalar">{categories.slice(0, 6).map((category) => <Link href={`/katalog/${encodeURIComponent(category.slug)}`} className="category-card" key={category.id}><CategoryIcon className="category-card-icon" name={category.name} iconUrl={category.iconUrl}/><span><b>{category.name}</b></span><ArrowRight size={18}/></Link>)}</section></Container>;
 }
 
 export function FeaturedShops({ shops }: { shops: StorefrontShop[] }) {

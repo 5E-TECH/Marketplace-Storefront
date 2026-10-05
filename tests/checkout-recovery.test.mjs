@@ -70,15 +70,29 @@ test('confirm(): oldingi tasdiqlash yetib borgan (javob yo‘qolgan) bo‘lsa ho
   await assert.rejects(orderService.confirm(order), /allaqachon tasdiqlangan/, 'hali tasdiqlanmagan bo‘lsa xato ko‘rsatiladi');
 });
 
-test('qayta qo‘shilgan savat qatorlarida xaridor olib tashlagan belgilar saqlanadi', (t) => {
-  const { session } = withBrowserStorage(t);
-  const { carryCartSelection, readCartSelection, saveCartSelection } = loadTypeScript('src/lib/cart-selection.ts');
-  const before = [{ id: 'a', productId: 1, variantId: 10 }, { id: 'b', productId: 2, variantId: 20 }, { id: 'c', productId: 3, variantId: 30 }];
-  saveCartSelection(['a', 'c'], before); // b olib tashlangan
-  const after = [{ id: 'a2', productId: 1, variantId: 10 }, { id: 'b2', productId: 2, variantId: 20 }];
-  carryCartSelection(before, after);
-  assert.deepEqual(readCartSelection(after), ['a2'], 'b yangi id bilan ham belgisiz qoladi');
-  assert.ok(session.has('elchi_cart_excluded_v2'));
+test('checkout faqat tanlangan qatorlarni yuboradi (cartItemIds) va savatni frontend tozalamaydi', async (t) => {
+  withBrowserStorage(t);
+  const calls = [];
+  let cleared = false;
+  const { orderService } = loadTypeScript('src/services/order.service.ts', {
+    '@/lib/api': { apiRequest: async (path, options = {}) => {
+      calls.push([path, options.body]);
+      if (path === '/checkout/delivery-preview') return preview;
+      if (path === '/checkout') return { orderId: 'o-7' };
+      if (path.endsWith('/confirm')) return { id: 'o-7', status: 'CONFIRMED' };
+      throw new Error(`kutilmagan so‘rov: ${path}`);
+    } },
+    './cart.service': { cartService: { get: async () => ({ items: [{ id: '10', productId: 7, product, quantity: 1, shopId: '3' }, { id: '12', productId: 8, product, quantity: 2, shopId: '3' }, { id: '15', productId: 9, product, quantity: 1, shopId: '4' }] }), clear: async () => { cleared = true; } } },
+  });
+  assert.deepEqual(await orderService.preview(address, ['10', '12']), preview);
+  const order = await orderService.create(address, 'key-7', preview, 'cod', ['10', '12', '12']);
+  assert.deepEqual(calls.map(([path]) => path), ['/checkout/delivery-preview', '/checkout', '/checkout/o-7/confirm']);
+  assert.deepEqual(calls[0][1], { address, cartItemIds: ['10', '12'] });
+  assert.deepEqual(calls[1][1], { paymentMethod: 'cod', address, cartItemIds: ['10', '12'] });
+  assert.deepEqual(order.items.map((item) => item.id), ['10', '12'], 'tarixga faqat buyurtmaga o‘tgan qatorlar');
+  assert.equal(cleared, false, 'tanlanmagan qator (15) savatda qoladi — backend faqat tanlanganlarni o‘chiradi');
+  await assert.rejects(orderService.create(address, 'key-8', preview, 'cod', ['99']), /savatda topilmadi/);
+  await assert.rejects(orderService.preview(address, Array.from({ length: 101 }, (_, index) => String(index))), /100 ta/);
 });
 
 test('Elchi holatlari (sold, settled, canceled) to‘g‘ri ko‘rinadi va bekor qilish taklif qilinmaydi', () => {
@@ -113,10 +127,13 @@ test('do‘kon sahifasi katalog bilan bir xil sahifa hajmida (2-sahifada mahsulo
 
 test('checkout: tanlov o‘zgarsa yangi Idempotency-Key, tasdiqlanmagan buyurtmani qayta tasdiqlash mumkin', () => {
   const source = fs.readFileSync(new URL('../src/components/checkout-content.tsx', import.meta.url), 'utf8');
-  const wholeCart = source.slice(source.indexOf('const checkoutWholeCart'), source.indexOf('const restoreDeferred'));
+  const wholeCart = source.slice(source.indexOf('const checkoutWholeCart'), source.indexOf('const finishOrder'));
   assert.match(wholeCart, /if \(pending\) return;/);
   assert.match(wholeCart, /idempotencyKey\.current = newIdempotencyKey\(\);/);
   assert.match(wholeCart, /setPreview\(null\);/);
+  assert.match(source, /useEffect\(\(\) => \{ idempotencyKey\.current = newIdempotencyKey\(\); \}, \[selectionKey\]\);/, 'tanlov o‘zgarsa yangi kalit');
+  assert.match(source, /orderService\.create\(address, idempotencyKey\.current, delivery, paymentMethod, cartItemIds\)/);
+  assert.doesNotMatch(source, /cartService\.remove|restoreDeferred/, 'belgilanmagan qatorlar endi vaqtincha o‘chirilmaydi');
   assert.match(source, /caught instanceof OrderNotConfirmedError/);
   assert.match(source, /orderService\.confirm\(unconfirmed\)/);
   assert.match(source, /if \(cart\.loading \|\| cart\.error \|\| selectionReady\) return;/, 'yuklanmagan savatdan tanlov hisoblanmaydi');

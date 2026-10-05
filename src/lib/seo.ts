@@ -13,9 +13,27 @@ export const siteUrl = (): string => {
 };
 
 export const SITE_NAME = "Elchi Market";
+/** Bosh sahifa sarlavhasi: odamlar qidiradigan "onlayn do'kon" va "marketplace" so'zlari bilan. */
+export const SITE_TITLE = "Elchi Market — O‘zbekistondagi onlayn do‘kon va marketplace";
+export const SITE_DESCRIPTION = "O‘zbekistondagi do‘konlarning mahsulotlari bitta joyda: oziq-ovqat, elektronika, kiyim va uy-ro‘zg‘or. Onlayn buyurtma bering — uyingizgacha yetkazamiz, qabul qilganda to‘laysiz.";
 export const absoluteUrl = (path: string): string => new URL(path, `${siteUrl()}/`).toString();
 export const defaultOpenGraphImages = [{ url: absoluteUrl("/og-default.png"), width: 1200, height: 630, alt: SITE_NAME }];
 export const jsonLd = (value: unknown): string => JSON.stringify(value).replace(/</g, "\\u003c");
+
+/** Qidiruv natijasida sahifa yo'li (Bosh sahifa › Katalog › …) ko'rinishi uchun. */
+export const breadcrumbLd = (items: { name: string; path: string }[]) => ({
+  "@context": "https://schema.org", "@type": "BreadcrumbList",
+  itemListElement: items.map((item, index) => ({ "@type": "ListItem", position: index + 1, name: item.name, item: absoluteUrl(item.path) })),
+});
+
+/** Kategoriya va do'kon ro'yxatlari: sahifadagi mahsulotlar tartibi bilan (qidiruv tizimi ularni bog'lab oladi). */
+export const productListLd = (name: string, path: string, products: { id: string | number; name: string }[], offset = 0) => ({
+  "@context": "https://schema.org", "@type": "CollectionPage", name, url: absoluteUrl(path), inLanguage: "uz",
+  mainEntity: {
+    "@type": "ItemList", numberOfItems: products.length,
+    itemListElement: products.map((product, index) => ({ "@type": "ListItem", position: offset + index + 1, url: absoluteUrl(`/product/${encodeURIComponent(String(product.id))}`), name: product.name })),
+  },
+});
 
 /** Sahifa `openGraph` bersa Next ildizdagisini to'liq almashtiradi — shu maydonlar har safar qo'shilsin. */
 export const baseOpenGraph = { siteName: SITE_NAME, locale: "uz_UZ", type: "website" } as const;

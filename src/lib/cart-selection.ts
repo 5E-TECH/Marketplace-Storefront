@@ -31,19 +31,6 @@ export function readCartSelection(items: CartItem[]): string[] {
   return items.filter((item) => !excluded.has(item.id)).map((item) => item.id);
 }
 
-const lineKey = (item: CartItem): string => `${item.productId}:${item.variantId ?? ""}`;
-
-/**
- * Checkout belgilanmagan qatorlarni vaqtincha o'chirib, keyin qayta qo'shadi — ular yangi id oladi.
- * Xaridor olib tashlagan belgilar mahsulot/variant bo'yicha yangi qatorlarga ko'chiriladi.
- */
-export function carryCartSelection(previous: CartItem[], next: CartItem[]): void {
-  if (typeof window === "undefined") return;
-  const excluded = readExcluded();
-  const excludedLines = new Set(previous.filter((item) => excluded.has(item.id)).map(lineKey));
-  saveCartSelection(next.filter((item) => !excludedLines.has(lineKey(item))).map((item) => item.id), next);
-}
-
 export function clearCartSelection(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(STORAGE_KEY);

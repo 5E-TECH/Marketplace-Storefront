@@ -2030,7 +2030,7 @@ return errors === 0;
 
 export const validateCartDto = validate20;
 const schema24 = {"type":"object","properties":{"id":{},"customerId":{},"sessionId":{},"items":{"type":"array","items":{"$ref":"#/components/schemas/CartItemDto"}},"totalAmount":{"type":"number"},"totalQuantity":{"type":"number"}},"required":["id","customerId","sessionId","items","totalAmount","totalQuantity"]};
-const schema25 = {"type":"object","properties":{"id":{"type":"string"},"productId":{"type":"string"},"variantId":{"type":"string"},"shopId":{"type":"string"},"quantity":{"type":"number"},"unitPriceSnapshot":{"type":"number"},"lineTotal":{"type":"number"}},"required":["id","productId","variantId","shopId","quantity","unitPriceSnapshot","lineTotal"]};
+const schema25 = {"type":"object","properties":{"id":{"type":"string"},"productId":{"type":"string"},"variantId":{"type":"string"},"shopId":{"type":"string"},"quantity":{"type":"number"},"unitPriceSnapshot":{"type":"number"},"lineTotal":{"type":"number"},"productName":{"type":"string","description":"Savatga qo‘shilgan paytdagi nom (narx kabi surat) — buyurtmaga ham shu nom o‘tadi"},"imageUrl":{"anyOf":[{"type":"string","description":"Variant rasmi, u bo‘lmasa mahsulotning asosiy rasmi. Katalogdan jonli olinadi"},{"type":"null"}]}},"required":["id","productId","variantId","shopId","quantity","unitPriceSnapshot","lineTotal","productName","imageUrl"]};
 
 function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -2057,7 +2057,7 @@ const _errs4 = errors;
 if(errors === _errs4){
 if(data1 && typeof data1 == "object" && !Array.isArray(data1)){
 let missing1;
-if((((((((data1.id === undefined) && (missing1 = "id")) || ((data1.productId === undefined) && (missing1 = "productId"))) || ((data1.variantId === undefined) && (missing1 = "variantId"))) || ((data1.shopId === undefined) && (missing1 = "shopId"))) || ((data1.quantity === undefined) && (missing1 = "quantity"))) || ((data1.unitPriceSnapshot === undefined) && (missing1 = "unitPriceSnapshot"))) || ((data1.lineTotal === undefined) && (missing1 = "lineTotal"))){
+if((((((((((data1.id === undefined) && (missing1 = "id")) || ((data1.productId === undefined) && (missing1 = "productId"))) || ((data1.variantId === undefined) && (missing1 = "variantId"))) || ((data1.shopId === undefined) && (missing1 = "shopId"))) || ((data1.quantity === undefined) && (missing1 = "quantity"))) || ((data1.unitPriceSnapshot === undefined) && (missing1 = "unitPriceSnapshot"))) || ((data1.lineTotal === undefined) && (missing1 = "lineTotal"))) || ((data1.productName === undefined) && (missing1 = "productName"))) || ((data1.imageUrl === undefined) && (missing1 = "imageUrl"))){
 validate20.errors = [{instancePath:instancePath+"/items/" + i0,schemaPath:"#/components/schemas/CartItemDto/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"}];
 return false;
 }
@@ -2145,6 +2145,82 @@ var valid3 = _errs18 === errors;
 else {
 var valid3 = true;
 }
+if(valid3){
+if(data1.productName !== undefined){
+const _errs20 = errors;
+if(typeof data1.productName !== "string"){
+validate20.errors = [{instancePath:instancePath+"/items/" + i0+"/productName",schemaPath:"#/components/schemas/CartItemDto/properties/productName/type",keyword:"type",params:{type: "string"},message:"must be string"}];
+return false;
+}
+var valid3 = _errs20 === errors;
+}
+else {
+var valid3 = true;
+}
+if(valid3){
+if(data1.imageUrl !== undefined){
+let data10 = data1.imageUrl;
+const _errs22 = errors;
+const _errs23 = errors;
+let valid4 = false;
+const _errs24 = errors;
+if(typeof data10 !== "string"){
+const err0 = {instancePath:instancePath+"/items/" + i0+"/imageUrl",schemaPath:"#/components/schemas/CartItemDto/properties/imageUrl/anyOf/0/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+var _valid0 = _errs24 === errors;
+valid4 = valid4 || _valid0;
+if(!valid4){
+const _errs26 = errors;
+if(data10 !== null){
+const err1 = {instancePath:instancePath+"/items/" + i0+"/imageUrl",schemaPath:"#/components/schemas/CartItemDto/properties/imageUrl/anyOf/1/type",keyword:"type",params:{type: "null"},message:"must be null"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+var _valid0 = _errs26 === errors;
+valid4 = valid4 || _valid0;
+}
+if(!valid4){
+const err2 = {instancePath:instancePath+"/items/" + i0+"/imageUrl",schemaPath:"#/components/schemas/CartItemDto/properties/imageUrl/anyOf",keyword:"anyOf",params:{},message:"must match a schema in anyOf"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+validate20.errors = vErrors;
+return false;
+}
+else {
+errors = _errs23;
+if(vErrors !== null){
+if(_errs23){
+vErrors.length = _errs23;
+}
+else {
+vErrors = null;
+}
+}
+}
+var valid3 = _errs22 === errors;
+}
+else {
+var valid3 = true;
+}
+}
+}
 }
 }
 }
@@ -2176,24 +2252,24 @@ var valid0 = true;
 }
 if(valid0){
 if(data.totalAmount !== undefined){
-const _errs20 = errors;
+const _errs28 = errors;
 if(!(typeof data.totalAmount == "number")){
 validate20.errors = [{instancePath:instancePath+"/totalAmount",schemaPath:"#/properties/totalAmount/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
-var valid0 = _errs20 === errors;
+var valid0 = _errs28 === errors;
 }
 else {
 var valid0 = true;
 }
 if(valid0){
 if(data.totalQuantity !== undefined){
-const _errs22 = errors;
+const _errs30 = errors;
 if(!(typeof data.totalQuantity == "number")){
 validate20.errors = [{instancePath:instancePath+"/totalQuantity",schemaPath:"#/properties/totalQuantity/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
-var valid0 = _errs22 === errors;
+var valid0 = _errs30 === errors;
 }
 else {
 var valid0 = true;

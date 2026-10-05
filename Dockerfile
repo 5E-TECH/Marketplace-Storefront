@@ -5,13 +5,15 @@
 # ko'rinishi uchun), shuning uchun nginx bilan almashtirib bo'lmaydi.
 
 # ── 1. Bog'liqliklar ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS deps
+# Node versiyasi CI (Node 24) bilan bir xil: package.json `engines` >=22.15 talab qiladi,
+# ilgari image Node 20 da qurilib, production sinalmagan versiyada ishlardi.
+FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # ── 2. Build ─────────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -33,7 +35,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ── 3. Ishga tushirish ───────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

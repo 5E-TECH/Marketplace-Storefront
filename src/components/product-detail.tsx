@@ -6,21 +6,33 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buyNowHref } from "@/lib/cart-selection";
 import { getSafeImageSrc } from "@/lib/product-storage";
-import type { Product, ProductReviewsResult } from "@/types/commerce";
+import type { Product, ProductReviewsResult, ProductVariant } from "@/types/commerce";
 import { useCart } from "@/providers/cart-provider";
 import { cartService } from "@/services/cart.service";
 import { Button, FavoriteButton, Price, QuantityStepper } from "./ui";
 import { ProductInformation } from "./product-information";
 import { ProductReviews } from "./product-reviews";
 
+/** Variant nomi: backend yagona variantni "Default" deydi — unda o'lcham/atributlardan nom yasaladi. */
+const variantLabel = (variant: ProductVariant, index: number): string => {
+  if (variant.name && !/^default$/i.test(variant.name.trim())) return variant.name;
+  return [variant.size, ...Object.values(variant.attributes).map(String)].filter(Boolean).join(" · ") || variant.sku || `${index + 1}-variant`;
+};
+
 export function ProductDetail({ product, reviews }: { product: Product; reviews: ProductReviewsResult }) {
+  const variants = product.variants ?? [];
+  // Rangsiz variantlar (o'lcham, hajm…) alohida tugmalar bilan tanlanadi; rang bo'lsa tanlov rang bo'yicha.
+  const variantChoices = product.colors.length === 0 && variants.length > 1;
   const [activeImage, setActiveImage] = useState(0);
   const [activeColor, setActiveColor] = useState(0);
+  const [activeVariant, setActiveVariant] = useState(() => Math.max(0, variants.findIndex((variant) => variant.stock === undefined || variant.stock > 0)));
   const [quantity, setQuantity] = useState(1);
   const cart = useCart();
   const router = useRouter();
   useEffect(() => { cartService.rememberProduct(product); }, [product]);
-  const selectedVariant = product.variants?.find((variant) => variant.color === product.colors[activeColor]) ?? product.variants?.[activeColor] ?? product.variants?.[0];
+  const selectedVariant = variantChoices
+    ? variants[activeVariant] ?? variants[0]
+    : product.variants?.find((variant) => variant.color === product.colors[activeColor]) ?? product.variants?.[activeColor] ?? product.variants?.[0];
   const selectedColor = product.colors[activeColor] ?? selectedVariant?.color ?? "";
   const selectedPrice = selectedVariant?.price ?? product.price;
   const selectedOldPrice = selectedVariant?.oldPrice ?? product.oldPrice;
@@ -54,6 +66,8 @@ export function ProductDetail({ product, reviews }: { product: Product; reviews:
         <h1>{product.name}</h1>
         <div className="detail-rating">{(reviews.error ? product.rating : reviews.rating) > 0 && <span><Star fill="currentColor"/> {(reviews.error ? product.rating : reviews.rating).toFixed(1)}</span>}<a href="#reviews">{(reviews.error ? product.reviews : reviews.total) > 0 ? `${reviews.error ? product.reviews : reviews.total} ta sharh` : "Hali sharh yo‘q"}</a></div>
         {product.description && <p className="detail-lead">{product.description}</p>}
+
+        {variantChoices && <div className="option-block"><div className="option-title"><b>Variant</b>{selectedVariant && <span>{variantLabel(selectedVariant, activeVariant)}</span>}</div><div className="variant-options" role="group" aria-label="Variantlar">{variants.map((variant, index) => <button type="button" className={activeVariant === index ? "active" : ""} aria-pressed={activeVariant === index} disabled={variant.stock === 0} onClick={() => setActiveVariant(index)} key={String(variant.id)}>{variantLabel(variant, index)}</button>)}</div></div>}
 
         {product.colors.length > 0 && <div className="option-block"><div className="option-title"><b>Rang</b><span>{selectedVariant?.name ?? selectedColor}</span></div><div className="color-options">{product.colors.map((color, index) => <button className={activeColor === index ? "active" : ""} onClick={() => setActiveColor(index)} key={color} aria-label={`${color} rang`}><i style={{ background: color }}/>{activeColor === index && <Check/>}</button>)}</div></div>}
 

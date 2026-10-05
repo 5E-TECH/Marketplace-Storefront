@@ -3,7 +3,7 @@
 import { Star } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { hasAuthSession } from "@/lib/access-token";
 import { formatLongDate } from "@/lib/format";
@@ -24,6 +24,18 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  // Xarid tekshiruvi xaridorning barcha buyurtmalarini so'raydi — faqat sharh bloki ko'rinishga yaqinlashganda.
+  const formRef = useRef<HTMLDivElement>(null);
+  const [nearby, setNearby] = useState(false);
+  useEffect(() => {
+    const node = formRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") { setNearby(true); return; }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) { setNearby(true); observer.disconnect(); }
+    }, { rootMargin: "600px 0px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -32,6 +44,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
       if (!active) return;
       setAuthenticated(signedIn);
       if (!signedIn) { setEligibilityLoading(false); return; }
+      if (!nearby) return;
       try {
         const items = await reviewService.reviewableItems(productId);
         if (!active) return;
@@ -43,7 +56,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
     };
     void load();
     return () => { active = false; };
-  }, [productId]);
+  }, [nearby, productId]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -82,7 +95,7 @@ export function ProductReviews({ productId, reviews }: { productId: string | num
       {reviews.page < reviews.totalPages ? <Link className="button button--secondary" href={`${basePath}?reviewPage=${reviews.page + 1}#reviews`}>Keyingi →</Link> : <span/>}
     </nav>}
 
-    <div className="review-form-card">
+    <div className="review-form-card" ref={formRef}>
       <h3>Mahsulotni baholang</h3>
       {eligibilityLoading ? <p role="status">Xarid ma’lumoti tekshirilmoqda…</p> : eligibilityError ? <p className="form-error" role="alert">{eligibilityError}</p> : submitted ? <p className="form-success" role="status">Sharhingiz qabul qilindi.</p> : !authenticated ? <p>Sharh yozish uchun <Link href={`/login?next=${encodeURIComponent(`${basePath}#reviews`)}`}>akkauntingizga kiring</Link>. Faqat yetkazilgan mahsulotga sharh yozish mumkin.</p> : !eligible.length ? <p>Bu mahsulot sizga yetkazilgach sharh qoldira olasiz.</p> : <form onSubmit={submit}>
         {eligible.length > 1 && <label>Buyurtma<select value={selectedItem} onChange={(event) => setSelectedItem(event.target.value)}>{eligible.map((item) => <option value={item.orderItemId} key={item.orderItemId}>#{item.orderId}</option>)}</select></label>}

@@ -44,6 +44,14 @@ export const securityHeaders = (production: boolean) => [
 // Brauzerdagi `getSafeImageSrc` ham aynan shu hostlarga ruxsat beradi — ikki ro'yxat ajralib ketmasin.
 const imageHosts = remotePatterns.map((pattern) => `${pattern.hostname}${pattern.port ? `:${pattern.port}` : ""}`).join(",");
 
+/**
+ * Bu botlar title, description, canonical va og: teglarini `<head>` ichida oladi (blocking metadata).
+ * Next standartda Googlebot'ga metadata'ni `<body>` oqimida beradi va JS bilan `<head>`ga ko'chiradi —
+ * Google `rel=canonical` va `robots`ni faqat `<head>`dan ishonchli o'qiydi, shuning uchun u ham ro'yxatda.
+ * Qolgani Next'ning standart ro'yxati + Telegram, Mail.ru va boshqa mahalliy qidiruv/preview botlari.
+ */
+export const htmlLimitedBots = /Googlebot|[\w-]+-Google|Google-[\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight|Mail\.RU_Bot|PetalBot|SeznamBot/i;
+
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_IMAGE_HOSTS: imageHosts },
   // `next build` ishlayotgan dev server manifestlarini buzmasligi uchun cache'lar ajratilgan.
@@ -52,9 +60,15 @@ const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
   allowedDevOrigins: ["192.168.1.69"],
+  htmlLimitedBots,
   images: {
     remotePatterns,
-    formats: ["image/avif", "image/webp"],
+    // AVIF birinchi kodlashda WebP'dan ~2 barobar sekin (o'lchandi: ~450 ms vs ~200 ms) va serverni
+    // ko'proq yuklaydi; har yangi rasm/o'lcham birinchi ko'rishda shuncha kutadi. WebP hajmi biroz katta, lekin tez.
+    formats: ["image/webp"],
+    // Media fayl nomlari vaqt + UUID (o'zgarmas): optimallashtirilgan nusxa bir oy keshda turadi,
+    // aks holda har 60 soniyada backenddan qayta yuklanib, qayta kodlanardi.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
   },
   poweredByHeader: false,
   async headers() {
