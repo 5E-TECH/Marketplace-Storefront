@@ -1,0 +1,16 @@
+# Lokal ishga tushirish (SF-01 TC1): `cd landing && docker compose up landing` → http://localhost:3003/k7Qm2x
+# Sukut — mock backend. Lokal backend bilan: `MOCK_API=false API_BASE_URL=http://host.docker.internal:3000/api/v1 docker compose up landing`.
+# Prod uchun konteyner `marketplace_edge` tarmog‘iga ulanadi — domen (EQ-05) aniq bo‘lgach, alohida PR da.
+services:
+  landing:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SUPPORT_PHONE: ${NEXT_PUBLIC_SUPPORT_PHONE:-}
+    image: elchi-landing:local
+    environment:
+      MOCK_API: ${MOCK_API:-true}
+      API_BASE_URL: ${API_BASE_URL:-}
+      API_TIMEOUT_MS: ${API_TIMEOUT_MS:-}
+    ports:
+      - "3003:3003"

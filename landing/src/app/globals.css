@@ -1,0 +1,48 @@
+/*
+ * Karkas uslublari. Qizil blok va tugma chegarasi holat-matnlari.md «Colours» dan; matn ranglari
+ * (#101828, #475467), 10 px burchak va sarlavha o‘lchamlari (48 px, 16 px chekka, 28 px logo)
+ * S1-mahsulot.mobil taxtasidan. S1/S3 dizayni SF-02 da (DZ-02 tasdig‘idan keyin).
+ */
+:root {
+  --text: #101828;
+  --muted: #475467;
+  --border: #e4e7ec;
+  --error-text: #a51d2d;
+  --error-bg: #fbeaea;
+  --page: #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+a { color: inherit; }
+
+.site-header { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; }
+.site-header img { display: block; width: 28px; height: 28px; }
+.site-header__name { font-size: 16px; line-height: 24px; font-weight: 700; }
+
+.page { max-width: 720px; margin: 0 auto; padding: 16px; }
+.page h1 { font-size: 22px; line-height: 28px; margin: 8px 0; }
+
+.block { margin-top: 24px; }
+.block__title { font-size: 16px; line-height: 24px; font-weight: 700; margin: 0 0 8px; }
+.steps { margin: 8px 0 0; padding-left: 20px; }
+.steps li + li { margin-top: 8px; }
+.muted { color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+
+.alert { padding: 16px; border-radius: 10px; }
+.alert--error { background: var(--error-bg); color: var(--error-text); }
+
+.button { display: inline-block; min-height: 44px; padding: 10px 16px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+.button--secondary { background: #ffffff; color: var(--text); border: 1px solid var(--border); }
+
+.price { font-size: 22px; line-height: 28px; font-weight: 700; }

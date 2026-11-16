@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { loadTypeScript } from './load-typescript.mjs';
+
+const { BackendError } = loadTypeScript('src/lib/backend.ts');
+
+function routeWith(createClick) {
+  const calls = [];
+  const { POST } = loadTypeScript('src/app/api/clicks/route.ts', {
+    '@/lib/backend': { BackendError, createClick: async (...args) => { calls.push(args); return createClick(...args); } },
+  });
+  return { POST, calls };
+}
+
+const post = (body, headers = {}) => new Request('http://landing.test/api/clicks', {
+  method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: typeof body === 'string' ? body : JSON.stringify(body),
+});
+
+test('TC4: klik variant bilan backendga ketadi, mijoz IP va user agenti bilan', async (t) => {
+  t.mock.method(console, 'error', () => {});
+  const { POST, calls } = routeWith(async () => ({ clickId: '90311' }));
+  const response = await POST(post({ code: 'k7Qm2x', variant: 's3', sub1: 'abc', utmSource: 'fb', ortiqcha: 'x' }, { 'x-forwarded-for': '203.0.113.7', 'user-agent': 'UA' }));
+  assert.equal(response.status, 201);
+  assert.deepEqual(await response.json(), { clickId: '90311' });
+  assert.deepEqual(calls[0][0], { code: 'k7Qm2x', variant: 's3', sub1: 'abc', utmSource: 'fb' });
+  assert.deepEqual(calls[0][1], { forwardedFor: '203.0.113.7', userAgent: 'UA' });
+});
+
+test('noto‘g‘ri tana — 400, backend chaqirilmaydi', async () => {
+  const { POST, calls } = routeWith(async () => ({ clickId: 'x' }));
+  assert.equal((await POST(post('{buzuq'))).status, 400);
+  assert.equal((await POST(post({ variant: 's1' }))).status, 400);
+  assert.equal(calls.length, 0);
+});
+
+test('backend 501/500 — 502, backend 400 — 400; sahifa baribir ishlaydi', async (t) => {
+  t.mock.method(console, 'error', () => {});
+  for (const [status, expected] of [[501, 502], [500, 502], [400, 400]]) {
+    const { POST } = routeWith(async () => { throw new BackendError('x', status); });
+    const response = await POST(post({ code: 'k7Qm2x', variant: 's1' }));
+    assert.equal(response.status, expected);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+  }
+});
