@@ -16,18 +16,27 @@ export const LANDING_URL_HEADER = "x-landing-url";
 /**
  * Kod formati backend shartnomasida berilmagan (BE-25: `code` — string, misol `k7Qm2x`).
  * Bu yerda faqat URL’ga xavfsiz belgilar o‘tkaziladi; kod bormi-yo‘qmi — backend aytadi (404).
+ * Ichki sahifalar (SF-02): `/<kod>/buyurtma` — S3 buyurtma qadami, `/<kod>/rahmat` — «Rahmat».
  */
-const CODE_PATTERN = /^\/([A-Za-z0-9_-]+)$/;
+const CODE_PATTERN = /^\/([A-Za-z0-9_-]+)(?:\/(buyurtma|rahmat))?$/;
+
+export const SUB_PAGES = ["buyurtma", "rahmat"] as const;
+export type SubPage = (typeof SUB_PAGES)[number];
 
 export type Route =
-  | { kind: "landing"; code: string }
+  | { kind: "landing"; code: string; sub?: SubPage }
   | { kind: "internal" }
   | { kind: "other" };
 
 export function classifyPath(pathname: string): Route {
   if (pathname === `/${VARIANT_SEGMENT}` || pathname.startsWith(`/${VARIANT_SEGMENT}/`)) return { kind: "internal" };
   const match = CODE_PATTERN.exec(pathname);
-  return match ? { kind: "landing", code: match[1] } : { kind: "other" };
+  if (!match) return { kind: "other" };
+  return match[2] ? { kind: "landing", code: match[1], sub: match[2] as SubPage } : { kind: "landing", code: match[1] };
 }
 
-export const variantPath = (variant: Variant, code: string) => `/${VARIANT_SEGMENT}/${variant}/${code}`;
+export const variantPath = (variant: Variant, code: string, sub?: SubPage) =>
+  `/${VARIANT_SEGMENT}/${variant}/${code}${sub ? `/${sub}` : ""}`;
+
+/** Mijoz ko‘radigan manzillar (rewrite’dan oldingi). */
+export const landingUrl = (code: string, sub?: SubPage) => `/${encodeURIComponent(code)}${sub ? `/${sub}` : ""}`;

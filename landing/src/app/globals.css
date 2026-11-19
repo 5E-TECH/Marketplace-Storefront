@@ -1,48 +1,314 @@
 /*
- * Karkas uslublari. Qizil blok va tugma chegarasi holat-matnlari.md «Colours» dan; matn ranglari
- * (#101828, #475467), 10 px burchak va sarlavha o‘lchamlari (48 px, 16 px chekka, 28 px logo)
- * S1-mahsulot.mobil taxtasidan. S1/S3 dizayni SF-02 da (DZ-02 tasdig‘idan keyin).
+ * Sotuvchi sahifasi uslublari. Qiymatlar `sf-tizim` va S1/S3 taxtalaridan (o‘qish:
+ * elchi-lid-sotuv/mvp-plan/tahlil-2026-11-19/sf02/dizayn-oqish.md, 1-bo‘lim). Yangi qiymat yo‘q.
+ * Tuzilish chegarasi [taklif]: taxtalar faqat 390, 768 va 1440 da chizilgan (CSS chegarasi yo‘q) —
+ * 768 dan planshet, 1024 dan kompyuter (brif-olcham.md: kompyuter 1024–1920 da buzilmaydi).
  */
 :root {
-  --text: #101828;
-  --muted: #475467;
-  --border: #e4e7ec;
-  --error-text: #a51d2d;
-  --error-bg: #fbeaea;
-  --page: #ffffff;
+  --sirt: #ffffff;
+  --zamin: #f4f5f7;
+  --chiziq: #e4e7ec;
+  --matn: #101828;
+  --matn-2: #475467;
+  --xarid: #c2410c;
+  --tanlov: #fff1ea;
+  --xato: #a51d2d;
+  --xato-fon: #fbeaea;
+  --joyida: #12704f;
+  --joyida-fon: #e3f4ec;
+  --etibor: #95560a;
+  --etibor-fon: #fcf0dc;
+  /* SF-01 nomlari (404 va xato-1 sahifalari). */
+  --text: var(--matn);
+  --muted: var(--matn-2);
+  --border: var(--chiziq);
+  --error-text: var(--xato);
+  --error-bg: var(--xato-fon);
+  --page: var(--sirt);
+  --chekka: 16px;
 }
+@media (min-width: 768px) { :root { --chekka: 24px; } }
 
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--page);
-  color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--sirt);
+  color: var(--matn);
+  font-family: var(--font-onest), Onest, system-ui, sans-serif;
   font-size: 15px;
   line-height: 22px;
 }
+@media (min-width: 768px) { body { font-size: 16px; line-height: 24px; } }
 
 a { color: inherit; }
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--matn); outline-offset: 2px; } /* [taklif] sf-tizim:174 */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.nowrap { white-space: nowrap; }
+.icon { flex: none; display: block; }
 
+/* ── {HEAD} karkas-1 ──────────────────────────────────────────────── */
 .site-header { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; }
 .site-header img { display: block; width: 28px; height: 28px; }
 .site-header__name { font-size: 16px; line-height: 24px; font-weight: 700; }
+.site-header__back { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: -12px; text-decoration: none; }
+.lp[data-variant="s3"] .site-header { height: 52px; border-bottom: 1px solid var(--chiziq); }
+.lp[data-variant="s3"] .site-header__name { line-height: 20px; }
+@media (min-width: 768px) {
+  .site-header { height: 56px; padding: 0 24px; }
+  .site-header img { width: 32px; height: 32px; }
+  .site-header__name { font-size: 18px; line-height: 24px; }
+  .lp[data-variant="s3"] .site-header { height: 56px; }
+  .lp[data-variant="s3"] .site-header__name { font-size: 17px; line-height: 22px; }
+}
+@media (min-width: 1024px) {
+  .site-header { height: 64px; max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+  .lp[data-variant="s3"] .site-header { height: 64px; }
+  .lp[data-variant="s3"] .site-header img { width: 36px; height: 36px; }
+  .lp[data-variant="s3"] .site-header__name { font-size: 18px; line-height: 22px; }
+}
 
+/* ── SF-01: 404-1 va xato-1 ────────────────────────────────────────── */
 .page { max-width: 720px; margin: 0 auto; padding: 16px; }
 .page h1 { font-size: 22px; line-height: 28px; margin: 8px 0; }
-
 .block { margin-top: 24px; }
 .block__title { font-size: 16px; line-height: 24px; font-weight: 700; margin: 0 0 8px; }
-.steps { margin: 8px 0 0; padding-left: 20px; }
+.steps { margin: 8px 0 0; padding-left: 20px; list-style: decimal; }
 .steps li + li { margin-top: 8px; }
-.muted { color: var(--muted); }
+.muted { color: var(--matn-2); }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
-
 .alert { padding: 16px; border-radius: 10px; }
-.alert--error { background: var(--error-bg); color: var(--error-text); }
-
-.button { display: inline-block; min-height: 44px; padding: 10px 16px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
-.button--secondary { background: #ffffff; color: var(--text); border: 1px solid var(--border); }
-
+.alert--error { background: var(--xato-fon); color: var(--xato); }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; }
+.button--secondary { background: var(--sirt); color: var(--matn); border: 1px solid var(--chiziq); }
 .price { font-size: 22px; line-height: 28px; font-weight: 700; }
+
+/* ── Tugmalar (sf-tizim:138-168) ───────────────────────────────────── */
+.buy {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 52px; padding: 0 20px;
+  background: var(--xarid); color: #fff; border: 0; border-radius: 10px;
+  font-size: 17px; line-height: 24px; font-weight: 700; text-decoration: none; cursor: pointer;
+}
+.buy:disabled { cursor: progress; }
+.lp[data-variant="s3"] .buy { line-height: 22px; }
+@media (min-width: 768px) { .buy { height: 56px; font-size: 18px; line-height: 24px; } }
+.button-light {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 16px;
+  background: #fff; color: var(--matn); border: 1px solid var(--chiziq); border-radius: 10px;
+  font-size: 16px; line-height: 22px; font-weight: 700; text-decoration: none; cursor: pointer;
+}
+
+/* ── Sahifa karkasi ───────────────────────────────────────────────── */
+.lp { min-height: 100vh; display: flex; flex-direction: column; }
+.lp-first { position: relative; z-index: 2; background: var(--sirt); }
+.lp-main { flex: 1; }
+.wrap { padding: 0 var(--chekka); }
+@media (min-width: 1024px) {
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+}
+
+/* ── Galereya (CSS scroll-snap, JS siz ham) ───────────────────────── */
+.gallery { position: relative; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; background: var(--zamin); scrollbar-width: none; height: clamp(168px, calc(100svh - 378px), 256px); }
+.lp[data-variant="s3"] .gallery { height: clamp(168px, calc(100svh - 416px), 248px); }
+.gallery::-webkit-scrollbar { display: none; }
+.slide { position: relative; flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; display: flex; align-items: center; justify-content: center; }
+.slide img, .slide video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.slide__count { position: absolute; right: 12px; bottom: 12px; padding: 2px 8px; border-radius: 10px; background: #fff; font-size: 13px; line-height: 18px; color: var(--matn-2); }
+.lp[data-variant="s3"] .slide__count { top: 12px; bottom: auto; font-size: 12px; line-height: 16px; }
+.slide--video .slide__count { top: 12px; bottom: auto; }
+.chip { position: absolute; left: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px; background: #fff; border: 1px solid var(--chiziq); border-radius: 10px; font-size: 15px; font-weight: 500; text-decoration: none; }
+.cover { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--zamin); }
+.cover img { position: absolute; inset: 0; }
+.cover__play { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px; background: #fff; border: 1px solid var(--chiziq); border-radius: 10px; font-size: 16px; line-height: 24px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.video-failed { position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 12px; background: var(--xato-fon); border: 1.5px solid var(--xato); border-radius: 10px; }
+.video-failed__actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+@media (min-width: 768px) {
+  .gallery, .lp[data-variant="s3"] .gallery { height: 440px; }
+  .cover__play { height: 56px; font-size: 18px; }
+}
+@media (min-width: 1024px) {
+  .gallery { height: 452px; border-radius: 10px; }
+  .lp[data-variant="s3"] .gallery { height: 500px; }
+}
+
+/* ── Narx bloki va yetkazish ──────────────────────────────────────── */
+.buybox { padding: 12px 0 16px; display: grid; gap: 0; }
+.buybox h1 { font-size: 22px; line-height: 28px; font-weight: 700; }
+.lp[data-variant="s3"] .buybox h1 { font-size: 20px; line-height: 26px; }
+.subtitle { margin-top: 2px; font-size: 15px; line-height: 20px; color: var(--matn-2); }
+.pricerow { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.pricerow__sum { font-size: 28px; line-height: 34px; font-weight: 700; white-space: nowrap; }
+.pricerow__hint { font-size: 15px; line-height: 20px; color: var(--matn-2); white-space: nowrap; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; padding: 0; border: 0; }
+.choice { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 10px; border: 1px solid var(--chiziq); border-radius: 10px; cursor: pointer; }
+.choice:has(input:checked) { background: var(--tanlov); border-color: var(--matn); }
+.choice input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--matn); }
+.choice__name { display: block; font-weight: 500; }
+.choice__fee { display: block; color: var(--matn-2); white-space: nowrap; }
+.lp[data-variant="s3"] .choice__name { font-weight: 400; }
+.lp[data-variant="s3"] .choice__fee { color: var(--matn); font-weight: 700; }
+.hint { margin-top: 4px; font-size: 13px; line-height: 18px; color: var(--matn-2); }
+.total { margin-top: 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.total__sum { font-size: 22px; line-height: 28px; font-weight: 700; white-space: nowrap; }
+.total__other { width: 100%; font-size: 15px; line-height: 20px; color: var(--matn-2); }
+.lp[data-variant="s3"] .total__other { width: auto; }
+.payline { display: flex; align-items: center; gap: 8px; font-size: 15px; line-height: 24px; font-weight: 500; color: var(--joyida); }
+.bad { margin-top: 4px; font-size: 15px; line-height: 22px; font-weight: 500; }
+.buybox .buy { margin-top: 8px; }
+.under-buy { margin-top: 10px; display: grid; gap: 4px; font-size: 15px; line-height: 20px; }
+.under-buy li { display: flex; align-items: center; gap: 8px; }
+.under-buy .now { color: var(--joyida); font-weight: 500; }
+.under-buy .muted-line { color: var(--matn-2); }
+.free-note { margin-top: 8px; font-weight: 500; }
+
+/* Tanlangan yetkazish: jami va boshqa qator CSS bilan almashadi (JS siz ham). */
+.if-address { display: none; }
+.lp:has(input[name="whereDeliver"][value="ADDRESS"]:checked) .if-address { display: revert; }
+.lp:has(input[name="whereDeliver"][value="ADDRESS"]:checked) .if-center { display: none; }
+
+@media (min-width: 768px) {
+  .buybox h1 { font-size: 28px; line-height: 34px; }
+  .lp[data-variant="s3"] .buybox h1 { font-size: 30px; line-height: 36px; }
+  .subtitle { font-size: 16px; line-height: 22px; }
+  .pricerow__sum { font-size: 36px; line-height: 44px; }
+  .choice { min-height: 60px; }
+  .lp[data-variant="s3"] .choice { min-height: 64px; }
+  .total__sum { font-size: 24px; line-height: 30px; }
+  .lp[data-variant="s3"] .total__sum { font-size: 26px; line-height: 34px; }
+  .total__other { width: auto; }
+  .hint { font-size: 14px; line-height: 18px; }
+}
+
+/* ── Forma (sf-tizim:172-284) ─────────────────────────────────────── */
+.form { display: grid; gap: 14px; padding: 16px 0 8px; scroll-margin-top: 16px; }
+.form__title { font-size: 18px; line-height: 24px; font-weight: 700; }
+.fields { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+.field label, .field__label { font-size: 15px; line-height: 20px; font-weight: 500; }
+.input { width: 100%; height: 48px; padding: 0 12px; border: 1px solid var(--chiziq); border-radius: 10px; background: #fff; font-size: 16px; line-height: 24px; }
+.input[aria-invalid="true"], .phone:has(input[aria-invalid="true"]) { border: 2px solid var(--xato); }
+.phone { display: flex; align-items: stretch; height: 48px; border: 1px solid var(--chiziq); border-radius: 10px; overflow: hidden; background: #fff; }
+.phone__prefix { display: flex; align-items: center; padding: 0 12px; border-right: 1px solid var(--chiziq); font-size: 16px; line-height: 24px; font-weight: 500; }
+.phone input { flex: 1; min-width: 0; border: 0; padding: 0 12px; font-size: 16px; line-height: 24px; background: transparent; }
+.phone input:focus-visible { outline: none; }
+.phone:has(input:focus-visible) { outline: 2px solid var(--matn); outline-offset: 2px; }
+.field__hint { font-size: 15px; line-height: 20px; color: var(--matn-2); }
+.field__error { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; line-height: 22px; font-weight: 500; color: var(--xato); }
+.consent { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; font-size: 15px; line-height: 20px; cursor: pointer; }
+.consent input { flex: none; width: 24px; height: 24px; margin: 0; accent-color: var(--matn); }
+.consent input[aria-invalid="true"] { appearance: none; border: 2px solid var(--xato); border-radius: 6px; background: #fff; }
+.consent a { white-space: nowrap; }
+.server-error { display: flex; gap: 8px; padding: 12px; background: var(--xato-fon); border: 1.5px solid var(--xato); border-radius: 10px; font-size: 15px; line-height: 22px; }
+.summary { padding: 12px; background: var(--xato-fon); border: 1.5px solid var(--xato); border-radius: 10px; }
+.summary ul { margin-top: 6px; padding-left: 20px; list-style: disc; }
+.summary a { color: var(--xato); font-weight: 500; }
+.honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+@media (min-width: 768px) {
+  .fields--row { grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 12px; }
+}
+
+/* ── Tafsilotlar ──────────────────────────────────────────────────── */
+.section { padding: 20px 0; border-top: 1px solid var(--chiziq); }
+.section h2 { font-size: 18px; line-height: 24px; font-weight: 700; margin-bottom: 10px; }
+.benefits { display: grid; gap: 8px; }
+.benefits li { display: flex; gap: 8px; align-items: flex-start; }
+.benefits .icon { color: var(--joyida); margin-top: 1px; }
+.specs { display: grid; }
+.specs div { display: flex; justify-content: space-between; gap: 16px; min-height: 36px; align-items: center; border-bottom: 1px solid var(--chiziq); }
+.specs dt { color: var(--matn-2); }
+.lp[data-variant="s3"] .specs dd { font-weight: 500; }
+.rows { display: grid; margin-top: 8px; }
+.rows div { display: flex; justify-content: space-between; gap: 16px; min-height: 36px; align-items: center; border-bottom: 1px solid var(--chiziq); }
+.numbered { display: grid; gap: 12px; counter-reset: step; }
+.numbered li { display: grid; grid-template-columns: 24px 1fr; gap: 10px; counter-increment: step; }
+.numbered li::before { content: counter(step); display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 10px; background: var(--zamin); font-size: 13px; font-weight: 700; }
+.table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--chiziq); border-radius: 10px; margin-top: 10px; }
+.table th, .table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--chiziq); }
+.table tr:last-child td { border-bottom: 0; }
+.table th { font-size: 13px; line-height: 18px; color: var(--matn-2); font-weight: 500; }
+.table td:last-child { font-weight: 700; white-space: nowrap; }
+.faq { background: var(--zamin); padding: 20px 0; }
+.faq dl { display: grid; gap: 14px; }
+.faq dt { font-weight: 700; }
+.faq dd { margin-top: 2px; }
+@media (min-width: 768px) {
+  .section h2 { font-size: 20px; line-height: 28px; }
+  .details-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; }
+  .faq dl { grid-template-columns: 1fr 1fr; column-gap: 32px; }
+}
+
+/* ── Yopishqoq panel (sf-tizim:357-416): faqat CSS ─────────────────── */
+.sticky { position: sticky; bottom: 0; z-index: 1; display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: #fff; box-shadow: 0 -4px 12px rgba(16, 24, 40, .08); }
+.sticky__sum { display: grid; }
+.sticky__label { font-size: 13px; line-height: 16px; color: var(--matn-2); }
+.sticky__value { font-size: 18px; line-height: 24px; font-weight: 700; white-space: nowrap; }
+.sticky .buy { flex: 1; height: 48px; font-size: 16px; line-height: 24px; }
+.lp[data-variant="s3"] .sticky { height: 72px; padding: 0 16px; box-shadow: 0 -2px 8px rgba(16, 24, 40, .08); }
+.lp[data-variant="s3"] .sticky .buy { flex: 0 1 auto; margin-left: auto; height: 52px; line-height: 22px; }
+@media (min-width: 768px) {
+  .sticky { padding: 8px 24px; }
+  .sticky__value { font-size: 20px; line-height: 26px; }
+  .sticky .buy { flex: 0 1 400px; margin-left: auto; height: 52px; font-size: 17px; }
+}
+
+/* ── «Rahmat» (sf-tizim:308-355) ──────────────────────────────────── */
+.thanks { display: grid; gap: 16px; padding: 16px 0 24px; }
+.thanks__ok { padding: 20px; background: var(--joyida-fon); border-radius: 10px; display: grid; gap: 8px; }
+.thanks__badge { width: 48px; height: 48px; border-radius: 24px; background: var(--joyida); color: #fff; display: flex; align-items: center; justify-content: center; }
+.thanks__title { font-size: 24px; line-height: 30px; font-weight: 700; color: var(--joyida); }
+.callbox { padding: 16px; background: var(--etibor-fon); border: 1.5px solid var(--etibor); border-radius: 10px; display: grid; gap: 6px; }
+.callbox__title { display: flex; gap: 8px; align-items: flex-start; font-size: 18px; line-height: 24px; font-weight: 700; color: var(--etibor); }
+.callbox__number { font-size: 20px; line-height: 26px; font-weight: 700; white-space: nowrap; }
+.card { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--chiziq); border-radius: 10px; }
+.card__product { display: flex; gap: 12px; align-items: center; }
+.card__product img, .card__thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: var(--zamin); flex: none; }
+.sumrows { display: grid; gap: 4px; }
+.sumrows div { display: flex; justify-content: space-between; gap: 12px; }
+.sumrows .sumrows__total { font-weight: 700; font-size: 18px; line-height: 24px; }
+@media (min-width: 1024px) {
+  .thanks { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; column-gap: 48px; padding-top: 24px; }
+  .thanks__title { font-size: 32px; line-height: 40px; }
+}
+
+/* ── To‘xtatilgan sahifa (sf-landing-toxtatilgan) ──────────────────── */
+.stopped { display: grid; gap: 12px; padding: 16px 0 24px; }
+.stopped__photo { height: 220px; background: var(--zamin); border-radius: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.stopped__photo img { width: 100%; height: 100%; object-fit: contain; }
+.stopped__photo--dim img { opacity: .45; filter: grayscale(1); }
+.tag { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 8px; background: var(--etibor-fon); color: var(--etibor); font-size: 13px; font-weight: 700; justify-self: start; }
+.notice { padding: 12px; border-radius: 10px; background: var(--etibor-fon); border: 1.5px solid var(--etibor); font-weight: 700; }
+.notice--neutral { background: var(--zamin); border: 1px solid var(--chiziq); font-weight: 400; }
+
+/* ── Kompyuter: ikki ustun ────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  .hero { display: grid; gap: 48px; padding-top: 8px; padding-bottom: 36px; }
+  .lp[data-variant="s1"] .hero { grid-template-columns: minmax(0, 11fr) minmax(400px, 9fr); }
+  .lp[data-variant="s3"] .hero { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); padding-top: 24px; }
+  .buybox { padding: 0; }
+  .buybox h1 { font-size: 32px; line-height: 40px; }
+  .lp[data-variant="s3"] .buybox h1 { font-size: 38px; line-height: 46px; }
+  .subtitle { font-size: 16px; line-height: 24px; }
+  .lp[data-variant="s3"] .subtitle { font-size: 17px; }
+  .pricerow__sum { font-size: 40px; line-height: 48px; }
+  .lp[data-variant="s3"] .pricerow__sum { font-size: clamp(44px, 4.3vw, 46px); line-height: 54px; }
+  .lp[data-variant="s3"] .choice { min-height: 76px; }
+  .lp[data-variant="s3"] .total__sum { font-size: 30px; line-height: 38px; }
+  .lp[data-variant="s3"] .buy { height: 60px; font-size: 19px; }
+  /* S1: kompyuterda forma narx blokidan keyin, tugmadan oldin — birinchi tugma va jami formada (S1-mahsulot:53-133). */
+  .lp[data-variant="s1"] .s1-first-buy { display: none; }
+  .details-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 48px; }
+  .sticky { display: none; }
+  .lp[data-variant="s3"] .sticky { display: none; }
+  .desk-cta { display: flex; align-items: center; gap: 24px; margin: 8px 0 36px; padding: 16px 24px; background: var(--zamin); border-radius: 10px; }
+  .desk-cta .buy { flex: 0 1 360px; margin-left: auto; height: 56px; }
+  .faq dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1023.98px) { .desk-cta { display: none; } }
+
+/* Telefon va planshetda galereya chetdan-chetga (S1-mahsulot.mobil:26, S3-mahsulot.mobil:26). */
+@media (max-width: 1023.98px) { .hero .gallery { margin: 0 calc(-1 * var(--chekka)); } }
+.order { display: grid; padding-top: 12px; padding-bottom: 24px; }
+@media (min-width: 1024px) { .order { max-width: 1280px; } }

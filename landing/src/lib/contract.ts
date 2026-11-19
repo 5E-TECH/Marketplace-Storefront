@@ -55,3 +55,35 @@ export type TrackingField = (typeof TRACKING_FIELDS)[number];
 export type CreateLandingClick = { code: string; variant?: Variant; fbp?: string; fbc?: string } & Partial<Record<TrackingField, string>>;
 
 export interface LandingClickCreated { clickId: string }
+
+/** `CheckoutDeliveryDestination`: CENTER — markazgacha, ADDRESS — eshikkacha (P-1). */
+export type WhereDeliver = "CENTER" | "ADDRESS";
+
+/**
+ * `CreateLeadDto` (BE-12, BE-38). Manzil maydonlari backendda majburiy; formada ular SF-06 da qo‘shiladi.
+ * `website` — yashirin maydon (bot himoyasi): to‘ldirilsa backend lid yozmaydi, javob baribir 201.
+ */
+export type CreateLead = {
+  code: string;
+  name: string;
+  phone: string;
+  regionSoato?: string;
+  districtSoato?: string;
+  addressLine?: string;
+  whereDeliver?: WhereDeliver;
+  consentVersion: string;
+  clickId?: string;
+  website?: string;
+  variant?: Variant;
+} & Partial<Record<TrackingField, string>>;
+
+/** `LeadCreatedDto`: `leadId` — piksel eventID si ham (BE-31 CAPI bilan bir xil). */
+export interface LeadCreated { leadId: string; duplicate: boolean }
+
+/** api-gateway `AllExceptionsFilter`: `{ statusCode, message, errorCode, details? }`. */
+export interface ApiError {
+  statusCode?: number;
+  message?: string | string[];
+  errorCode?: string;
+  details?: Array<{ field?: string; error?: string }>;
+}

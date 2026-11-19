@@ -131,6 +131,97 @@ check('boshqa saytdan klik (text/plain, sendBeacon kabi) → 403', async () => {
   assert.equal(response.status, 403);
 });
 
+// ─── SF-02 ─────────────────────────────────────────────────────────────────────
+const text = async (response) => (await response.text()).replaceAll('<!-- -->', '');
+const page = async (pathname, variant) => text(await get(pathname, `elchi_variant=${variant}`));
+const arizaCookie = (response) => response.headers.getSetCookie().find((value) => value.startsWith('elchi_ariza='))?.split(';')[0];
+
+/** JS siz yuborish: sahifadagi forma (server action yashirin maydonlari bilan) oddiy POST bo‘ladi. */
+async function submitWithoutJs(pathname, variant, fields) {
+  const html = await (await get(pathname, `elchi_variant=${variant}`)).text();
+  const form = /<form id="lead-form"[\s\S]*?<\/form>/.exec(html)?.[0];
+  assert.ok(form, 'sahifada lead-form yo‘q');
+  const data = new FormData();
+  for (const [, name, value = ''] of form.matchAll(/<input type="hidden" name="([^"]+)"(?: value="([^"]*)")?\/>/g)) {
+    data.append(name.replaceAll('&amp;', '&'), value.replaceAll('&quot;', '"').replaceAll('&amp;', '&'));
+  }
+  for (const [name, value] of Object.entries(fields)) data.append(name, value);
+  return fetch(`${base}${pathname.split('?')[0]}`, { method: 'POST', redirect: 'manual', body: data, headers: { cookie: `elchi_variant=${variant}`, origin: base, referer: `${base}${pathname}` } });
+}
+
+check('S1: forma sahifaning o‘zida, yetkazish tanlovi, jami ikkala holati; S3: forma keyingi qadamda', async () => {
+  const s1 = await page(`/${CODE}`, 's1');
+  assert.match(s1, /<form id="lead-form"/);
+  assert.match(s1, /name="whereDeliver" value="ADDRESS" form="lead-form"|name="whereDeliver" form="lead-form" value="ADDRESS"|form="lead-form"[^>]*value="ADDRESS"/);
+  assert.match(s1, /Jami 292 000 so‘m/);
+  assert.match(s1, /Eshikkacha bo‘lsa — 312 000 so‘m/);
+  const s3 = await page(`/${CODE}`, 's3');
+  assert.doesNotMatch(s3, /id="lead-form"/);
+  assert.match(s3, /<form id="s3-order" class="buybox" action="\/k7Qm2x\/buyurtma" method="get">/);
+  assert.match(s3, /Hozir hech narsa to‘lamaysiz/);
+  const order = await page(`/${CODE}/buyurtma?whereDeliver=ADDRESS`, 's3');
+  assert.match(order, /Ism, raqam va manzilingizni qoldiring/);
+  assert.match(order, /<input type="hidden" name="variant" value="s3"\/>/);
+  assert.match(order, /name="whereDeliver" checked="" value="ADDRESS"/);
+  assert.equal((await get(`/${CODE}/buyurtma`, 'elchi_variant=s1')).status, 307);
+});
+
+check('TC5: JS siz forma yuborildi → 303 «Rahmat», ism va raqam cookie’da (URL da emas), Lead piksel lid ID bilan', async () => {
+  const response = await submitWithoutJs(`/${CODE}?sub1=abc&utm_source=fb`, 's1', { ism: 'Aziza', telefon: '90 123 45 67', rozilik: '1', whereDeliver: 'ADDRESS' });
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get('location'), `/${CODE}/rahmat`);
+  const ariza = arizaCookie(response);
+  assert.ok(ariza, 'elchi_ariza cookie yo‘q');
+  const thanks = await text(await get(`/${CODE}/rahmat`, `elchi_variant=s1; ${ariza}`));
+  assert.match(thanks, /Rahmat, Aziza!/);
+  assert.match(thanks, /\+998 90 123 45 67/);
+  assert.match(thanks, /Yetkazish eshikkacha/);
+  assert.match(thanks, /Jami 312 000 so‘m/);
+  assert.match(thanks, /\\"leadId\\":\\"\d+\\"/);
+});
+
+check('TC1: noto‘g‘ri telefon → yuborilmaydi, yozilganlar saqlanadi (forma-10)', async () => {
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Aziza', telefon: '90 123', rozilik: '1' });
+  assert.equal(response.status, 200);
+  assert.equal(arizaCookie(response), undefined);
+  const html = await text(response);
+  assert.match(html, /Arizani yuborib bo‘lmadi — 1 ta maydonni to‘g‘rilang:/);
+  assert.match(html, /Raqamni to‘liq kiriting: 9 ta raqam, masalan 90\u00a0123\u00a045\u00a067/);
+  assert.match(html, /value="Aziza"/);
+});
+
+check('TC2: server xatosi → «Rahmat» yo‘q, piksel yo‘q (forma-11)', async () => {
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Xato Sinov', telefon: '901234567', rozilik: '1' });
+  assert.equal(response.status, 200);
+  assert.equal(arizaCookie(response), undefined);
+  const html = await text(response);
+  assert.match(html, /Arizangiz hali yuborilmadi/);
+  assert.match(html, /Qayta yuborish/);
+  assert.doesNotMatch(html, /leadId/);
+});
+
+check('dublikat (rahmat-4) va «Rahmat» cookie’siz: piksel yo‘q, sahifaga qaytadi', async () => {
+  const response = await submitWithoutJs(`/${CODE}/buyurtma`, 's3', { ism: 'Aziza', telefon: '90 111 11 11', rozilik: '1' });
+  assert.equal(response.headers.get('location'), `/${CODE}/rahmat`);
+  assert.equal(response.status, 303);
+  const thanks = await text(await get(`/${CODE}/rahmat`, `elchi_variant=s3; ${arizaCookie(response)}`));
+  assert.match(thanks, /Bu tovarga arizangiz bizda bor/);
+  assert.doesNotMatch(thanks, /leadId/);
+  assert.equal((await get(`/${CODE}/rahmat`, 'elchi_variant=s1')).status, 307);
+});
+
+check('TC7: BAD tovar — «Dori vositasi emas» S1 va S3 da; TC8: ochiq bo‘lmagan sahifada forma va xarid tugmasi yo‘q', async () => {
+  for (const variant of ['s1', 's3']) assert.match(await page('/mockBad', variant), /Dori vositasi emas/);
+  assert.match(await page('/mockBepul', 's1'), /Yetkazish bepul/);
+  for (const [code, words] of [['mockYoq', /Vaqtincha yo‘q/], ['mockHavola', /Bu havola orqali hozir buyurtma qabul qilinmaydi/], ['mockOlingan', /Bu tovar sotuvdan olingan/]]) {
+    for (const variant of ['s1', 's3']) {
+      const html = await page(`/${code}`, variant);
+      assert.match(html, words);
+      assert.doesNotMatch(html, /lead-form|s3-order|Buyurtma berish|metaPixelId/);
+    }
+  }
+});
+
 let failed = 0;
 try {
   await waitFor(`${base}/healthz`, 30_000);

@@ -82,3 +82,34 @@ test('sozlamalar: mock faqat MOCK_API=true bilan, timeout sukuti 10 000 ms', () 
   assert.deepEqual(readConfig({ API_BASE_URL: 'http://localhost:3000/api/v1/', API_TIMEOUT_MS: '2500', MOCK_API: 'true' }), { apiUrl: 'http://localhost:3000/api/v1', apiTimeoutMs: 2500, mock: true });
   assert.equal(readConfig({ MOCK_API: '1' }).mock, false);
 });
+
+const leadBody = { code: 'k7Qm2x', name: 'Aziza', phone: '+998901234567', consentVersion: '2026-11-16', variant: 's3', sub1: 'abc' };
+
+test('POST /leads — 201: lid ID (piksel eventID si) va dublikat belgisi; tana, IP va user agent uzatiladi', async () => {
+  const { calls, fetcher } = recorder(201, { leadId: '7001', duplicate: true });
+  const result = await backend.createLead(leadBody, { forwardedFor: '203.0.113.7', userAgent: 'UA' }, live, fetcher);
+  assert.deepEqual(result, { kind: 'created', leadId: '7001', duplicate: true });
+  assert.equal(calls[0].url, 'http://api.test/api/v1/leads');
+  assert.equal(calls[0].init.method, 'POST');
+  assert.deepEqual(JSON.parse(calls[0].init.body), leadBody);
+  assert.equal(calls[0].init.headers['x-forwarded-for'], '203.0.113.7');
+  assert.equal(calls[0].init.headers['user-agent'], 'UA');
+});
+
+test('POST /leads — 400 maydonlar, 404, 409 LANDING_NOT_OPEN; boshqasi BackendError', async () => {
+  const invalid = recorder(400, { statusCode: 400, message: ['phone O‘zbekiston operator kodi bilan bo‘lishi kerak'], errorCode: 'VALIDATION_ERROR', details: [{ field: 'phone', error: 'x' }, { field: 'phone', error: 'y' }] });
+  assert.deepEqual(await backend.createLead(leadBody, {}, live, invalid.fetcher), { kind: 'invalid', fields: ['phone'], messages: ['phone O‘zbekiston operator kodi bilan bo‘lishi kerak'] });
+  assert.deepEqual(await backend.createLead(leadBody, {}, live, recorder(404, { message: 'x' }).fetcher), { kind: 'notFound' });
+  assert.deepEqual(await backend.createLead(leadBody, {}, live, recorder(409, { errorCode: 'LANDING_NOT_OPEN' }).fetcher), { kind: 'notOpen' });
+  for (const [status, body] of [[409, { errorCode: 'BOSHQA' }], [500, {}], [503, undefined], [201, {}]]) {
+    await assert.rejects(backend.createLead(leadBody, {}, live, recorder(status, body).fetcher), (error) => error instanceof backend.BackendError);
+  }
+});
+
+test('mock lid: ma’lum kod — raqamli ID, noma’lum — 404, «Xato Sinov» — server xatosi', async () => {
+  const created = await backend.createLead(leadBody, {}, mock);
+  assert.equal(created.kind, 'created');
+  assert.match(created.leadId, /^\d+$/);
+  assert.deepEqual(await backend.createLead({ ...leadBody, code: 'boshqa' }, {}, mock), { kind: 'notFound' });
+  await assert.rejects(backend.createLead({ ...leadBody, name: 'Xato Sinov' }, {}, mock));
+});

@@ -30,7 +30,7 @@ export function handle(request: NextRequest, random: RandomByte = cryptoRandomBy
   if (route.kind !== "landing") return NextResponse.next({ request: { headers } });
 
   const { variant, assigned } = resolveVariant(request.cookies.get(VARIANT_COOKIE)?.value, random);
-  const response = NextResponse.rewrite(internalUrl(request, variantPath(variant, route.code)), { request: { headers } });
+  const response = NextResponse.rewrite(internalUrl(request, variantPath(variant, route.code, route.sub)), { request: { headers } });
   if (assigned) response.cookies.set(VARIANT_COOKIE, variant, variantCookieOptions(request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto") === "https"));
   return response;
 }
