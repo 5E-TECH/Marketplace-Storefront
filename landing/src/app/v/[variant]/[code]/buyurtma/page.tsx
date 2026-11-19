@@ -8,7 +8,7 @@ import { PageErrorView } from "@/components/page-error-view";
 import { Pixels } from "@/components/pixels";
 import { Total } from "@/components/price-block";
 import { SiteHeader } from "@/components/site-header";
-import { loadLanding } from "@/lib/load-landing";
+import { loadLanding, loadRegions } from "@/lib/load-landing";
 import { parseWhere, priceView } from "@/lib/pricing";
 import { landingUrl } from "@/lib/routing";
 import { trackingFromReferer } from "@/lib/tracking";
@@ -45,7 +45,7 @@ export default async function OrderStep({ params, searchParams }: Props) {
     <div className="lp" data-page="buyurtma" data-variant="s3">
       <SiteHeader back={{ href: landingUrl(code), label: FORM.back.s3 }} />
       <main className="wrap lp-main order">
-        <LeadForm code={page.code} variant="s3" formId="lead-form" title={FORM.s3Title} view={view} initialWhere={where} tracking={tracking}
+        <LeadForm code={page.code} variant="s3" formId="lead-form" title={FORM.s3Title} view={view} initialWhere={where} tracking={tracking} regions={await loadRegions(page.code)}
           summary={{
             head: (
               <div className="card__product">

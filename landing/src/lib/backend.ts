@@ -1,6 +1,6 @@
 import { readConfig, type ServerConfig } from "./config";
-import type { ApiError, CreateLandingClick, CreateLead, LandingClickCreated, LandingPage } from "./contract";
-import { mockCreateClick, mockCreateLead, mockGetLanding } from "./mock";
+import type { ApiError, CreateLandingClick, CreateLead, LandingClickCreated, LandingPage, RegionGroup } from "./contract";
+import { mockCreateClick, mockCreateLead, mockGetLanding, mockRegionTree } from "./mock";
 
 /** Backend javob bermadi yoki kutilmagan javob berdi: sahifada xato-1, klik yozilmaydi. */
 export class BackendError extends Error {
@@ -92,4 +92,24 @@ export async function createLead(body: CreateLead, client: ClientHeaders = {}, c
     return { kind: "invalid", fields, messages };
   }
   throw new BackendError(`POST /leads → ${response.status}`, response.status);
+}
+
+/**
+ * `GET /regions/tree` — formadagi viloyat va tuman ro‘yxati (SF-06). Ro‘yxat kam o‘zgaradi: Next keshida
+ * 1 soat [taklif]. Yuklanmasa — BackendError: forma-20 holati, ariza yuborilmaydi (TC5).
+ * `code` faqat mock uchun: `mockRoyxat` sahifasida ro‘yxat yuklanmaydi.
+ */
+export async function getRegionTree(code = "", config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<RegionGroup[]> {
+  if (config.mock) return mockRegionTree(code);
+  let response: Response;
+  try {
+    response = await fetcher(`${baseUrl(config)}/regions/tree`, { headers: { accept: "application/json" }, next: { revalidate: 3600 }, signal: AbortSignal.timeout(config.apiTimeoutMs) } as RequestInit);
+  } catch (error) {
+    if (error instanceof BackendError) throw error;
+    throw new BackendError(`backend bilan aloqa yo‘q: ${(error as Error).name}`);
+  }
+  if (!response.ok) throw new BackendError(`GET /regions/tree → ${response.status}`, response.status);
+  const tree = (await response.json()) as unknown;
+  if (!Array.isArray(tree)) throw new BackendError("GET /regions/tree: ro‘yxat emas", response.status);
+  return tree as RegionGroup[];
 }

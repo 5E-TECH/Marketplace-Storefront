@@ -137,6 +137,9 @@ const page = async (pathname, variant) => text(await get(pathname, `elchi_varian
 const arizaCookie = (response) => response.headers.getSetCookie().find((value) => value.startsWith('elchi_ariza='))?.split(';')[0];
 
 /** JS siz yuborish: sahifadagi forma (server action yashirin maydonlari bilan) oddiy POST bo‘ladi. */
+/** Manzil (SF-06): mock ro‘yxatidagi tuman va ko‘cha/uy. */
+const ADDRESS = { districtSoato: '1726266', addressLine: 'Navoiy ko‘chasi, 12-uy' };
+
 async function submitWithoutJs(pathname, variant, fields) {
   const html = await (await get(pathname, `elchi_variant=${variant}`)).text();
   const form = /<form id="lead-form"[\s\S]*?<\/form>/.exec(html)?.[0];
@@ -167,7 +170,7 @@ check('S1: forma sahifaning o‘zida, yetkazish tanlovi, jami ikkala holati; S3:
 });
 
 check('TC5: JS siz forma yuborildi → 303 «Rahmat», ism va raqam cookie’da (URL da emas), Pixels ga lid ID uzatiladi', async () => {
-  const response = await submitWithoutJs(`/${CODE}?sub1=abc&utm_source=fb`, 's1', { ism: 'Aziza', telefon: '90 123 45 67', rozilik: '1', whereDeliver: 'ADDRESS' });
+  const response = await submitWithoutJs(`/${CODE}?sub1=abc&utm_source=fb`, 's1', { ism: 'Aziza', telefon: '90 123 45 67', rozilik: '1', whereDeliver: 'ADDRESS', ...ADDRESS });
   assert.equal(response.status, 303);
   assert.equal(response.headers.get('location'), `/${CODE}/rahmat`);
   const ariza = arizaCookie(response);
@@ -181,7 +184,7 @@ check('TC5: JS siz forma yuborildi → 303 «Rahmat», ism va raqam cookie’da 
 });
 
 check('TC1: noto‘g‘ri telefon → yuborilmaydi, yozilganlar saqlanadi (forma-10)', async () => {
-  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Aziza', telefon: '90 123', rozilik: '1', whereDeliver: 'ADDRESS' });
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Aziza', telefon: '90 123', rozilik: '1', whereDeliver: 'ADDRESS', ...ADDRESS });
   assert.equal(response.status, 200);
   assert.equal(arizaCookie(response), undefined);
   const html = await text(response);
@@ -194,7 +197,7 @@ check('TC1: noto‘g‘ri telefon → yuborilmaydi, yozilganlar saqlanadi (forma
 });
 
 check('TC2: server xatosi → «Rahmat» yo‘q, piksel yo‘q (forma-11)', async () => {
-  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Xato Sinov', telefon: '901234567', rozilik: '1' });
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Xato Sinov', telefon: '901234567', rozilik: '1', ...ADDRESS });
   assert.equal(response.status, 200);
   assert.equal(arizaCookie(response), undefined);
   const html = await text(response);
@@ -204,7 +207,7 @@ check('TC2: server xatosi → «Rahmat» yo‘q, piksel yo‘q (forma-11)', asyn
 });
 
 check('dublikat (rahmat-4) va «Rahmat» cookie’siz: piksel yo‘q, sahifaga qaytadi', async () => {
-  const response = await submitWithoutJs(`/${CODE}/buyurtma`, 's3', { ism: 'Aziza', telefon: '90 111 11 11', rozilik: '1' });
+  const response = await submitWithoutJs(`/${CODE}/buyurtma`, 's3', { ism: 'Aziza', telefon: '90 111 11 11', rozilik: '1', ...ADDRESS });
   assert.equal(response.headers.get('location'), `/${CODE}/rahmat`);
   assert.equal(response.status, 303);
   const thanks = await text(await get(`/${CODE}/rahmat`, `elchi_variant=s3; ${arizaCookie(response)}`));
@@ -214,7 +217,7 @@ check('dublikat (rahmat-4) va «Rahmat» cookie’siz: piksel yo‘q, sahifaga q
 });
 
 check('yashirin maydon to‘ldirilgan (forma-13): bot oddiy «Rahmat» ko‘radi, Pixels ga lid ID uzatilmaydi', async () => {
-  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Bot', telefon: '901234567', rozilik: '1', website: 'https://spam.example' });
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Bot', telefon: '901234567', rozilik: '1', website: 'https://spam.example', ...ADDRESS });
   assert.equal(response.status, 303);
   const thanks = await text(await get(`/${CODE}/rahmat`, `elchi_variant=s1; ${arizaCookie(response)}`));
   assert.match(thanks, /Rahmat, Bot!/);
@@ -226,6 +229,53 @@ check('S3 JS siz: buyurtma qadami mahsulot sahifasi havolasidagi sub va utm ni y
   const html = await text(response);
   assert.match(html, /<input type="hidden" name="sub1" value="abc"\/>/);
   assert.match(html, /<input type="hidden" name="utmSource" value="fb"\/>/);
+});
+
+// ─── SF-06: manzil ─────────────────────────────────────────────────────────────
+check('SF-06 TC6: S1 va S3 da manzil maydonlari bir xil — JS siz bitta guruhlangan «Tuman yoki shahar» va «Ko‘cha, uy»', async () => {
+  for (const [path, variant] of [[`/${CODE}`, 's1'], [`/${CODE}/buyurtma`, 's3']]) {
+    const html = await page(path, variant);
+    assert.match(html, /<select class="input" id="tuman" name="districtSoato"><option value="" selected="">Tuman yoki shaharni tanlang<\/option><optgroup label="Toshkent shahri">/);
+    assert.doesNotMatch(html, /name="regionSoato"/);
+    assert.match(html, /<input class="input" id="manzil"[^>]*placeholder="Masalan: Navoiy ko‘chasi, 12-uy"[^>]*name="addressLine"/);
+  }
+});
+
+check('SF-06 TC0/TC1/TC4: «Markazgacha», tumansiz va ko‘cha/uysiz → yuborilmaydi, qolgan maydonlar to‘ldirilgan', async () => {
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Aziza', telefon: '901234567', rozilik: '1', whereDeliver: 'CENTER' });
+  assert.equal(response.status, 200);
+  assert.equal(arizaCookie(response), undefined);
+  const html = await text(response);
+  assert.match(html, /Arizani yuborib bo‘lmadi — 2 ta maydonni to‘g‘rilang:/);
+  assert.match(html, /Tuman yoki shaharni tanlang/);
+  assert.match(html, /Ko‘cha va uyni kiriting/);
+  assert.match(html, /value="Aziza"/);
+  assert.match(html, /value="90 123 45 67"/);
+});
+
+check('SF-06 TC2: boshqa viloyat tumani (so‘rov qo‘lda o‘zgartirilgan) → server xatosi, kiritilgan maydonlar saqlangan', async () => {
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Aziza', telefon: '901234567', rozilik: '1', regionSoato: '1730', ...ADDRESS });
+  assert.equal(response.status, 200);
+  assert.equal(arizaCookie(response), undefined);
+  const html = await text(response);
+  assert.match(html, /Arizangiz hali yuborilmadi/);
+  assert.match(html, /value="Navoiy ko‘chasi, 12-uy"/);
+  assert.match(html, /<option value="1726266" selected="">Yunusobod tumani<\/option>/);
+});
+
+check('SF-06 TC0/TC3: «Eshikkacha», to‘g‘ri manzil → «Rahmat», eshikkacha', async () => {
+  const response = await submitWithoutJs(`/${CODE}/buyurtma?whereDeliver=ADDRESS`, 's3', { ism: 'Aziza', telefon: '901234567', rozilik: '1', whereDeliver: 'ADDRESS', ...ADDRESS });
+  assert.equal(response.status, 303);
+  const thanks = await text(await get(`/${CODE}/rahmat`, `elchi_variant=s3; ${arizaCookie(response)}`));
+  assert.match(thanks, /Elchi Pochta eshikkacha yetkazadi\./);
+});
+
+check('SF-06 TC5: tumanlar ro‘yxati yuklanmadi → xato holati, forma yuborilmaydi', async () => {
+  const html = await page('/mockRoyxat', 's1');
+  assert.match(html, /Ro‘yxatni yuklab bo‘lmadi\. Internetni tekshirib, qayta urinib ko‘ring\./);
+  const response = await submitWithoutJs('/mockRoyxat', 's1', { ism: 'Aziza', telefon: '901234567', rozilik: '1', ...ADDRESS });
+  assert.equal(response.status, 200);
+  assert.equal(arizaCookie(response), undefined);
 });
 
 check('«Ommaviy oferta» havolasi sotuvchi sahifasi kodi deb qaralmaydi', async () => {

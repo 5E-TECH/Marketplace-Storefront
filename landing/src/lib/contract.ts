@@ -60,22 +60,25 @@ export interface LandingClickCreated { clickId: string }
 export type WhereDeliver = "CENTER" | "ADDRESS";
 
 /**
- * `CreateLeadDto` (BE-12, BE-38). Manzil maydonlari backendda majburiy; formada ular SF-06 da qo‘shiladi.
+ * `CreateLeadDto` (BE-12, BE-38). Manzil maydonlari majburiy: viloyat va tuman SOATO, ko‘cha/uy (SF-06).
  * `website` — yashirin maydon (bot himoyasi): to‘ldirilsa backend lid yozmaydi, javob baribir 201.
  */
 export type CreateLead = {
   code: string;
   name: string;
   phone: string;
-  regionSoato?: string;
-  districtSoato?: string;
-  addressLine?: string;
-  whereDeliver?: WhereDeliver;
+  regionSoato: string;
+  districtSoato: string;
+  addressLine: string;
+  whereDeliver: WhereDeliver;
   consentVersion: string;
   clickId?: string;
   website?: string;
   variant?: Variant;
 } & Partial<Record<TrackingField, string>>;
+
+/** `GET /regions/tree` (`LeadRegionGroupDto`, BE-38): viloyat va uning tumanlari, kalit — SOATO. Elchi bormaydigan tuman ro‘yxatda yo‘q. */
+export interface RegionGroup { satoCode: string; name: string; districts: Array<{ satoCode: string; name: string }> }
 
 /** `LeadCreatedDto`: `leadId` — piksel eventID si ham (BE-31 CAPI bilan bir xil). */
 export interface LeadCreated { leadId: string; duplicate: boolean }

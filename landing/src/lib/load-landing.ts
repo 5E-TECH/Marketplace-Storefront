@@ -1,7 +1,8 @@
 import { headers } from "next/headers";
 import { cache } from "react";
-import { getLanding } from "./backend";
-import type { LandingPage } from "./contract";
+import { sortRegions } from "./address";
+import { getLanding, getRegionTree } from "./backend";
+import type { LandingPage, RegionGroup } from "./contract";
 
 export type Loaded = { ok: true; page: LandingPage | null } | { ok: false };
 
@@ -19,3 +20,13 @@ export const loadLanding = cache(async (code: string): Promise<Loaded> => {
     return { ok: false };
   }
 });
+
+/** Formadagi viloyat va tuman ro‘yxati (SF-06). Yuklanmasa — null: forma-20 holati. */
+export async function loadRegions(code: string): Promise<RegionGroup[] | null> {
+  try {
+    return sortRegions(await getRegionTree(code));
+  } catch (error) {
+    console.error(`regions ${code}:`, (error as Error).message);
+    return null;
+  }
+}

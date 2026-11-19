@@ -1,13 +1,14 @@
 import { TRACKING_FIELDS, type CreateLead, type TrackingField, type WhereDeliver } from "./contract";
 import { parseWhere } from "./pricing";
+import { ADDRESS_MAX_LENGTH } from "./address";
 import { phoneDigits, toE164 } from "./phone";
 import { FORM } from "./texts";
 import { CLICK_FIELD_MAX_LENGTH, trackingFromQuery } from "./tracking";
 import { isVariant, type Variant } from "./variant";
 
 /**
- * Buyurtma formasi (SF-02): ism, telefon, rozilik, yashirin maydon, variant, kuzatuv parametrlari.
- * Manzil maydonlari SF-06 da qo‘shiladi. Server tekshiruvi JS siz yuborishda ham bir xil ishlaydi.
+ * Buyurtma formasi (SF-02, SF-06): ism, telefon, manzil (viloyat, tuman, ko‘cha/uy), rozilik, yashirin maydon,
+ * variant, kuzatuv parametrlari. Server tekshiruvi JS siz yuborishda ham bir xil ishlaydi.
  */
 
 /**
@@ -28,11 +29,24 @@ export const FIELDS = {
   honeypot: "website",
   js: "js",
   clickId: "clickId",
+  region: "regionSoato",
+  district: "districtSoato",
+  address: "addressLine",
 } as const;
 
-export type FieldKey = "name" | "phone" | "consent";
+/** Xato tartibi forma tartibida (forma-10 ro‘yxati ham shu tartibda). */
+export const FIELD_ORDER = ["name", "phone", "region", "district", "address", "consent"] as const;
+export type FieldKey = (typeof FIELD_ORDER)[number];
 
-export interface FormValues { name: string; phone: string; consent: boolean; whereDeliver: WhereDeliver }
+export interface FormValues {
+  name: string;
+  phone: string;
+  consent: boolean;
+  whereDeliver: WhereDeliver;
+  regionSoato: string;
+  districtSoato: string;
+  addressLine: string;
+}
 
 /**
  * `invalid` — maydon xatolari (forma-3…6, JS siz forma-10); `error` — server xatosi (forma-8, JS siz forma-11).
@@ -50,7 +64,7 @@ export interface FormState {
 export const initialFormState = (whereDeliver: WhereDeliver = "CENTER"): FormState => ({
   status: "idle",
   errors: {},
-  values: { name: "", phone: "", consent: false, whereDeliver },
+  values: { name: "", phone: "", consent: false, whereDeliver, regionSoato: "", districtSoato: "", addressLine: "" },
   js: false,
   tracking: {},
 });
@@ -102,6 +116,9 @@ export function readForm(form: FormData, referer: string | null): ParsedForm {
       phone: phoneDigits(text(form, FIELDS.phone)),
       consent: form.get(FIELDS.consent) !== null,
       whereDeliver: parseWhere(text(form, FIELDS.where)),
+      regionSoato: text(form, FIELDS.region).trim(),
+      districtSoato: text(form, FIELDS.district).trim(),
+      addressLine: text(form, FIELDS.address).trim(),
     },
     honeypot: text(form, FIELDS.honeypot),
     js: text(form, FIELDS.js) === "1",
@@ -115,19 +132,29 @@ export function readForm(form: FormData, referer: string | null): ParsedForm {
  * lekin Tenglik qoidasi farqni faqat sotish usulida qoldiradi (sinov-s1-s3.md), backend esa
  * `consentVersion` ni majburiy so‘raydi. A-7 (EQ-10) javobidan keyin qayta ko‘riladi.
  */
-export function validate(values: FormValues): Partial<Record<FieldKey, string>> {
+export function validate(values: FormValues, js = false): Partial<Record<FieldKey, string>> {
   const errors: Partial<Record<FieldKey, string>> = {};
   if (!values.name || values.name.length > NAME_MAX_LENGTH) errors.name = FORM.nameError;
   if (!toE164(values.phone)) errors.phone = FORM.phoneError;
+  // forma-17: JS bilan viloyat tanlanmaguncha tuman yopiq — xato viloyatda; JS siz viloyat maydoni yo‘q (forma-22).
+  if (!values.districtSoato) {
+    if (js && !values.regionSoato) errors.region = FORM.regionError;
+    else errors.district = FORM.districtError;
+  }
+  if (!values.addressLine || values.addressLine.length > ADDRESS_MAX_LENGTH) errors.address = FORM.addressError; // forma-21
   if (!values.consent) errors.consent = FORM.consentError;
   return errors;
 }
 
-export function buildLead(parsed: ParsedForm & { code: string }): CreateLead {
+/** `regionSoato` — server ro‘yxatdan topgan viloyat (tuman bo‘yicha), mijoz yuborgani emas. */
+export function buildLead(parsed: ParsedForm & { code: string }, regionSoato: string): CreateLead {
   const lead: CreateLead = {
     code: parsed.code,
     name: parsed.values.name,
     phone: toE164(parsed.values.phone) ?? "",
+    regionSoato,
+    districtSoato: parsed.values.districtSoato,
+    addressLine: parsed.values.addressLine,
     whereDeliver: parsed.values.whereDeliver,
     consentVersion: CONSENT_VERSION,
     ...parsed.tracking,
@@ -140,8 +167,8 @@ export function buildLead(parsed: ParsedForm & { code: string }): CreateLead {
 
 /**
  * Backend 400 → maydon xatosi. Telefon: operator kodi xabari bo‘lsa forma-5, aks holda forma-4.
- * Formada yo‘q maydon (manzil — SF-06, `consentVersion`, kod) bo‘yicha xato mijoz tuzata olmaydi —
- * null: server xatosi (forma-8) ko‘rsatiladi.
+ * Viloyat/tuman mosligi (so‘rov qo‘lda o‘zgartirilgan — SF-06 TC2), `consentVersion`, kod bo‘yicha xato —
+ * null: server xatosi (forma-8/forma-11), yozilganlar saqlanadi.
  */
 export function errorsFromBackend(fields: string[], messages: string[]): Partial<Record<FieldKey, string>> | null {
   const errors: Partial<Record<FieldKey, string>> = {};
@@ -150,6 +177,8 @@ export function errorsFromBackend(fields: string[], messages: string[]): Partial
       errors.phone = messages.some((message) => /operator/i.test(message)) ? FORM.operatorError : FORM.phoneError;
     } else if (field === "name") {
       errors.name = FORM.nameError;
+    } else if (field === "addressLine") {
+      errors.address = FORM.addressError;
     } else {
       return null;
     }

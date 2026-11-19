@@ -12,8 +12,8 @@ import { DeliveryChoice, PayLine, PriceHead, Total } from "@/components/price-bl
 import { SiteHeader } from "@/components/site-header";
 import { DesktopCta, StickyPanel } from "@/components/sticky-panel";
 import { StoppedView } from "@/components/stopped-view";
-import type { LandingPage } from "@/lib/contract";
-import { loadLanding } from "@/lib/load-landing";
+import type { LandingPage, RegionGroup } from "@/lib/contract";
+import { loadLanding, loadRegions } from "@/lib/load-landing";
 import { priceView, type PriceView } from "@/lib/pricing";
 import { LANDING_URL_HEADER, landingUrl } from "@/lib/routing";
 import { BUY, FORM, NOW, PAGE_ERROR, PRODUCT } from "@/lib/texts";
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return loaded.page ? { title: loaded.page.product.name } : {};
 }
 
-function S1Page({ page, view }: { page: LandingPage; view: PriceView }) {
+function S1Page({ page, view, regions }: { page: LandingPage; view: PriceView; regions: RegionGroup[] | null }) {
   const bad = page.product.isBad;
   return (
     <>
@@ -44,7 +44,7 @@ function S1Page({ page, view }: { page: LandingPage; view: PriceView }) {
         <div className="wrap hero">
           <Gallery page={page} />
           <div>
-            <LeadForm code={page.code} variant="s1" formId="lead-form" view={view} initialWhere="CENTER"
+            <LeadForm code={page.code} variant="s1" formId="lead-form" view={view} initialWhere="CENTER" regions={regions}
               buybox={{
                 head: <PriceHead name={page.product.name} subtitle={page.product.subtitle} product={view.product} />,
                 after: (
@@ -116,7 +116,7 @@ export default async function LandingRoute({ params }: Params) {
   const view = priceView(page.price);
   return (
     <div className="lp" data-page="landing" data-variant={variant} data-template={page.template} data-state={page.state}>
-      {variant === "s1" ? <S1Page page={page} view={view} /> : <S3Page page={page} view={view} />}
+      {variant === "s1" ? <S1Page page={page} view={view} regions={await loadRegions(page.code)} /> : <S3Page page={page} view={view} />}
       <ClickTracker code={page.code} variant={variant} />
       <Pixels metaPixelId={page.metaPixelId} tiktokPixelId={page.tiktokPixelId} />
     </div>

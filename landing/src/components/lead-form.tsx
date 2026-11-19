@@ -4,19 +4,22 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { useActionState, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { submitLead } from "@/app/actions";
-import { TRACKING_FIELDS, type TrackingField, type WhereDeliver } from "@/lib/contract";
-import { FIELDS, initialFormState, readForm, type FieldKey, type FormState } from "@/lib/lead-form";
+import { TRACKING_FIELDS, type RegionGroup, type TrackingField, type WhereDeliver } from "@/lib/contract";
+import { FIELD_ORDER, FIELDS, initialFormState, readForm, type FieldKey, type FormState } from "@/lib/lead-form";
 import type { PriceView } from "@/lib/pricing";
 import { formatPhoneLocal, phoneDigits } from "@/lib/phone";
 import { landingUrl } from "@/lib/routing";
 import { BUY, CONSENT, CONSENT_LINK, FORM } from "@/lib/texts";
 import { trackingFromQuery } from "@/lib/tracking";
 import type { Variant } from "@/lib/variant";
+import { AddressFields } from "./address-fields";
 import { AlertIcon } from "./icons";
 import { DeliveryChoice } from "./price-block";
 import { clickStorageKey, trackingStorageKey } from "./click-tracker";
 
-const FIELD_IDS: Record<FieldKey, string> = { name: "ism", phone: "telefon", consent: "rozilik" };
+const FIELD_IDS: Record<FieldKey, string> = { name: "ism", phone: "telefon", region: "viloyat", district: "tuman", address: "manzil", consent: "rozilik" };
+/** forma-10 ro‘yxatidagi qisqa matnlar (holat-matnlari.md:423). */
+const SHORT: Partial<Record<string, string>> = { [FORM.phoneError]: FORM.phoneErrorShort };
 
 function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
@@ -25,20 +28,22 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 /**
  * Buyurtma formasi asosi (SF-02): ism, telefon (+998, 2-3-2-2), rozilik, yashirin maydon, variant.
- * Manzil maydonlari (viloyat, tuman, ko‘cha/uy) SF-06 da shu joyga — telefondan keyin, rozilikdan oldin.
+ * Manzil (viloyat, tuman, ko‘cha/uy — SF-06) telefondan keyin, rozilikdan oldin.
  * Yetkazish tanlovi ham shu komponentda: xatodan keyin tanlangani saqlanadi (P-1, forma-10/11).
  * S1 — tanlov forma tashqarisidagi narx blokida (`buybox`, `form` atributi bilan); S3 — forma ichidagi kartada (`summary`).
  * JS siz: `useActionState` server action bilan — oddiy POST, xato yozilganlar bilan qaytadi.
  * JS bilan: server action to‘g‘ridan-to‘g‘ri chaqiriladi — so‘rov yiqilsa (tarmoq, 502, deploy) sahifa xato
  * sahifasiga almashmaydi, forma-8 ko‘rsatiladi va yozilganlar qoladi; «Yuborilmoqda…», bir marta.
  */
-export function LeadForm({ code, variant, formId, title, view, initialWhere, buybox, summary, tracking, footer, under }: {
+export function LeadForm({ code, variant, formId, title, view, initialWhere, regions, buybox, summary, tracking, footer, under }: {
   code: string;
   variant: Variant;
   formId: string;
   title?: string;
   view: PriceView;
   initialWhere: WhereDeliver;
+  /** `GET /regions/tree`; null — ro‘yxat yuklanmadi (forma-20). */
+  regions: RegionGroup[] | null;
   buybox?: { head: ReactNode; after: ReactNode };
   summary?: { head: ReactNode; after: ReactNode };
   tracking?: Partial<Record<TrackingField, string>>;
@@ -55,7 +60,7 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, buy
   useEffect(() => { setPhone(state.values.phone ? formatPhoneLocal(state.values.phone) : ""); }, [state]);
   useEffect(() => {
     // Xatodan keyin birinchi xato maydonga o‘tiladi (forma-3…6).
-    const first = (["name", "phone", "consent"] as const).find((key) => state.errors[key]);
+    const first = FIELD_ORDER.find((key) => state.errors[key]);
     if (state.js && first) document.getElementById(FIELD_IDS[first])?.focus();
   }, [state]);
 
@@ -91,7 +96,7 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, buy
   const hidden = { ...tracking, ...state.tracking };
 
   const errors = state.errors;
-  const errorList = (Object.keys(FIELD_IDS) as FieldKey[]).filter((key) => errors[key]);
+  const errorList = FIELD_ORDER.filter((key) => errors[key]);
   const noJsServerError = state.status === "error" && !state.js;
   const describedBy = (key: FieldKey, extra?: string) => [errors[key] ? `${FIELD_IDS[key]}-xato` : null, extra].filter(Boolean).join(" ") || undefined;
 
@@ -109,7 +114,7 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, buy
       {state.status === "invalid" && !state.js && errorList.length ? (
         <div className="summary" role="alert">
           <p><strong>{FORM.summary(errorList.length)}</strong></p>
-          <ul>{errorList.map((key) => <li key={key}><a href={`#${FIELD_IDS[key]}`}>{key === "phone" && errors.phone === FORM.phoneError ? FORM.phoneErrorShort : errors[key]}</a></li>)}</ul>
+          <ul>{errorList.map((key) => <li key={key}><a href={`#${key === "region" && !state.js ? FIELD_IDS.district : FIELD_IDS[key]}`}>{SHORT[errors[key] ?? ""] ?? errors[key]}</a></li>)}</ul>
         </div>
       ) : null}
       {summary ? <div className="card">{summary.head}{choice}{summary.after}</div> : null}
@@ -136,6 +141,7 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, buy
           <FieldError id="telefon-xato" message={errors.phone} />
         </div>
       </div>
+      <AddressFields key={`manzil-${state.status}-${state.values.districtSoato}-${state.values.addressLine}`} regions={regions} values={state.values} errors={errors} describedBy={(key) => describedBy(key)} />
       <div className="honeypot" aria-hidden="true">
         <label htmlFor="website">{FORM.honeypot}</label>
         <input id="website" name={FIELDS.honeypot} type="text" tabIndex={-1} autoComplete="off" />
