@@ -99,6 +99,7 @@ test('yo‘llar: /<kod>/buyurtma va /<kod>/rahmat — ichki variant yo‘liga', 
   assert.deepEqual(routing.classifyPath('/k7Qm2x/boshqa'), { kind: 'other' });
   assert.equal(routing.variantPath('s3', 'k7Qm2x', 'rahmat'), '/v/s3/k7Qm2x/rahmat');
   assert.equal(routing.landingUrl('k7Qm2x', 'buyurtma'), '/k7Qm2x/buyurtma');
+  assert.deepEqual(routing.classifyPath('/oferta'), { kind: 'other' });
 });
 
 const pixelEnv = () => {
@@ -126,6 +127,14 @@ test('TC3: Lead bir marta, eventID = lid ID; qayta yuklanganda yuborilmaydi; Pag
   calls.length = 0;
   assert.deepEqual(pixels.firePixelEvents(env, ids, '7001'), { lead: false });
   assert.deepEqual(calls, [['fbq', 'init', '123456789012345'], ['fbq', 'track', 'PageView'], ['ttq.page', 'CABCDEFGH12345']]);
+});
+
+test('piksel kodi xato bersa ham: belgi oldin yozilgan — qayta yuklashda Lead takrorlanmaydi, sahifa buzilmaydi', () => {
+  const { calls, env } = pixelEnv();
+  const broken = { ...env, tiktok: () => ({ page: () => { throw new Error('SDK'); }, track: () => calls.push(['ttq']) }) };
+  assert.deepEqual(pixels.firePixelEvents(broken, { meta: '123456789012345', tiktok: 'CABCDEFGH12345' }, '7002'), { lead: true });
+  assert.ok(calls.some((call) => call[2] === 'Lead'));
+  assert.match(env.cookie(), /elchi_px_7002=1/);
 });
 
 test('piksel: noto‘g‘ri yoki bo‘sh ID — skript yuklanmaydi; lidsiz sahifada Lead yo‘q', () => {

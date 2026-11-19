@@ -166,7 +166,7 @@ check('S1: forma sahifaning o‘zida, yetkazish tanlovi, jami ikkala holati; S3:
   assert.equal((await get(`/${CODE}/buyurtma`, 'elchi_variant=s1')).status, 307);
 });
 
-check('TC5: JS siz forma yuborildi → 303 «Rahmat», ism va raqam cookie’da (URL da emas), Lead piksel lid ID bilan', async () => {
+check('TC5: JS siz forma yuborildi → 303 «Rahmat», ism va raqam cookie’da (URL da emas), Pixels ga lid ID uzatiladi', async () => {
   const response = await submitWithoutJs(`/${CODE}?sub1=abc&utm_source=fb`, 's1', { ism: 'Aziza', telefon: '90 123 45 67', rozilik: '1', whereDeliver: 'ADDRESS' });
   assert.equal(response.status, 303);
   assert.equal(response.headers.get('location'), `/${CODE}/rahmat`);
@@ -181,13 +181,16 @@ check('TC5: JS siz forma yuborildi → 303 «Rahmat», ism va raqam cookie’da 
 });
 
 check('TC1: noto‘g‘ri telefon → yuborilmaydi, yozilganlar saqlanadi (forma-10)', async () => {
-  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Aziza', telefon: '90 123', rozilik: '1' });
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Aziza', telefon: '90 123', rozilik: '1', whereDeliver: 'ADDRESS' });
   assert.equal(response.status, 200);
   assert.equal(arizaCookie(response), undefined);
   const html = await text(response);
   assert.match(html, /Arizani yuborib bo‘lmadi — 1 ta maydonni to‘g‘rilang:/);
   assert.match(html, /Raqamni to‘liq kiriting: 9 ta raqam, masalan 90\u00a0123\u00a045\u00a067/);
   assert.match(html, /value="Aziza"/);
+  // Tanlangan «Eshikkacha» xatodan keyin ham tanlangan (P-1): qayta yuborishda lid eshikkacha bo‘ladi.
+  assert.match(html, /<input type="radio"[^>]*name="whereDeliver"[^>]*checked=""[^>]*value="ADDRESS"/);
+  assert.match(html, /Jami 312 000 so‘m/);
 });
 
 check('TC2: server xatosi → «Rahmat» yo‘q, piksel yo‘q (forma-11)', async () => {
@@ -208,6 +211,27 @@ check('dublikat (rahmat-4) va «Rahmat» cookie’siz: piksel yo‘q, sahifaga q
   assert.match(thanks, /Bu tovarga arizangiz bizda bor/);
   assert.doesNotMatch(thanks, /leadId/);
   assert.equal((await get(`/${CODE}/rahmat`, 'elchi_variant=s1')).status, 307);
+});
+
+check('yashirin maydon to‘ldirilgan (forma-13): bot oddiy «Rahmat» ko‘radi, Pixels ga lid ID uzatilmaydi', async () => {
+  const response = await submitWithoutJs(`/${CODE}`, 's1', { ism: 'Bot', telefon: '901234567', rozilik: '1', website: 'https://spam.example' });
+  assert.equal(response.status, 303);
+  const thanks = await text(await get(`/${CODE}/rahmat`, `elchi_variant=s1; ${arizaCookie(response)}`));
+  assert.match(thanks, /Rahmat, Bot!/);
+  assert.doesNotMatch(thanks, /leadId/);
+});
+
+check('S3 JS siz: buyurtma qadami mahsulot sahifasi havolasidagi sub va utm ni yashirin maydonda olib o‘tadi (TC4)', async () => {
+  const response = await fetch(`${base}/${CODE}/buyurtma?whereDeliver=ADDRESS`, { headers: { cookie: 'elchi_variant=s3', referer: `${base}/${CODE}?sub1=abc&utm_source=fb` } });
+  const html = await text(response);
+  assert.match(html, /<input type="hidden" name="sub1" value="abc"\/>/);
+  assert.match(html, /<input type="hidden" name="utmSource" value="fb"\/>/);
+});
+
+check('«Ommaviy oferta» havolasi sotuvchi sahifasi kodi deb qaralmaydi', async () => {
+  const response = await get('/oferta', 'elchi_variant=s1');
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('set-cookie'), null);
 });
 
 check('TC7: BAD tovar — «Dori vositasi emas» S1 va S3 da; TC8: ochiq bo‘lmagan sahifada forma va xarid tugmasi yo‘q', async () => {

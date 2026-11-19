@@ -24,19 +24,25 @@ export function firePixelEvents(env: PixelEnv, ids: { meta: string | null; tikto
   const lead = leadId && name && !env.cookie().split(";").some((part) => part.trim().startsWith(`${name}=`)) ? leadId : null;
   const metaOk = Boolean(ids.meta && META_PIXEL_ID.test(ids.meta));
   const tiktokOk = Boolean(ids.tiktok && TIKTOK_PIXEL_ID.test(ids.tiktok));
-  if (metaOk && ids.meta) {
-    const fbq = env.meta();
-    fbq("init", ids.meta);
-    fbq("track", "PageView");
-    if (lead) fbq("track", "Lead", {}, { eventID: lead });
-  }
-  if (tiktokOk && ids.tiktok) {
-    const ttq = env.tiktok(ids.tiktok);
-    ttq.page();
-    // [taklif] TikTok’da «Lead» o‘rniga standart «SubmitForm» hodisasi; event_id — o‘sha lid ID.
-    if (lead) ttq.track("SubmitForm", {}, { event_id: lead });
-  }
+  // Belgi hodisadan OLDIN: piksel kodi xato bersa ham qayta yuklashda Lead ikkinchi marta ketmasin.
   const sent = Boolean(lead && name && (metaOk || tiktokOk));
   if (sent) env.setCookie(`${name}=1; Max-Age=${PIXEL_SENT_MAX_AGE}; Path=/; SameSite=Lax`);
+  // Sotuvchi pikseli xatosi sahifani buzmasin: har biri alohida.
+  if (metaOk && ids.meta) {
+    try {
+      const fbq = env.meta();
+      fbq("init", ids.meta);
+      fbq("track", "PageView");
+      if (sent && lead) fbq("track", "Lead", {}, { eventID: lead });
+    } catch { /* Meta pikseli ishlamadi */ }
+  }
+  if (tiktokOk && ids.tiktok) {
+    try {
+      const ttq = env.tiktok(ids.tiktok);
+      ttq.page();
+      // [taklif] TikTok’da «Lead» o‘rniga standart «SubmitForm» hodisasi; event_id — o‘sha lid ID.
+      if (sent && lead) ttq.track("SubmitForm", {}, { event_id: lead });
+    } catch { /* TikTok pikseli ishlamadi */ }
+  }
   return { lead: sent };
 }

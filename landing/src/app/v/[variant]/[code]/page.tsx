@@ -44,16 +44,17 @@ function S1Page({ page, view }: { page: LandingPage; view: PriceView }) {
         <div className="wrap hero">
           <Gallery page={page} />
           <div>
-            <section className="buybox">
-              <PriceHead name={page.product.name} subtitle={page.product.subtitle} product={view.product} />
-              <DeliveryChoice view={view} variant="s1" form="lead-form" />
-              <div className="s1-first-buy">
-                <Total view={view} variant="s1" />
-                <PayLine bad={bad} />
-                <a className="buy" href="#ism">{BUY}</a>
-              </div>
-            </section>
-            <LeadForm code={page.code} variant="s1" formId="lead-form"
+            <LeadForm code={page.code} variant="s1" formId="lead-form" view={view} initialWhere="CENTER"
+              buybox={{
+                head: <PriceHead name={page.product.name} subtitle={page.product.subtitle} product={view.product} />,
+                after: (
+                  <div className="s1-first-buy">
+                    <Total view={view} variant="s1" />
+                    <PayLine bad={bad} />
+                    <a className="buy" href="#ism">{BUY}</a>
+                  </div>
+                ),
+              }}
               footer={<><Total view={view} variant="s1" /><PayLine bad={bad} /></>}
               under={<p className="under-buy">{FORM.arizaS1}</p>} />
           </div>

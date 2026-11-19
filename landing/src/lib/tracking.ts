@@ -84,3 +84,22 @@ export function sanitizeClick(input: unknown, cookieVariant?: string): CreateLan
   }
   return click;
 }
+
+/**
+ * Referer shu sotuvchi sahifasi bo‘lsa (`pathname` mos), undagi havola parametrlari — uzunlari tashlanadi.
+ * S3 buyurtma qadamida JS siz kuzatuv yo‘qolmasin (SF-02 TC4).
+ */
+export function trackingFromReferer(referer: string | null, pathname: string): Partial<Record<TrackingField, string>> {
+  if (!referer) return {};
+  try {
+    const url = new URL(referer);
+    if (url.pathname !== pathname) return {};
+    const tracking = trackingFromQuery(url.search);
+    for (const field of TRACKING_FIELDS) {
+      if ((tracking[field]?.length ?? 0) > CLICK_FIELD_MAX_LENGTH[field]) delete tracking[field];
+    }
+    return tracking;
+  } catch {
+    return {};
+  }
+}

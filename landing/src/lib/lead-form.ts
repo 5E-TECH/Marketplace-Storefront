@@ -43,6 +43,8 @@ export interface FormState {
   errors: Partial<Record<FieldKey, string>>;
   values: FormValues;
   js: boolean;
+  /** JS siz qayta yuborishda ham sub1–sub5, utm, fbclid yo‘qolmasin: forma ularni yashirin maydonda qaytaradi. */
+  tracking: Partial<Record<TrackingField, string>>;
 }
 
 export const initialFormState = (whereDeliver: WhereDeliver = "CENTER"): FormState => ({
@@ -50,6 +52,7 @@ export const initialFormState = (whereDeliver: WhereDeliver = "CENTER"): FormSta
   errors: {},
   values: { name: "", phone: "", consent: false, whereDeliver },
   js: false,
+  tracking: {},
 });
 
 const text = (form: FormData, name: string): string => {

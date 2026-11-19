@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { startTransition, useActionState, useEffect, useRef, useState, type ReactNode } from "react";
+import { unstable_rethrow } from "next/navigation";
+import { useActionState, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { submitLead } from "@/app/actions";
-import { TRACKING_FIELDS } from "@/lib/contract";
-import { FIELDS, initialFormState, type FieldKey, type FormState } from "@/lib/lead-form";
+import { TRACKING_FIELDS, type TrackingField, type WhereDeliver } from "@/lib/contract";
+import { FIELDS, initialFormState, readForm, type FieldKey, type FormState } from "@/lib/lead-form";
+import type { PriceView } from "@/lib/pricing";
 import { formatPhoneLocal, phoneDigits } from "@/lib/phone";
 import { landingUrl } from "@/lib/routing";
 import { BUY, CONSENT, CONSENT_LINK, FORM } from "@/lib/texts";
 import { trackingFromQuery } from "@/lib/tracking";
 import type { Variant } from "@/lib/variant";
 import { AlertIcon } from "./icons";
+import { DeliveryChoice } from "./price-block";
 import { clickStorageKey, trackingStorageKey } from "./click-tracker";
 
 const FIELD_IDS: Record<FieldKey, string> = { name: "ism", phone: "telefon", consent: "rozilik" };
@@ -23,24 +26,32 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 /**
  * Buyurtma formasi asosi (SF-02): ism, telefon (+998, 2-3-2-2), rozilik, yashirin maydon, variant.
  * Manzil maydonlari (viloyat, tuman, ko‘cha/uy) SF-06 da shu joyga — telefondan keyin, rozilikdan oldin.
- * JS bilan: yuborish qo‘lda (React 19 forma maydonlarini avtomatik tozalamasin), «Yuborilmoqda…», bir marta.
- * JS siz: oddiy POST, server xatoni yozilganlar bilan qaytaradi (forma-10, forma-11).
+ * Yetkazish tanlovi ham shu komponentda: xatodan keyin tanlangani saqlanadi (P-1, forma-10/11).
+ * S1 — tanlov forma tashqarisidagi narx blokida (`buybox`, `form` atributi bilan); S3 — forma ichidagi kartada (`summary`).
+ * JS siz: `useActionState` server action bilan — oddiy POST, xato yozilganlar bilan qaytadi.
+ * JS bilan: server action to‘g‘ridan-to‘g‘ri chaqiriladi — so‘rov yiqilsa (tarmoq, 502, deploy) sahifa xato
+ * sahifasiga almashmaydi, forma-8 ko‘rsatiladi va yozilganlar qoladi; «Yuborilmoqda…», bir marta.
  */
-export function LeadForm({ code, variant, formId, title, summary, footer, under }: {
+export function LeadForm({ code, variant, formId, title, view, initialWhere, buybox, summary, tracking, footer, under }: {
   code: string;
   variant: Variant;
   formId: string;
   title?: string;
-  summary?: ReactNode;
+  view: PriceView;
+  initialWhere: WhereDeliver;
+  buybox?: { head: ReactNode; after: ReactNode };
+  summary?: { head: ReactNode; after: ReactNode };
+  tracking?: Partial<Record<TrackingField, string>>;
   footer: ReactNode;
   under: ReactNode;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(submitLead, initialFormState());
+  const [serverState, formAction] = useActionState<FormState, FormData>(submitLead, initialFormState(initialWhere));
+  const [clientState, setClientState] = useState<FormState | null>(null);
+  const [pending, startTransition] = useTransition();
+  const state = clientState ?? serverState;
   const [phone, setPhone] = useState(state.values.phone ? formatPhoneLocal(state.values.phone) : "");
   const sending = useRef(false);
-  const form = useRef<HTMLFormElement>(null);
 
-  useEffect(() => { if (!pending) sending.current = false; }, [pending]);
   useEffect(() => { setPhone(state.values.phone ? formatPhoneLocal(state.values.phone) : ""); }, [state]);
   useEffect(() => {
     // Xatodan keyin birinchi xato maydonga o‘tiladi (forma-3…6).
@@ -58,11 +69,26 @@ export function LeadForm({ code, variant, formId, title, summary, footer, under 
       const clickId = sessionStorage.getItem(clickStorageKey(code));
       if (clickId) data.set(FIELDS.clickId, clickId);
       const saved = sessionStorage.getItem(trackingStorageKey(code));
-      const tracking = { ...(saved ? (JSON.parse(saved) as Record<string, string>) : {}), ...trackingFromQuery(window.location.search) };
-      for (const field of TRACKING_FIELDS) if (tracking[field]) data.set(field, tracking[field]);
+      const stored = { ...(saved ? (JSON.parse(saved) as Record<string, string>) : {}), ...trackingFromQuery(window.location.search) };
+      for (const field of TRACKING_FIELDS) if (stored[field]) data.set(field, stored[field]);
     } catch { /* xususiy rejim: klik va parametrlar bo‘lmasa ham ariza ketadi */ }
-    startTransition(() => formAction(data));
+    const submitted = readForm(data, null);
+    startTransition(async () => {
+      try {
+        const next = await submitLead(state, data);
+        if (next) setClientState(next); // muvaffaqiyatda server «Rahmat» ga o‘tkazadi
+      } catch (error) {
+        unstable_rethrow(error);
+        setClientState({ status: "error", errors: {}, values: submitted.values, js: true, tracking: submitted.tracking });
+      } finally {
+        sending.current = false;
+      }
+    });
   };
+
+  const where = state.status === "idle" ? initialWhere : state.values.whereDeliver;
+  const choice = <DeliveryChoice key={`${state.status}-${where}`} view={view} variant={variant} form={buybox ? formId : undefined} selected={where} />;
+  const hidden = { ...tracking, ...state.tracking };
 
   const errors = state.errors;
   const errorList = (Object.keys(FIELD_IDS) as FieldKey[]).filter((key) => errors[key]);
@@ -70,7 +96,9 @@ export function LeadForm({ code, variant, formId, title, summary, footer, under 
   const describedBy = (key: FieldKey, extra?: string) => [errors[key] ? `${FIELD_IDS[key]}-xato` : null, extra].filter(Boolean).join(" ") || undefined;
 
   return (
-    <form id={formId} ref={form} className="form" action={formAction} onSubmit={onSubmit} noValidate>
+    <>
+    {buybox ? <section className="buybox">{buybox.head}{choice}{buybox.after}</section> : null}
+    <form id={formId} className="form" action={formAction} onSubmit={onSubmit} noValidate>
       {noJsServerError ? (
         <>
           <h2 className="form__title">{FORM.notSentTitle}</h2>
@@ -84,10 +112,11 @@ export function LeadForm({ code, variant, formId, title, summary, footer, under 
           <ul>{errorList.map((key) => <li key={key}><a href={`#${FIELD_IDS[key]}`}>{key === "phone" && errors.phone === FORM.phoneError ? FORM.phoneErrorShort : errors[key]}</a></li>)}</ul>
         </div>
       ) : null}
-      {summary}
+      {summary ? <div className="card">{summary.head}{choice}{summary.after}</div> : null}
       {title ? <h1 className="form__title">{title}</h1> : null}
       <input type="hidden" name={FIELDS.code} value={code} />
       <input type="hidden" name={FIELDS.variant} value={variant} />
+      {TRACKING_FIELDS.filter((field) => hidden[field]).map((field) => <input key={field} type="hidden" name={field} value={hidden[field]} />)}
       <div className="fields fields--row">
         <div className="field">
           <label htmlFor="ism">{FORM.name}</label>
@@ -124,5 +153,6 @@ export function LeadForm({ code, variant, formId, title, summary, footer, under 
       <button className="buy" type="submit" disabled={pending}>{pending ? FORM.sending : noJsServerError ? FORM.resend : BUY}</button>
       {noJsServerError ? <Link className="button-light" href={landingUrl(code)}>{FORM.backToProduct}</Link> : under}
     </form>
+    </>
   );
 }

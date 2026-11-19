@@ -69,7 +69,12 @@ export function Pixels({ metaPixelId, tiktokPixelId, leadId }: { metaPixelId: st
     done.current = true;
     firePixelEvents({
       meta: () => meta() as Track,
-      tiktok: (id) => { const ttq = tiktok(id); return { page: ttq.page as () => void, track: ttq.track as Track }; },
+      // SDK yuklangach `window.ttq` almashadi — metod har safar jonli obyektda, o‘z `this` i bilan chaqiriladi.
+      tiktok: (id) => {
+        tiktok(id);
+        const live = () => window.ttq as unknown as { page: () => void; track: Track };
+        return { page: () => live().page(), track: (...args: unknown[]) => live().track(...args) };
+      },
       cookie: () => document.cookie,
       setCookie: (value) => { document.cookie = value; },
     }, { meta: metaPixelId, tiktok: tiktokPixelId }, leadId);

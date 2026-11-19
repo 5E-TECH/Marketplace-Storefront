@@ -28,10 +28,16 @@ export type Route =
   | { kind: "internal" }
   | { kind: "other" };
 
+/**
+ * Sotuvchi sahifasi kodi bo‘la olmaydigan yo‘llar: huquqiy sahifalar (SF-07). «Ommaviy oferta» havolasi
+ * rozilik matnida (SF-02) — backendga kod sifatida so‘rov ketmasin. SF-07 qolganlarini shu ro‘yxatga qo‘shadi.
+ */
+export const RESERVED_PATHS: ReadonlySet<string> = new Set(["oferta"]);
+
 export function classifyPath(pathname: string): Route {
   if (pathname === `/${VARIANT_SEGMENT}` || pathname.startsWith(`/${VARIANT_SEGMENT}/`)) return { kind: "internal" };
   const match = CODE_PATTERN.exec(pathname);
-  if (!match) return { kind: "other" };
+  if (!match || RESERVED_PATHS.has(match[1])) return { kind: "other" };
   return match[2] ? { kind: "landing", code: match[1], sub: match[2] as SubPage } : { kind: "landing", code: match[1] };
 }
 

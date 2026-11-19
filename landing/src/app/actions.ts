@@ -16,7 +16,7 @@ import { landingUrl } from "@/lib/routing";
 export async function submitLead(previous: FormState, form: FormData): Promise<FormState> {
   const incoming = await headers();
   const parsed = readForm(form, incoming.get("referer"));
-  const state = (status: FormState["status"], errors: FormState["errors"] = {}): FormState => ({ status, errors, values: parsed.values, js: parsed.js });
+  const state = (status: FormState["status"], errors: FormState["errors"] = {}): FormState => ({ status, errors, values: parsed.values, js: parsed.js, tracking: parsed.tracking });
 
   if (!parsed.code) return state("error");
   const errors = validate(parsed.values);
