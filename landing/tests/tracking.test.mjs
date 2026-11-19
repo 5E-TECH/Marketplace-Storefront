@@ -34,8 +34,17 @@ test('backend DTO uzunlik chegaralari: uzun ixtiyoriy maydon tashlanadi, klik sa
   assert.equal(t.sanitizeClick({ code: 'k'.repeat(32) }).code.length, 32);
 });
 
-test('variant: HttpOnly cookie ustun, tanadagi qiymat faqat cookie bo‘lmasa', () => {
-  assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 's3' }, 's1').variant, 's1');
+test('variant: sahifa ko‘rsatgan (tanadagi) variant ustun, cookie faqat tanada bo‘lmasa', () => {
+  assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 's3' }, 's1').variant, 's3');
+  assert.equal(t.sanitizeClick({ code: 'k7Qm2x' }, 's1').variant, 's1');
+  assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 'buzuq' }, 's1').variant, 's1');
   assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 's3' }, undefined).variant, 's3');
   assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 's3' }, 'buzuq').variant, 's3');
+});
+
+test('brauzer chegaradan uzun qiymatni yubormaydi — tana chegarada qoladi', () => {
+  const long = 'x'.repeat(t.CLICK_FIELD_MAX_LENGTH.fbclid + 1);
+  const click = t.buildClick('k7Qm2x', 's1', `?fbclid=${long}&sub1=ok`, `_fbp=${'y'.repeat(300)}`);
+  assert.deepEqual(click, { code: 'k7Qm2x', variant: 's1', sub1: 'ok' });
+  assert.equal(t.CLICK_BODY_MAX_BYTES, 22_648);
 });

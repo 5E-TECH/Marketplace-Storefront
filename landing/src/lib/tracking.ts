@@ -39,6 +39,10 @@ export function buildClick(code: string, variant: Variant, search: string, cooki
   const fbc = readCookie(cookieHeader, "_fbc");
   if (fbp) click.fbp = fbp;
   if (fbc) click.fbc = fbc;
+  // Server bundan uzun qiymatni baribir tashlaydi (`sanitizeClick`); brauzer ham yubormaydi — tana chegarada qoladi.
+  for (const field of [...TRACKING_FIELDS, "fbp", "fbc"] as const) {
+    if ((click[field]?.length ?? 0) > CLICK_FIELD_MAX_LENGTH[field]) delete click[field];
+  }
   return click;
 }
 
@@ -56,14 +60,23 @@ export const CLICK_FIELD_MAX_LENGTH: Readonly<Record<TrackingField | "fbp" | "fb
   fbclid: 512, fbp: 255, fbc: 255, code: 32,
 };
 
+/**
+ * `/api/clicks` tanasining yuqori chegarasi: hamma maydon o‘z chegarasida (jami 3 604 belgi), JSON da
+ * bitta belgi 6 baytgacha (`\uXXXX`), kalitlar, variant va qavslar uchun 1 KB — 22 648 bayt.
+ */
+export const CLICK_BODY_MAX_BYTES =
+  Object.values(CLICK_FIELD_MAX_LENGTH).reduce((sum, length) => sum + length, 0) * 6 + 1024;
+
 /** Serverda: brauzerdan kelgan tanadan faqat shartnomadagi maydonlar olinadi. `code` majburiy. */
 export function sanitizeClick(input: unknown, cookieVariant?: string): CreateLandingClick | null {
   if (typeof input !== "object" || input === null) return null;
   const raw = input as Record<string, unknown>;
   if (!isNonEmptyString(raw.code) || raw.code.trim().length > CLICK_FIELD_MAX_LENGTH.code) return null;
   const click: CreateLandingClick = { code: raw.code.trim() };
-  // Ko‘rsatilgan variant — middleware yozgan HttpOnly cookie; tanadagi qiymat faqat cookie bo‘lmasa (cookie o‘chiq brauzer).
-  const variant = isVariant(cookieVariant) ? cookieVariant : raw.variant;
+  // Tanadagi variant — sahifa aslida ko‘rsatgan variant (server ichki yo‘ldan biladi). Cookie undan keyin
+  // o‘zgarishi mumkin: ikki tab bir vaqtda birinchi marta ochilsa, ikkinchisi cookie’ni boshqa variantga yozadi.
+  // Cookie faqat tanada variant bo‘lmasa olinadi. Soxta klikdan himoya — `isSameOriginJson`, cookie emas.
+  const variant = isVariant(raw.variant) ? raw.variant : cookieVariant;
   if (isVariant(variant)) click.variant = variant;
   for (const field of [...TRACKING_FIELDS, "fbp", "fbc"] as const) {
     const value = raw[field];

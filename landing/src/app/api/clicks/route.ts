@@ -1,6 +1,6 @@
 import { BackendError, createClick } from "@/lib/backend";
-import { isSameOriginJson } from "@/lib/request";
-import { readCookie, sanitizeClick } from "@/lib/tracking";
+import { isSameOriginJson, readBodyLimited } from "@/lib/request";
+import { CLICK_BODY_MAX_BYTES, readCookie, sanitizeClick } from "@/lib/tracking";
 import { VARIANT_COOKIE } from "@/lib/variant";
 
 export const dynamic = "force-dynamic";
@@ -14,8 +14,10 @@ const noStore = { "Cache-Control": "no-store" };
  */
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOriginJson(request)) return Response.json({ error: "forbidden" }, { status: 403, headers: noStore });
+  const text = await readBodyLimited(request, CLICK_BODY_MAX_BYTES);
+  if (text === null) return Response.json({ error: "body_too_large" }, { status: 413, headers: noStore });
   let body: unknown;
-  try { body = await request.json(); } catch { return Response.json({ error: "invalid_json" }, { status: 400, headers: noStore }); }
+  try { body = JSON.parse(text); } catch { return Response.json({ error: "invalid_json" }, { status: 400, headers: noStore }); }
   const click = sanitizeClick(body, readCookie(request.headers.get("cookie") ?? "", VARIANT_COOKIE));
   if (!click) return Response.json({ error: "invalid_click" }, { status: 400, headers: noStore });
   try {

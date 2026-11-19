@@ -53,8 +53,28 @@ test('boshqa saytdan soxta klik rad etiladi: text/plain (sendBeacon), cross-site
   assert.equal((await POST(post(body, { 'sec-fetch-site': 'same-origin', origin: 'http://landing.test' }))).status, 201);
 });
 
-test('variant cookie’dan olinadi: tanada boshqa variant yozilsa ham ko‘rsatilgan variant ketadi', async () => {
+test('variant: sahifa ko‘rsatgan variant ketadi (ikki tab cookie’ni almashtirgan bo‘lsa ham); tanada yo‘q bo‘lsa — cookie’dan', async () => {
   const { POST, calls } = routeWith(async () => ({ clickId: 'x' }));
   await POST(post({ code: 'k7Qm2x', variant: 's3' }, { cookie: 'a=1; elchi_variant=s1' }));
-  assert.equal(calls[0][0].variant, 's1');
+  assert.equal(calls[0][0].variant, 's3');
+  await POST(post({ code: 'k7Qm2x' }, { cookie: 'a=1; elchi_variant=s1' }));
+  assert.equal(calls[1][0].variant, 's1');
+});
+
+test('proksi orqasida: X-Forwarded-Host ro‘yxati va standart port bilan haqiqiy klik o‘tadi', async () => {
+  const { POST } = routeWith(async () => ({ clickId: 'x' }));
+  const body = { code: 'k7Qm2x', variant: 's1' };
+  const sameSite = { 'sec-fetch-site': 'same-origin', origin: 'https://sotuv.example' };
+  assert.equal((await POST(post(body, { ...sameSite, 'x-forwarded-host': 'sotuv.example, ichki.proksi' }))).status, 201);
+  assert.equal((await POST(post(body, { ...sameSite, 'x-forwarded-host': 'SOTUV.example:443' }))).status, 201);
+  assert.equal((await POST(post(body, { ...sameSite, 'x-forwarded-host': 'sotuv.example:8443' }))).status, 403);
+  assert.equal((await POST(post(body, { ...sameSite, 'x-forwarded-host': 'boshqa.example, sotuv.example' }))).status, 403);
+});
+
+test('katta tana — 413, backend chaqirilmaydi', async () => {
+  const { POST, calls } = routeWith(async () => ({ clickId: 'x' }));
+  const big = { code: 'k7Qm2x', sub1: 'x'.repeat(30_000) };
+  assert.equal((await POST(post(big))).status, 413);
+  assert.equal((await POST(post({ code: 'k7Qm2x' }, { 'content-length': '999999' }))).status, 413);
+  assert.equal(calls.length, 0);
 });

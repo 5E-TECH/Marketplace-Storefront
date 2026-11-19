@@ -110,13 +110,20 @@ check('ichki /v/s3/<kod> tashqaridan → 404', async () => {
 check('backend xatosi → xato-1 serverda chiziladi (JS siz ham ko‘rinadi)', async () => {
   const html = await (await get('/mockXato')).text();
   assert.match(html, /Sahifani ochib bo‘lmadi/);
-  assert.match(html, /href="\/mockXato"/);
+  // «Qayta urinish» joriy manzilni (havola parametrlari bilan) qayta ochadi.
+  assert.match(html, /<a class="button button--secondary" href="">/);
 });
 
 check('POST /api/clicks → 201 clickId', async () => {
   const response = await fetch(`${base}/api/clicks`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: CODE, variant: 's3', sub1: 'abc' }) });
   assert.equal(response.status, 201);
   assert.match((await response.json()).clickId, /^mock-s3-/);
+});
+
+check('brauzer klik: Origin va Sec-Fetch-Site same-origin bilan → 201', async () => {
+  const headers = { 'content-type': 'application/json', origin: base, 'sec-fetch-site': 'same-origin' };
+  const response = await fetch(`${base}/api/clicks`, { method: 'POST', headers, body: JSON.stringify({ code: CODE, variant: 's1' }) });
+  assert.equal(response.status, 201);
 });
 
 check('boshqa saytdan klik (text/plain, sendBeacon kabi) → 403', async () => {

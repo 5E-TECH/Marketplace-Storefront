@@ -47,7 +47,9 @@ export default async function LandingRoute({ params }: Params) {
   const { variant, code } = await params;
   if (!isVariant(variant)) notFound();
   const loaded = await loadLanding(code);
-  if (!loaded.ok) return <PageErrorView retry={<a className="button button--secondary" href={`/${encodeURIComponent(code)}`}>{PAGE_ERROR.retry}</a>} />;
+  // `href=""` — brauzer ochgan manzilni qayta ochadi, havola parametrlari (sub1–sub5, utm, fbclid) bilan:
+  // aks holda qayta urinishdagi klik ularsiz yozilib, lid sotuvchining sub ID sini yo‘qotardi. JS siz ham ishlaydi.
+  if (!loaded.ok) return <PageErrorView retry={<a className="button button--secondary" href="">{PAGE_ERROR.retry}</a>} />;
   if (!loaded.page) notFound();
   return (
     <>
