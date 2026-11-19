@@ -107,8 +107,11 @@ check('ichki /v/s3/<kod> tashqaridan → 404', async () => {
   assert.equal((await get(`/v/s3/${CODE}`, 'elchi_variant=s1')).status, 404);
 });
 
-check('backend xatosi → xato-1 serverda chiziladi (JS siz ham ko‘rinadi)', async () => {
-  const html = await (await get('/mockXato')).text();
+check('backend xatosi → xato-1 serverda chiziladi (JS siz ham ko‘rinadi), statik keshga yozilmaydi (SF-03)', async () => {
+  const response = await get('/mockXato', 'elchi_variant=s1');
+  assert.equal(response.status, 500);
+  assert.equal(response.headers.get('x-nextjs-cache'), null);
+  const html = await response.text();
   assert.match(html, /Sahifani ochib bo‘lmadi/);
   // «Qayta urinish» joriy manzilni (havola parametrlari bilan) qayta ochadi.
   assert.match(html, /<a class="button button--secondary" href="">/);
@@ -271,13 +274,18 @@ check('SF-06 TC0/TC3: «Eshikkacha», to‘g‘ri manzil → «Rahmat», eshikka
 });
 
 check('SF-06 TC5: tumanlar ro‘yxati yuklanmadi → xato holati, forma yuborilmaydi', async () => {
-  const html = await page('/mockRoyxat', 's1');
+  // S3 buyurtma qadami (dinamik): forma-20, tugma o‘chiq.
+  const html = await page('/mockRoyxat/buyurtma', 's3');
   assert.match(html, /Ro‘yxatni yuklab bo‘lmadi\. Internetni tekshirib, qayta urinib ko‘ring\./);
   assert.doesNotMatch(html, /name="districtSoato"/);
   assert.match(html, /<button class="buy" type="submit" disabled="">/);
-  const response = await submitWithoutJs('/mockRoyxat', 's1', { ism: 'Aziza', telefon: '901234567', rozilik: '1', ...ADDRESS });
+  const response = await submitWithoutJs('/mockRoyxat/buyurtma', 's3', { ism: 'Aziza', telefon: '901234567', rozilik: '1', ...ADDRESS });
   assert.equal(response.status, 200);
   assert.equal(arizaCookie(response), undefined);
+  // S1 (statik sahifa): ro‘yxatsiz sahifa keshga yozilmaydi — xato-1, forma yo‘q (SF-03).
+  const s1 = await get('/mockRoyxat', 'elchi_variant=s1');
+  assert.equal(s1.status, 500);
+  assert.doesNotMatch(await s1.text(), /lead-form/);
 });
 
 // ─── SF-03: statik sahifa va kesh ──────────────────────────────────────────────

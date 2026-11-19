@@ -36,8 +36,8 @@ const nextConfig: NextConfig = {
     const has = [{ type: "header" as const, key: "x-elchi-variant", value: "(?<variant>s1|s3)" }];
     return {
       beforeFiles: [
-        { source: "/:code([A-Za-z0-9_-]+)", has, destination: "/v/:variant/:code" },
-        { source: "/:code([A-Za-z0-9_-]+)/:sub(buyurtma|rahmat)", has, destination: "/v/:variant/:code/:sub" },
+        { source: "/:code([A-Za-z0-9_-]{1,32})", has, destination: "/v/:variant/:code" },
+        { source: "/:code([A-Za-z0-9_-]{1,32})/:sub(buyurtma|rahmat)", has, destination: "/v/:variant/:code/:sub" },
       ],
       afterFiles: [],
       fallback: [],

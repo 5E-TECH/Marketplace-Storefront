@@ -46,9 +46,10 @@ export async function readData<T>(response: Response): Promise<T> {
 }
 
 /**
- * Mijoz IP manzili o‘zgartirilmay uzatiladi (do‘kon proksisidagi kabi, `src/lib/backend-proxy.ts`).
- * Har so‘rovda kerak: api-gateway `ThrottlerGuard` limitini IP bo‘yicha hisoblaydi (`app.module.ts`,
- * `RATE_LIMIT_MAX` sukuti 300 / daqiqa). IP siz hamma tashrif landing konteynerining bitta IP siga yozilib, limitga tez yetadi.
+ * Mijoz IP manzili o‘zgartirilmay uzatiladi (do‘kon proksisidagi kabi, `src/lib/backend-proxy.ts`) — klik va lid
+ * so‘rovlarida: api-gateway `ThrottlerGuard` limitini IP bo‘yicha hisoblaydi (`RATE_LIMIT_MAX` sukuti 300 / daqiqa).
+ * Statik sahifa (SF-03) uchun `GET /landing` va `/regions/tree` IP siz — sahifa yasalganda, tashrifda emas;
+ * ular landing konteyneri IP sidan ketadi (noma’lum kodlar oqimi xavfi — PR 30 «Bilish kerak»).
  */
 function clientHeaders(client: ClientHeaders, extra: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = { accept: "application/json", ...extra };

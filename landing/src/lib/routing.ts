@@ -12,11 +12,11 @@ export const NOT_FOUND_PATH = "/__topilmadi";
 
 
 /**
- * Kod formati backend shartnomasida berilmagan (BE-25: `code` — string, misol `k7Qm2x`).
- * Bu yerda faqat URL’ga xavfsiz belgilar o‘tkaziladi; kod bormi-yo‘qmi — backend aytadi (404).
+ * Kod: URL’ga xavfsiz belgilar, ko‘pi bilan 32 (BE-25 `CreateLeadDto.code` `@MaxLength(32)`; backend o‘zi
+ * 6 belgili kod yaratadi — `stream.service.ts` CODE_LENGTH). Kod bormi-yo‘qmi — backend aytadi (404).
  * Ichki sahifalar (SF-02): `/<kod>/buyurtma` — S3 buyurtma qadami, `/<kod>/rahmat` — «Rahmat».
  */
-const CODE_PATTERN = /^\/([A-Za-z0-9_-]+)(?:\/(buyurtma|rahmat))?$/;
+const CODE_PATTERN = /^\/([A-Za-z0-9_-]{1,32})(?:\/(buyurtma|rahmat))?$/;
 
 export const SUB_PAGES = ["buyurtma", "rahmat"] as const;
 export type SubPage = (typeof SUB_PAGES)[number];

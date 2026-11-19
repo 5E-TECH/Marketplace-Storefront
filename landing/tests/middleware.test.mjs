@@ -78,4 +78,10 @@ test('SF-03: mijoz yuborgan variant sarlavhasi hech qachon o‘tmaydi; sahifa ja
     assert.doesNotMatch(other.headers.get('x-middleware-override-headers') ?? '', new RegExp(routing.VARIANT_HEADER), path);
   }
   assert.equal(variantOf(handle(request('/k7Qm2x/rahmat', forged), () => 0)), 's1');
+  // Ichki yo‘l (404 ga rewrite) ham soxta sarlavhani olib tashlaydi.
+  const internal = handle(request('/v/x', forged), () => 0);
+  assert.ok(internal.headers.has('x-middleware-override-headers'));
+  assert.equal(variantOf(internal), null);
+  // Kod 32 belgidan uzun — sotuvchi sahifasi emas (backend DTO chegarasi).
+  assert.deepEqual(routing.classifyPath(`/${'a'.repeat(33)}`), { kind: 'other' });
 });

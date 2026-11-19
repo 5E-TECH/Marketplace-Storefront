@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * SF-03 tezlik byudjeti (TZ T8: sotuvchi sahifasi 1.5 s): Lighthouse mobil profili — sekin 4G
- * (150 ms RTT, 1.6 Mbit/s, 4× sekin CPU) — S1 va S3 da LCP ≤ 1500 ms. Byudjet buzilsa — chiqish kodi 1 (CI qizil).
+ * SF-03 tezlik byudjeti (TZ T8: sotuvchi sahifasi 1.5 s): Lighthouse mobil profili — sekin 4G, 4× sekin CPU;
+ * `devtools` usulida Chrome har so‘rovga 562.5 ms kechikish va 1.47 Mbit/s qo‘llaydi — S1 va S3 da LCP ≤ 1500 ms.
+ * Byudjet buzilsa — chiqish kodi 1 (CI qizil).
  *
  * O‘lchov usuli `devtools` [taklif]: Chrome tarmoq va CPU ni haqiqatan sekinlashtiradi, LCP brauzerda o‘lchanadi.
  * Lighthouse’ning sukutdagi `simulate` usuli (Lantern) bu sahifada ~2.2 s beradi: lokal o‘lchovda sahifa JS

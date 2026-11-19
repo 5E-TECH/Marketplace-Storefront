@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { sortRegions } from "./address";
 import { getLanding, getRegionTree } from "./backend";
@@ -28,10 +29,17 @@ export const loadLanding = cache(async (code: string): Promise<Loaded> => {
   }
 });
 
-/** Formadagi viloyat va tuman ro‘yxati (SF-06). Yuklanmasa yoki bo‘sh bo‘lsa — null: forma-20 holati. */
+/**
+ * Viloyat va tuman ro‘yxati Next keshida 5 daqiqa — faqat muvaffaqiyatli (bo‘sh bo‘lmagan) javob: xato yoki bo‘sh
+ * ro‘yxat `getRegionTree` da xato tashlaydi va keshga yozilmaydi. Ichidagi so‘rov `no-store` — kesh doirasida
+ * statik sahifani dinamik qilmaydi. Kalit: mock rejimida sahifa kodi (`mockRoyxat`), haqiqiyda bitta ro‘yxat.
+ */
+const cachedRegionTree = unstable_cache(async (key: string) => sortRegions(await getRegionTree(key)), ["landing-regions"], { revalidate: REGIONS_REVALIDATE });
+
+/** Formadagi viloyat va tuman ro‘yxati (SF-06). Yuklanmasa — null: forma-20 holati (dinamik sahifalarda). */
 export async function loadRegions(code: string): Promise<RegionGroup[] | null> {
   try {
-    const regions = sortRegions(await getRegionTree(code, readConfig(), fetch, REGIONS_REVALIDATE));
+    const regions = await cachedRegionTree(readConfig().mock ? code : "");
     return regions.length ? regions : null;
   } catch (error) {
     console.error(`regions ${code}:`, (error as Error).message);
