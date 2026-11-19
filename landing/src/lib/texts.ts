@@ -149,6 +149,22 @@ export const FORM = {
   phoneErrorShort: "Raqamni to‘liq kiriting",
   operatorError: "Bu raqam O‘zbekiston mobil operatoriga tegishli emas",
   consentError: "Davom etish uchun rozilik belgisini qo‘ying",
+  /** Manzil (SF-06, holat-matnlari.md:383, forma-17…22). */
+  region: "Viloyat",
+  regionPlaceholder: "Viloyatni tanlang",
+  district: "Tuman yoki shahar",
+  districtClosed: "Avval viloyatni tanlang",
+  districtPlaceholder: "Tumanni tanlang",
+  /** forma-22: JS siz bitta guruhlangan ro‘yxat. */
+  districtPlaceholderNoJs: "Tuman yoki shaharni tanlang",
+  address: "Ko‘cha, uy",
+  addressPlaceholder: "Masalan: Navoiy ko‘chasi, 12-uy",
+  regionError: "Viloyatni tanlang",
+  districtError: "Tuman yoki shaharni tanlang",
+  addressError: "Ko‘cha va uyni kiriting",
+  /** forma-20 [taklif]. */
+  listFailed: "Ro‘yxatni yuklab bo‘lmadi. Internetni tekshirib, qayta urinib ko‘ring.",
+  listRetry: "Qayta urinish",
   serverError: "Arizani yuborib bo‘lmadi. Internetni tekshirib, qayta urinib ko‘ring.",
   /** forma-10: «Arizani yuborib bo‘lmadi — {N} ta maydonni to‘g‘rilang:». */
   summary: (count: number) => `Arizani yuborib bo‘lmadi — ${count} ta maydonni to‘g‘rilang:`,

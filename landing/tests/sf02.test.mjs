@@ -12,7 +12,9 @@ const routing = loadTypeScript('src/lib/routing.ts');
 const { FORM } = loadTypeScript('src/lib/texts.ts');
 
 const fd = (entries) => { const data = new FormData(); for (const [key, value] of entries) data.append(key, value); return data; };
-const base = [['code', 'k7Qm2x'], ['variant', 's3'], ['ism', ' Aziza '], ['telefon', '90 123 45 67'], ['rozilik', '1']];
+const base = [['code', 'k7Qm2x'], ['variant', 's3'], ['ism', ' Aziza '], ['telefon', '90 123 45 67'], ['rozilik', '1'], ['districtSoato', '1730405'], ['addressLine', ' Turkiston ko‘chasi, 27-uy ']];
+const address = { regionSoato: '', districtSoato: '1730405', addressLine: 'Turkiston ko‘chasi, 27-uy' };
+const filled = { name: 'Aziza', phone: '901234567', consent: true, whereDeliver: 'CENTER', ...address };
 
 test('telefon: +998 dan keyin 9 raqam, ko‘rinish 2-3-2-2', () => {
   assert.equal(phone.phoneDigits('+998 (90) 123-45-67'), '901234567');
@@ -39,7 +41,7 @@ test('narx: jami = tovar + yetkazish; ikkala haq 0 — bepul (narx-4)', () => {
 
 test('forma: maydonlar, variant, yetkazish, clickId; JS siz kuzatuv parametrlari Referer’dan (TC4)', () => {
   const parsed = form.readForm(fd([...base, ['whereDeliver', 'ADDRESS'], ['clickId', '90311'], ['js', '1']]), 'https://sotuv.example/k7Qm2x?sub1=abc&utm_source=fb');
-  assert.deepEqual(parsed.values, { name: 'Aziza', phone: '901234567', consent: true, whereDeliver: 'ADDRESS' });
+  assert.deepEqual(parsed.values, { ...filled, whereDeliver: 'ADDRESS' });
   assert.equal(parsed.code, 'k7Qm2x');
   assert.equal(parsed.variant, 's3');
   assert.equal(parsed.clickId, '90311');
@@ -56,17 +58,27 @@ test('forma: maydonlar, variant, yetkazish, clickId; JS siz kuzatuv parametrlari
 });
 
 test('TC1: noto‘g‘ri telefon, bo‘sh ism, rozilik yo‘q — yuborilmaydi (forma-3, -4, -6)', () => {
-  assert.deepEqual(form.validate({ name: 'Aziza', phone: '901234567', consent: true, whereDeliver: 'CENTER' }), {});
-  assert.deepEqual(form.validate({ name: '', phone: '90123', consent: false, whereDeliver: 'CENTER' }), {
+  assert.deepEqual(form.validate(filled), {});
+  assert.deepEqual(form.validate({ ...filled, name: '', phone: '90123', consent: false }), {
     name: FORM.nameError, phone: FORM.phoneError, consent: FORM.consentError,
   });
-  assert.equal(form.validate({ name: 'a'.repeat(101), phone: '901234567', consent: true, whereDeliver: 'CENTER' }).name, FORM.nameError);
+  assert.equal(form.validate({ ...filled, name: 'a'.repeat(101) }).name, FORM.nameError);
+});
+
+test('SF-06: manzil majburiy — tumansiz, ko‘cha/uysiz yuborilmaydi; JS bilan viloyat tanlanmagan bo‘lsa xato viloyatda', () => {
+  assert.deepEqual(form.validate({ ...filled, districtSoato: '', addressLine: '' }), { district: FORM.districtError, address: FORM.addressError });
+  assert.deepEqual(form.validate({ ...filled, districtSoato: '' }, true), { region: FORM.regionError });
+  assert.deepEqual(form.validate({ ...filled, regionSoato: '1730', districtSoato: '' }, true), { district: FORM.districtError });
+  // TC0: «Markazgacha» tanlanganda ham ko‘cha/uy majburiy.
+  assert.deepEqual(form.validate({ ...filled, whereDeliver: 'CENTER', addressLine: '' }), { address: FORM.addressError });
+  assert.equal(form.validate({ ...filled, addressLine: 'x'.repeat(256) }).address, FORM.addressError);
 });
 
 test('TC6 va TC4: lid so‘rovida variant, yetkazish, rozilik versiyasi, sub va utm; yashirin maydon uzatiladi', () => {
   const parsed = form.readForm(fd([...base, ['website', 'bot'], ['clickId', '90311']]), 'https://sotuv.example/k7Qm2x?sub1=abc&utm_source=fb');
-  assert.deepEqual(form.buildLead({ ...parsed, code: 'k7Qm2x' }), {
-    code: 'k7Qm2x', name: 'Aziza', phone: '+998901234567', whereDeliver: 'CENTER', consentVersion: form.CONSENT_VERSION,
+  assert.deepEqual(form.buildLead({ ...parsed, code: 'k7Qm2x' }, '1730'), {
+    code: 'k7Qm2x', name: 'Aziza', phone: '+998901234567', regionSoato: '1730', districtSoato: '1730405', addressLine: 'Turkiston ko‘chasi, 27-uy',
+    whereDeliver: 'CENTER', consentVersion: form.CONSENT_VERSION,
     sub1: 'abc', utmSource: 'fb', variant: 's3', clickId: '90311', website: 'bot',
   });
 });
@@ -75,6 +87,8 @@ test('backend 400: operator kodi — forma-5, telefon — forma-4, ism; formada 
   assert.deepEqual(form.errorsFromBackend(['phone'], ['phone O‘zbekiston operator kodi bilan bo‘lishi kerak']), { phone: FORM.operatorError });
   assert.deepEqual(form.errorsFromBackend(['phone', 'name'], ['phone +998XXXXXXXXX formatida bo‘lishi kerak']), { phone: FORM.phoneError, name: FORM.nameError });
   assert.equal(form.errorsFromBackend(['regionSoato'], ['regionSoato should not be empty']), null);
+  assert.deepEqual(form.errorsFromBackend(['addressLine'], ['addressLine should not be empty']), { address: FORM.addressError });
+  assert.equal(form.errorsFromBackend(['districtSoato'], ['tuman boshqa viloyatniki']), null);
   assert.equal(form.errorsFromBackend([], ['x']), null);
 });
 
@@ -145,4 +159,18 @@ test('piksel: noto‘g‘ri yoki bo‘sh ID — skript yuklanmaydi; lidsiz sahif
   const second = pixelEnv();
   pixels.firePixelEvents(second.env, { meta: '123456789012345', tiktok: null });
   assert.deepEqual(second.calls, [['fbq', 'init', '123456789012345'], ['fbq', 'track', 'PageView']]);
+});
+
+const address_ = loadTypeScript('src/lib/address.ts');
+
+test('viloyatlar holat-matnlari.md:387 tartibida; tumansiz viloyat chiqmaydi; tumandan viloyat topiladi', () => {
+  const tree = [
+    { satoCode: '1730', name: 'Farg‘ona viloyati', districts: [{ satoCode: '1730405', name: 'Qo‘qon shahri' }] },
+    { satoCode: '1799', name: 'Noma’lum', districts: [{ satoCode: '1799001', name: 'X' }] },
+    { satoCode: '1735', name: 'Qoraqalpog‘iston Respublikasi', districts: [] },
+    { satoCode: '1726', name: 'Toshkent shahri', districts: [{ satoCode: '1726266', name: 'Yunusobod tumani' }] },
+  ];
+  assert.deepEqual(address_.sortRegions(tree).map((region) => region.satoCode), ['1726', '1730', '1799']);
+  assert.equal(address_.regionOfDistrict(tree, '1730405'), '1730');
+  assert.equal(address_.regionOfDistrict(tree, '0000000'), null);
 });

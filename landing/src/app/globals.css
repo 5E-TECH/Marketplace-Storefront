@@ -312,3 +312,8 @@ button, input, select { font: inherit; color: inherit; }
 @media (max-width: 1023.98px) { .hero .gallery { margin: 0 calc(-1 * var(--chekka)); } }
 .order { display: grid; padding-top: 12px; padding-bottom: 24px; }
 @media (min-width: 1024px) { .order { max-width: 1280px; } }
+
+/* Manzil (SF-06): planshet va kompyuterda viloyat va tuman yonma-yon, ko‘cha/uy butun kenglikda (holat-matnlari.md:383). */
+@media (min-width: 768px) { .fields--row .field--wide { grid-column: 1 / -1; } }
+select.input { appearance: auto; }
+select.input:disabled { background: var(--zamin); color: var(--matn-2); }

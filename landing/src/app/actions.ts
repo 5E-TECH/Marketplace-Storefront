@@ -2,7 +2,8 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { BackendError, createLead, type LeadResult } from "@/lib/backend";
+import { regionOfDistrict } from "@/lib/address";
+import { BackendError, createLead, getRegionTree, type LeadResult } from "@/lib/backend";
 import { encodeLeadCookie, LEAD_COOKIE, LEAD_COOKIE_MAX_AGE } from "@/lib/lead-cookie";
 import { buildLead, errorsFromBackend, readForm, validate, type FormState } from "@/lib/lead-form";
 import { landingUrl } from "@/lib/routing";
@@ -19,12 +20,23 @@ export async function submitLead(previous: FormState, form: FormData): Promise<F
   const state = (status: FormState["status"], errors: FormState["errors"] = {}): FormState => ({ status, errors, values: parsed.values, js: parsed.js, tracking: parsed.tracking });
 
   if (!parsed.code) return state("error");
-  const errors = validate(parsed.values);
+  const errors = validate(parsed.values, parsed.js);
   if (Object.keys(errors).length) return state("invalid", errors);
+
+  // Viloyat — ro‘yxatdan, tuman bo‘yicha (JS siz forma viloyat yubormaydi). Tuman ro‘yxatda yo‘q yoki boshqa
+  // viloyatniki (so‘rov qo‘lda o‘zgartirilgan) — server xatosi, yozilganlar saqlanadi (SF-06 TC2). Backend ham tekshiradi.
+  let regionSoato: string | null;
+  try {
+    regionSoato = regionOfDistrict(await getRegionTree(parsed.code), parsed.values.districtSoato);
+  } catch (error) {
+    console.error(`regions ${parsed.code}:`, (error as Error).message);
+    return state("error");
+  }
+  if (!regionSoato || (parsed.values.regionSoato && parsed.values.regionSoato !== regionSoato)) return state("error");
 
   let result: LeadResult;
   try {
-    result = await createLead(buildLead({ ...parsed, code: parsed.code }), {
+    result = await createLead(buildLead({ ...parsed, code: parsed.code }, regionSoato), {
       forwardedFor: incoming.get("x-forwarded-for"),
       userAgent: incoming.get("user-agent"),
     });

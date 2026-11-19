@@ -1,6 +1,6 @@
 import { readConfig, type ServerConfig } from "./config";
-import type { ApiError, CreateLandingClick, CreateLead, LandingClickCreated, LandingPage } from "./contract";
-import { mockCreateClick, mockCreateLead, mockGetLanding } from "./mock";
+import type { ApiError, CreateLandingClick, CreateLead, LandingClickCreated, LandingPage, RegionGroup } from "./contract";
+import { mockCreateClick, mockCreateLead, mockGetLanding, mockRegionTree } from "./mock";
 
 /** Backend javob bermadi yoki kutilmagan javob berdi: sahifada xato-1, klik yozilmaydi. */
 export class BackendError extends Error {
@@ -107,4 +107,27 @@ export async function createLead(body: CreateLead, client: ClientHeaders = {}, c
     return { kind: "invalid", fields, messages };
   }
   throw new BackendError(`POST /leads → ${response.status}`, response.status);
+}
+
+/** Ro‘yxat kam o‘zgaradi: jarayon xotirasida 1 soat [taklif]. Bo‘sh yoki xato javob keshlanmaydi. */
+export const REGION_CACHE_MS = 60 * 60 * 1000;
+let regionCache: { tree: RegionGroup[]; at: number } | null = null;
+/** Testlar uchun. */
+export const resetRegionCache = () => { regionCache = null; };
+
+/**
+ * `GET /regions/tree` — formadagi viloyat va tuman ro‘yxati (SF-06), gateway qobig‘idan (`data`).
+ * Yuklanmasa yoki bo‘sh kelsa — BackendError: forma-20 holati, ariza yuborilmaydi (TC5).
+ * `code` faqat mock uchun: `mockRoyxat` sahifasida ro‘yxat yuklanmaydi.
+ */
+export async function getRegionTree(code = "", config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<RegionGroup[]> {
+  if (config.mock) return mockRegionTree(code);
+  if (regionCache && Date.now() - regionCache.at < REGION_CACHE_MS) return regionCache.tree;
+  const response = await call("/regions/tree", { headers: { accept: "application/json" } }, config, fetcher);
+  if (!response.ok) throw new BackendError(`GET /regions/tree → ${response.status}`, response.status);
+  const tree = await readData<unknown>(response);
+  const usable = Array.isArray(tree) ? (tree as RegionGroup[]).filter((region) => Array.isArray(region?.districts) && region.districts.length > 0) : [];
+  if (usable.length === 0) throw new BackendError("GET /regions/tree: ro‘yxat bo‘sh yoki noto‘g‘ri", response.status);
+  regionCache = { tree: usable, at: Date.now() };
+  return usable;
 }

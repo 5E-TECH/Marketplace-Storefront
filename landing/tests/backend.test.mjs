@@ -86,7 +86,7 @@ test('sozlamalar: mock faqat MOCK_API=true bilan, timeout sukuti 10 000 ms', () 
   assert.equal(readConfig({ MOCK_API: '1' }).mock, false);
 });
 
-const leadBody = { code: 'k7Qm2x', name: 'Aziza', phone: '+998901234567', consentVersion: '2026-11-16', variant: 's3', sub1: 'abc' };
+const leadBody = { code: 'k7Qm2x', name: 'Aziza', phone: '+998901234567', regionSoato: '1726', districtSoato: '1726266', addressLine: 'Navoiy ko‘chasi, 12-uy', whereDeliver: 'CENTER', consentVersion: '2026-11-16', variant: 's3', sub1: 'abc' };
 
 test('POST /leads — 201: lid ID (piksel eventID si) va dublikat belgisi; tana, IP va user agent uzatiladi', async () => {
   const { calls, fetcher } = recorder(201, wrapped({ leadId: '7001', duplicate: true }, 201));
@@ -115,6 +115,24 @@ test('mock lid: ma’lum kod — raqamli ID, noma’lum — 404, «Xato Sinov» 
   assert.match(created.leadId, /^\d+$/);
   assert.deepEqual(await backend.createLead({ ...leadBody, code: 'boshqa' }, {}, mock), { kind: 'notFound' });
   await assert.rejects(backend.createLead({ ...leadBody, name: 'Xato Sinov' }, {}, mock));
+});
+
+test('GET /regions/tree — qobiqdagi ro‘yxat; xato, ro‘yxat emas yoki bo‘sh — BackendError va keshlanmaydi; mock «mockRoyxat» — yuklanmaydi', async () => {
+  const tree = [{ satoCode: '1726', name: 'Toshkent shahri', districts: [{ satoCode: '1726266', name: 'Yunusobod tumani' }] }];
+  backend.resetRegionCache();
+  await assert.rejects(backend.getRegionTree('', live, recorder(500, {}).fetcher), (error) => error instanceof backend.BackendError);
+  await assert.rejects(backend.getRegionTree('', live, recorder(200, wrapped({ a: 1 })).fetcher), (error) => error instanceof backend.BackendError);
+  await assert.rejects(backend.getRegionTree('', live, recorder(200, wrapped([])).fetcher), (error) => error instanceof backend.BackendError);
+  const ok = recorder(200, wrapped(tree));
+  assert.deepEqual(await backend.getRegionTree('', live, ok.fetcher), tree);
+  assert.equal(ok.calls[0].url, 'http://api.test/api/v1/regions/tree');
+  // Bo‘sh bo‘lmagan ro‘yxat keshlanadi: keyingi so‘rov backendga bormaydi.
+  const again = recorder(500, {});
+  assert.deepEqual(await backend.getRegionTree('', live, again.fetcher), tree);
+  assert.equal(again.calls.length, 0);
+  backend.resetRegionCache();
+  assert.ok((await backend.getRegionTree('k7Qm2x', mock)).length > 0);
+  await assert.rejects(backend.getRegionTree('mockRoyxat', mock));
 });
 
 test('gateway qobig‘i: GET /landing va POST /clicks `data` ni oladi; qobiqsiz javob ham; bo‘sh `data` — BackendError', async () => {
