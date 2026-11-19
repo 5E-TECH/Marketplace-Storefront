@@ -29,21 +29,31 @@ async function call(path: string, init: RequestInit, config: ServerConfig, fetch
   }
 }
 
+/**
+ * Mijoz IP manzili o‘zgartirilmay uzatiladi (do‘kon proksisidagi kabi, `src/lib/backend-proxy.ts`).
+ * Har so‘rovda kerak: api-gateway `ThrottlerGuard` limitini IP bo‘yicha hisoblaydi (`app.module.ts`,
+ * `RATE_LIMIT_MAX` sukuti 300 / daqiqa). IP siz hamma tashrif landing konteynerining bitta IP siga yozilib, limitga tez yetadi.
+ */
+function clientHeaders(client: ClientHeaders, extra: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { accept: "application/json", ...extra };
+  if (client.forwardedFor) headers["x-forwarded-for"] = client.forwardedFor;
+  if (client.userAgent) headers["user-agent"] = client.userAgent;
+  return headers;
+}
+
 /** `GET /landing/:code`. 404 — bunday sotuvchi sahifasi yo‘q (null). Boshqa javoblar — BackendError. */
-export async function getLanding(code: string, config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<LandingPage | null> {
+export async function getLanding(code: string, client: ClientHeaders = {}, config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<LandingPage | null> {
   if (config.mock) return mockGetLanding(code);
-  const response = await call(`/landing/${encodeURIComponent(code)}`, { headers: { accept: "application/json" } }, config, fetcher);
+  const response = await call(`/landing/${encodeURIComponent(code)}`, { headers: clientHeaders(client, {}) }, config, fetcher);
   if (response.status === 404) return null;
   if (!response.ok) throw new BackendError(`GET /landing → ${response.status}`, response.status);
   return (await response.json()) as LandingPage;
 }
 
-/** `POST /clicks`. Mijoz IP manzili o‘zgartirilmay uzatiladi (do‘kon proksisidagi kabi, `src/lib/backend-proxy.ts`). */
+/** `POST /clicks`. */
 export async function createClick(body: CreateLandingClick, client: ClientHeaders = {}, config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<LandingClickCreated> {
   if (config.mock) return mockCreateClick(body);
-  const headers: Record<string, string> = { accept: "application/json", "content-type": "application/json" };
-  if (client.forwardedFor) headers["x-forwarded-for"] = client.forwardedFor;
-  if (client.userAgent) headers["user-agent"] = client.userAgent;
+  const headers = clientHeaders(client, { "content-type": "application/json" });
   const response = await call("/clicks", { method: "POST", headers, body: JSON.stringify(body) }, config, fetcher);
   if (!response.ok) throw new BackendError(`POST /clicks → ${response.status}`, response.status);
   return (await response.json()) as LandingClickCreated;

@@ -16,26 +16,36 @@ const recorder = (status, body) => {
 
 test('GET /landing/:code — 200 ma’lumot qaytaradi, kod URL’ga xavfsiz yoziladi', async () => {
   const { calls, fetcher } = recorder(200, mockLanding);
-  assert.deepEqual(await backend.getLanding('a b', live, fetcher), mockLanding);
+  assert.deepEqual(await backend.getLanding('a b', {}, live, fetcher), mockLanding);
   assert.equal(calls[0].url, 'http://api.test/api/v1/landing/a%20b');
   assert.equal(calls[0].init.cache, 'no-store');
 });
 
+test('GET /landing ham mijoz IP va user agenti bilan — backend limiti IP bo‘yicha (ThrottlerGuard)', async () => {
+  const { calls, fetcher } = recorder(200, mockLanding);
+  await backend.getLanding('k7Qm2x', { forwardedFor: '203.0.113.7', userAgent: 'UA' }, live, fetcher);
+  assert.equal(calls[0].init.headers['x-forwarded-for'], '203.0.113.7');
+  assert.equal(calls[0].init.headers['user-agent'], 'UA');
+  const bare = recorder(200, mockLanding);
+  await backend.getLanding('k7Qm2x', {}, live, bare.fetcher);
+  assert.equal(bare.calls[0].init.headers['x-forwarded-for'], undefined);
+});
+
 test('TC3: backend 404 — sahifa yo‘q (null)', async () => {
   const { fetcher } = recorder(404, { message: 'Not Found' });
-  assert.equal(await backend.getLanding('nomalum', live, fetcher), null);
+  assert.equal(await backend.getLanding('nomalum', {}, live, fetcher), null);
 });
 
 test('backend 501 (BE-11 hali yo‘q) yoki 500 — BackendError, sahifada xato-1', async () => {
   for (const status of [500, 501, 503]) {
     const { fetcher } = recorder(status, { message: 'x' });
-    await assert.rejects(backend.getLanding('k7Qm2x', live, fetcher), (error) => error instanceof backend.BackendError && error.status === status);
+    await assert.rejects(backend.getLanding('k7Qm2x', {}, live, fetcher), (error) => error instanceof backend.BackendError && error.status === status);
   }
 });
 
 test('tarmoq xatosi va sozlanmagan API_BASE_URL — BackendError', async () => {
-  await assert.rejects(backend.getLanding('k7Qm2x', live, async () => { throw new TypeError('fetch failed'); }), backend.BackendError);
-  await assert.rejects(backend.getLanding('k7Qm2x', { ...live, apiUrl: '' }, async () => { throw new Error('chaqirilmasligi kerak'); }), backend.BackendError);
+  await assert.rejects(backend.getLanding('k7Qm2x', {}, live, async () => { throw new TypeError('fetch failed'); }), backend.BackendError);
+  await assert.rejects(backend.getLanding('k7Qm2x', {}, { ...live, apiUrl: '' }, async () => { throw new Error('chaqirilmasligi kerak'); }), backend.BackendError);
 });
 
 test('POST /clicks — tana, mijoz IP va user agenti o‘zgartirilmay uzatiladi', async () => {
@@ -56,9 +66,9 @@ test('POST /clicks — backend xatosi BackendError bo‘ladi', async () => {
 
 test('mock: ma’lum kod, noma’lum kod, xato kodi va klik', async () => {
   const never = async () => { throw new Error('mock rejimida backend chaqirilmaydi'); };
-  assert.equal((await backend.getLanding(MOCK_CODE, mock, never)).product.name, 'Simsiz quloqchinlar');
-  assert.equal(await backend.getLanding('nomalum', mock, never), null);
-  await assert.rejects(backend.getLanding(MOCK_FAILING_CODE, mock, never));
+  assert.equal((await backend.getLanding(MOCK_CODE, {}, mock, never)).product.name, 'Simsiz quloqchinlar');
+  assert.equal(await backend.getLanding('nomalum', {}, mock, never), null);
+  await assert.rejects(backend.getLanding(MOCK_FAILING_CODE, {}, mock, never));
   assert.match((await backend.createClick({ code: MOCK_CODE, variant: 's1' }, {}, mock, never)).clickId, /^mock-s1-/);
 });
 

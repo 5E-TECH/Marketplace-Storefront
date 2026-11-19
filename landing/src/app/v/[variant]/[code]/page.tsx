@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { ClickTracker } from "@/components/click-tracker";
@@ -13,6 +14,7 @@ import { isVariant } from "@/lib/variant";
 /**
  * Ichki yo‘l: `/<kod>` → middleware → `/v/<variant>/<kod>`. Tashqaridan ochilmaydi.
  * Sahifa cookie va query string o‘qimaydi: SF-03 da har variant uchun statik HTML qilinadi.
+ * Hozircha har ochilishda backendga so‘rov ketadi — mijoz IP va user agenti bilan (`backend.ts`, limit IP bo‘yicha).
  */
 type Params = { params: Promise<{ variant: string; code: string }> };
 
@@ -24,8 +26,9 @@ type Loaded = { ok: true; page: LandingPage | null } | { ok: false };
  * kesh shunday sahifani saqlamasligi kerak.
  */
 const loadLanding = cache(async (code: string): Promise<Loaded> => {
+  const incoming = await headers();
   try {
-    return { ok: true, page: await getLanding(code) };
+    return { ok: true, page: await getLanding(code, { forwardedFor: incoming.get("x-forwarded-for"), userAgent: incoming.get("user-agent") }) };
   } catch (error) {
     console.error(`landing ${code}:`, (error as Error).message);
     return { ok: false };

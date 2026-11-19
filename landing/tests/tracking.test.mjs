@@ -26,3 +26,16 @@ test('serverda faqat shartnomadagi maydonlar qoladi; kodsiz klik rad etiladi', (
   assert.deepEqual(t.sanitizeClick({ code: 'k7Qm2x', variant: 's2' }), { code: 'k7Qm2x' });
   for (const bad of [null, 'x', {}, { code: '' }, { code: 1 }]) assert.equal(t.sanitizeClick(bad), null);
 });
+
+test('backend DTO uzunlik chegaralari: uzun ixtiyoriy maydon tashlanadi, klik saqlanadi', () => {
+  const click = t.sanitizeClick({ code: 'k7Qm2x', sub1: 'a'.repeat(255), sub2: 'a'.repeat(256), fbclid: 'f'.repeat(512), fbc: `fb.1.1700000000000.${'f'.repeat(512)}`, utmContent: 'u'.repeat(300) });
+  assert.deepEqual(Object.keys(click).sort(), ['code', 'fbclid', 'sub1']);
+  assert.equal(t.sanitizeClick({ code: 'k'.repeat(33) }), null);
+  assert.equal(t.sanitizeClick({ code: 'k'.repeat(32) }).code.length, 32);
+});
+
+test('variant: HttpOnly cookie ustun, tanadagi qiymat faqat cookie bo‘lmasa', () => {
+  assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 's3' }, 's1').variant, 's1');
+  assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 's3' }, undefined).variant, 's3');
+  assert.equal(t.sanitizeClick({ code: 'k7Qm2x', variant: 's3' }, 'buzuq').variant, 's3');
+});

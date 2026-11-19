@@ -12,5 +12,7 @@ services:
       MOCK_API: ${MOCK_API:-true}
       API_BASE_URL: ${API_BASE_URL:-}
       API_TIMEOUT_MS: ${API_TIMEOUT_MS:-}
+    # Faqat shu kompyuterdan: landing mijoz X-Forwarded-For sarlavhasini o‘zgartirmay uzatadi,
+    # shuning uchun konteyner tashqariga to‘g‘ridan-to‘g‘ri ochilmaydi (prodda faqat cloudflared/Caddy orqali).
     ports:
-      - "3003:3003"
+      - "127.0.0.1:3003:3003"

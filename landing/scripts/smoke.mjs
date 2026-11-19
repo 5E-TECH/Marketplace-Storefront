@@ -119,6 +119,11 @@ check('POST /api/clicks → 201 clickId', async () => {
   assert.match((await response.json()).clickId, /^mock-s3-/);
 });
 
+check('boshqa saytdan klik (text/plain, sendBeacon kabi) → 403', async () => {
+  const response = await fetch(`${base}/api/clicks`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ code: CODE, variant: 's3' }) });
+  assert.equal(response.status, 403);
+});
+
 let failed = 0;
 try {
   await waitFor(`${base}/healthz`, 30_000);

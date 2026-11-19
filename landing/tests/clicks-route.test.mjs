@@ -13,7 +13,7 @@ function routeWith(createClick) {
 }
 
 const post = (body, headers = {}) => new Request('http://landing.test/api/clicks', {
-  method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: typeof body === 'string' ? body : JSON.stringify(body),
+  method: 'POST', headers: { 'content-type': 'application/json', host: 'landing.test', ...headers }, body: typeof body === 'string' ? body : JSON.stringify(body),
 });
 
 test('TC4: klik variant bilan backendga ketadi, mijoz IP va user agenti bilan', async (t) => {
@@ -41,4 +41,20 @@ test('backend 501/500 — 502, backend 400 — 400; sahifa baribir ishlaydi', as
     assert.equal(response.status, expected);
     assert.equal(response.headers.get('cache-control'), 'no-store');
   }
+});
+
+test('boshqa saytdan soxta klik rad etiladi: text/plain (sendBeacon), cross-site, boshqa Origin', async () => {
+  const { POST, calls } = routeWith(async () => ({ clickId: 'x' }));
+  const body = { code: 'k7Qm2x', variant: 's3' };
+  assert.equal((await POST(post(body, { 'content-type': 'text/plain;charset=UTF-8' }))).status, 403);
+  assert.equal((await POST(post(body, { 'sec-fetch-site': 'cross-site' }))).status, 403);
+  assert.equal((await POST(post(body, { origin: 'https://boshqa.example' }))).status, 403);
+  assert.equal(calls.length, 0);
+  assert.equal((await POST(post(body, { 'sec-fetch-site': 'same-origin', origin: 'http://landing.test' }))).status, 201);
+});
+
+test('variant cookie’dan olinadi: tanada boshqa variant yozilsa ham ko‘rsatilgan variant ketadi', async () => {
+  const { POST, calls } = routeWith(async () => ({ clickId: 'x' }));
+  await POST(post({ code: 'k7Qm2x', variant: 's3' }, { cookie: 'a=1; elchi_variant=s1' }));
+  assert.equal(calls[0][0].variant, 's1');
 });

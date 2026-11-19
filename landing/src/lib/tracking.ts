@@ -44,16 +44,30 @@ export function buildClick(code: string, variant: Variant, search: string, cooki
 
 const isNonEmptyString = (value: unknown): value is string => typeof value === "string" && value.trim() !== "";
 
+/**
+ * Backend DTO dagi `@MaxLength` (`libs/common/src/dto/lead.dto.ts`, `CreateLandingClickDto`, BE-11):
+ * sub1–sub5 va utm — 255, fbclid — 512, fbp va fbc — 255, code — 32.
+ * Uzun ixtiyoriy maydon yuborilmaydi (kesilmaydi — kesilgan fbclid noto‘g‘ri qiymat bo‘lardi):
+ * aks holda backend butun klikni 400 bilan rad etadi va lid klik, variant va utm siz qoladi.
+ */
+export const CLICK_FIELD_MAX_LENGTH: Readonly<Record<TrackingField | "fbp" | "fbc" | "code", number>> = {
+  sub1: 255, sub2: 255, sub3: 255, sub4: 255, sub5: 255,
+  utmSource: 255, utmMedium: 255, utmCampaign: 255, utmContent: 255, utmTerm: 255,
+  fbclid: 512, fbp: 255, fbc: 255, code: 32,
+};
+
 /** Serverda: brauzerdan kelgan tanadan faqat shartnomadagi maydonlar olinadi. `code` majburiy. */
-export function sanitizeClick(input: unknown): CreateLandingClick | null {
+export function sanitizeClick(input: unknown, cookieVariant?: string): CreateLandingClick | null {
   if (typeof input !== "object" || input === null) return null;
   const raw = input as Record<string, unknown>;
-  if (!isNonEmptyString(raw.code)) return null;
+  if (!isNonEmptyString(raw.code) || raw.code.trim().length > CLICK_FIELD_MAX_LENGTH.code) return null;
   const click: CreateLandingClick = { code: raw.code.trim() };
-  if (isVariant(raw.variant)) click.variant = raw.variant;
+  // Ko‘rsatilgan variant — middleware yozgan HttpOnly cookie; tanadagi qiymat faqat cookie bo‘lmasa (cookie o‘chiq brauzer).
+  const variant = isVariant(cookieVariant) ? cookieVariant : raw.variant;
+  if (isVariant(variant)) click.variant = variant;
   for (const field of [...TRACKING_FIELDS, "fbp", "fbc"] as const) {
     const value = raw[field];
-    if (isNonEmptyString(value)) click[field] = value.trim();
+    if (isNonEmptyString(value) && value.trim().length <= CLICK_FIELD_MAX_LENGTH[field]) click[field] = value.trim();
   }
   return click;
 }
