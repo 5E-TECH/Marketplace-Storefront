@@ -11,6 +11,8 @@
     "lint": "eslint . --max-warnings=0",
     "test": "node --test tests/*.test.mjs",
     "test:smoke": "node scripts/smoke.mjs",
+    "test:lighthouse": "node scripts/lighthouse.mjs",
+    "test:e2e": "node scripts/e2e.mjs",
     "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:smoke"
   },
   "dependencies": {

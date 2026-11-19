@@ -20,9 +20,14 @@ function baseUrl(config: ServerConfig): string {
   return config.apiUrl;
 }
 
-async function call(path: string, init: RequestInit, config: ServerConfig, fetcher: Fetcher): Promise<Response> {
+/**
+ * `revalidate` (soniya) berilsa — Next ma’lumot keshi (SF-03: statik sahifa uchun, sahifa ham shu muddatda qayta
+ * generatsiya qilinadi); berilmasa — `no-store` (forma yuborish, klik).
+ */
+async function call(path: string, init: RequestInit, config: ServerConfig, fetcher: Fetcher, revalidate?: number): Promise<Response> {
+  const caching = revalidate === undefined ? { cache: "no-store" as const } : { next: { revalidate } };
   try {
-    return await fetcher(`${baseUrl(config)}${path}`, { ...init, cache: "no-store", signal: AbortSignal.timeout(config.apiTimeoutMs) });
+    return await fetcher(`${baseUrl(config)}${path}`, { ...init, ...caching, signal: AbortSignal.timeout(config.apiTimeoutMs) } as RequestInit);
   } catch (error) {
     if (error instanceof BackendError) throw error;
     throw new BackendError(`backend bilan aloqa yo‘q: ${(error as Error).name}`);
@@ -41,9 +46,10 @@ export async function readData<T>(response: Response): Promise<T> {
 }
 
 /**
- * Mijoz IP manzili o‘zgartirilmay uzatiladi (do‘kon proksisidagi kabi, `src/lib/backend-proxy.ts`).
- * Har so‘rovda kerak: api-gateway `ThrottlerGuard` limitini IP bo‘yicha hisoblaydi (`app.module.ts`,
- * `RATE_LIMIT_MAX` sukuti 300 / daqiqa). IP siz hamma tashrif landing konteynerining bitta IP siga yozilib, limitga tez yetadi.
+ * Mijoz IP manzili o‘zgartirilmay uzatiladi (do‘kon proksisidagi kabi, `src/lib/backend-proxy.ts`) — klik va lid
+ * so‘rovlarida: api-gateway `ThrottlerGuard` limitini IP bo‘yicha hisoblaydi (`RATE_LIMIT_MAX` sukuti 300 / daqiqa).
+ * Statik sahifa (SF-03) uchun `GET /landing` va `/regions/tree` IP siz — sahifa yasalganda, tashrifda emas;
+ * ular landing konteyneri IP sidan ketadi (noma’lum kodlar oqimi xavfi — PR 30 «Bilish kerak»).
  */
 function clientHeaders(client: ClientHeaders, extra: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = { accept: "application/json", ...extra };
@@ -53,9 +59,9 @@ function clientHeaders(client: ClientHeaders, extra: Record<string, string>): Re
 }
 
 /** `GET /landing/:code`. 404 — bunday sotuvchi sahifasi yo‘q (null). Boshqa javoblar — BackendError. */
-export async function getLanding(code: string, client: ClientHeaders = {}, config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<LandingPage | null> {
+export async function getLanding(code: string, client: ClientHeaders = {}, config: ServerConfig = readConfig(), fetcher: Fetcher = fetch, revalidate?: number): Promise<LandingPage | null> {
   if (config.mock) return mockGetLanding(code);
-  const response = await call(`/landing/${encodeURIComponent(code)}`, { headers: clientHeaders(client, {}) }, config, fetcher);
+  const response = await call(`/landing/${encodeURIComponent(code)}`, { headers: clientHeaders(client, {}) }, config, fetcher, revalidate);
   if (response.status === 404) return null;
   if (!response.ok) throw new BackendError(`GET /landing → ${response.status}`, response.status);
   const page = await readData<LandingPage | null>(response);
@@ -120,10 +126,10 @@ export const resetRegionCache = () => { regionCache = null; };
  * Yuklanmasa yoki bo‘sh kelsa — BackendError: forma-20 holati, ariza yuborilmaydi (TC5).
  * `code` faqat mock uchun: `mockRoyxat` sahifasida ro‘yxat yuklanmaydi.
  */
-export async function getRegionTree(code = "", config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<RegionGroup[]> {
+export async function getRegionTree(code = "", config: ServerConfig = readConfig(), fetcher: Fetcher = fetch, revalidate?: number): Promise<RegionGroup[]> {
   if (config.mock) return mockRegionTree(code);
   if (regionCache && Date.now() - regionCache.at < REGION_CACHE_MS) return regionCache.tree;
-  const response = await call("/regions/tree", { headers: { accept: "application/json" } }, config, fetcher);
+  const response = await call("/regions/tree", { headers: { accept: "application/json" } }, config, fetcher, revalidate);
   if (!response.ok) throw new BackendError(`GET /regions/tree → ${response.status}`, response.status);
   const tree = await readData<unknown>(response);
   const usable = Array.isArray(tree) ? (tree as RegionGroup[]).filter((region) => Array.isArray(region?.districts) && region.districts.length > 0) : [];
