@@ -14,8 +14,11 @@ const recorder = (status, body) => {
   return { calls, fetcher };
 };
 
-test('GET /landing/:code — 200 ma’lumot qaytaradi, kod URL’ga xavfsiz yoziladi', async () => {
-  const { calls, fetcher } = recorder(200, mockLanding);
+/** api-gateway qobig‘i (TransformInterceptor): `{ statusCode, message, data }`. */
+const wrapped = (data, statusCode = 200) => ({ statusCode, message: 'OK', data });
+
+test('GET /landing/:code — 200 ma’lumot qaytaradi (gateway qobig‘idan), kod URL’ga xavfsiz yoziladi', async () => {
+  const { calls, fetcher } = recorder(200, wrapped(mockLanding));
   assert.deepEqual(await backend.getLanding('a b', {}, live, fetcher), mockLanding);
   assert.equal(calls[0].url, 'http://api.test/api/v1/landing/a%20b');
   assert.equal(calls[0].init.cache, 'no-store');
@@ -81,4 +84,12 @@ test('sozlamalar: mock faqat MOCK_API=true bilan, timeout sukuti 10 000 ms', () 
   assert.deepEqual(readConfig({}), { apiUrl: '', apiTimeoutMs: 10_000, mock: false });
   assert.deepEqual(readConfig({ API_BASE_URL: 'http://localhost:3000/api/v1/', API_TIMEOUT_MS: '2500', MOCK_API: 'true' }), { apiUrl: 'http://localhost:3000/api/v1', apiTimeoutMs: 2500, mock: true });
   assert.equal(readConfig({ MOCK_API: '1' }).mock, false);
+});
+
+test('gateway qobig‘i: GET /landing va POST /clicks `data` ni oladi; qobiqsiz javob ham; bo‘sh `data` — BackendError', async () => {
+  assert.deepEqual(await backend.getLanding('k7Qm2x', {}, live, recorder(200, mockLanding).fetcher), mockLanding);
+  await assert.rejects(backend.getLanding('k7Qm2x', {}, live, recorder(200, wrapped(null)).fetcher), (error) => error instanceof backend.BackendError);
+  assert.deepEqual(await backend.createClick({ code: 'k7Qm2x' }, {}, live, recorder(201, wrapped({ clickId: '90311' }, 201)).fetcher), { clickId: '90311' });
+  assert.deepEqual(await backend.createClick({ code: 'k7Qm2x' }, {}, live, recorder(201, { clickId: 90311 }).fetcher), { clickId: '90311' });
+  await assert.rejects(backend.createClick({ code: 'k7Qm2x' }, {}, live, recorder(201, wrapped({})).fetcher), (error) => error instanceof backend.BackendError);
 });
