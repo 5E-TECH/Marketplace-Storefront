@@ -20,9 +20,14 @@ function baseUrl(config: ServerConfig): string {
   return config.apiUrl;
 }
 
-async function call(path: string, init: RequestInit, config: ServerConfig, fetcher: Fetcher): Promise<Response> {
+/**
+ * `revalidate` (soniya) berilsa — Next ma’lumot keshi (SF-03: statik sahifa uchun, sahifa ham shu muddatda qayta
+ * generatsiya qilinadi); berilmasa — `no-store` (forma yuborish, klik).
+ */
+async function call(path: string, init: RequestInit, config: ServerConfig, fetcher: Fetcher, revalidate?: number): Promise<Response> {
+  const caching = revalidate === undefined ? { cache: "no-store" as const } : { next: { revalidate } };
   try {
-    return await fetcher(`${baseUrl(config)}${path}`, { ...init, cache: "no-store", signal: AbortSignal.timeout(config.apiTimeoutMs) });
+    return await fetcher(`${baseUrl(config)}${path}`, { ...init, ...caching, signal: AbortSignal.timeout(config.apiTimeoutMs) } as RequestInit);
   } catch (error) {
     if (error instanceof BackendError) throw error;
     throw new BackendError(`backend bilan aloqa yo‘q: ${(error as Error).name}`);
@@ -53,9 +58,9 @@ function clientHeaders(client: ClientHeaders, extra: Record<string, string>): Re
 }
 
 /** `GET /landing/:code`. 404 — bunday sotuvchi sahifasi yo‘q (null). Boshqa javoblar — BackendError. */
-export async function getLanding(code: string, client: ClientHeaders = {}, config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<LandingPage | null> {
+export async function getLanding(code: string, client: ClientHeaders = {}, config: ServerConfig = readConfig(), fetcher: Fetcher = fetch, revalidate?: number): Promise<LandingPage | null> {
   if (config.mock) return mockGetLanding(code);
-  const response = await call(`/landing/${encodeURIComponent(code)}`, { headers: clientHeaders(client, {}) }, config, fetcher);
+  const response = await call(`/landing/${encodeURIComponent(code)}`, { headers: clientHeaders(client, {}) }, config, fetcher, revalidate);
   if (response.status === 404) return null;
   if (!response.ok) throw new BackendError(`GET /landing → ${response.status}`, response.status);
   const page = await readData<LandingPage | null>(response);
@@ -120,10 +125,10 @@ export const resetRegionCache = () => { regionCache = null; };
  * Yuklanmasa yoki bo‘sh kelsa — BackendError: forma-20 holati, ariza yuborilmaydi (TC5).
  * `code` faqat mock uchun: `mockRoyxat` sahifasida ro‘yxat yuklanmaydi.
  */
-export async function getRegionTree(code = "", config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<RegionGroup[]> {
+export async function getRegionTree(code = "", config: ServerConfig = readConfig(), fetcher: Fetcher = fetch, revalidate?: number): Promise<RegionGroup[]> {
   if (config.mock) return mockRegionTree(code);
   if (regionCache && Date.now() - regionCache.at < REGION_CACHE_MS) return regionCache.tree;
-  const response = await call("/regions/tree", { headers: { accept: "application/json" } }, config, fetcher);
+  const response = await call("/regions/tree", { headers: { accept: "application/json" } }, config, fetcher, revalidate);
   if (!response.ok) throw new BackendError(`GET /regions/tree → ${response.status}`, response.status);
   const tree = await readData<unknown>(response);
   const usable = Array.isArray(tree) ? (tree as RegionGroup[]).filter((region) => Array.isArray(region?.districts) && region.districts.length > 0) : [];

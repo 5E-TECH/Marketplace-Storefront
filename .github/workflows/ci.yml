@@ -49,6 +49,14 @@ jobs:
       # typecheck, lint, unit testlar, build va smoke (mock backend bilan).
       - run: npm run check
 
+      # SF-03: e2e (manzilli forma → «Rahmat» → Lead, S1 va S3) va tezlik byudjeti (Lighthouse, LCP ≤ 1.5 s).
+      # Tizimdagi Chrome ishlatiladi (runner'da o‘rnatilgan), brauzer yuklanmaydi.
+      - name: e2e va tezlik byudjeti (S1, S3)
+        run: |
+          npm i --no-save --no-audit --no-fund playwright-core@1.64.1
+          npm run test:e2e
+          npm run test:lighthouse
+
       # TC1: konteyner quriladi, ishga tushadi va sahifa ochiladi.
       - name: Docker image va konteyner smoke
         run: |

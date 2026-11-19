@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- rasm offer kartasidagi CDN manzilidan; host EQ-05 gacha noma’lum */
 import type { LandingPage } from "@/lib/contract";
 import { ASK, BAD_NOTICE, formatSum, PRODUCT, STOPPED } from "@/lib/texts";
+import { OpenedLink } from "./opened-link";
 import { SupportContact } from "./support-contact";
 
 /**
@@ -9,7 +10,7 @@ import { SupportContact } from "./support-contact";
  * V1 dagi «Qaytganda xabar bering» (toxtatilgan-4…9) [taklif — 5-, 60-qaror] — qurilmaydi.
  * Telefon (EQ-05) sozlanmagan bo‘lsa {ASK} bloki chiqmaydi. Sahifalarning to‘liq ko‘rinishi SF-07 da.
  */
-export function StoppedView({ page, openedUrl }: { page: LandingPage; openedUrl: string | null }) {
+export function StoppedView({ page }: { page: LandingPage }) {
   const { product } = page;
   if (page.state === "WITHDRAWN") {
     return (
@@ -17,7 +18,7 @@ export function StoppedView({ page, openedUrl }: { page: LandingPage; openedUrl:
         <div className="notice notice--neutral">
           <h1 className="block__title">{STOPPED.withdrawnTitle}</h1>
           <p>{STOPPED.withdrawnBody}</p>
-          {openedUrl ? <p className="mono">{openedUrl}</p> : null}
+          <OpenedLink />
         </div>
         <SupportContact lead={ASK} hoursFirst />
       </section>

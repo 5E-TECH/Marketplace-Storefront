@@ -48,8 +48,26 @@ telefon bloki chiqmaydi — bo‘sh joy qoldirilmaydi.
 | Piksellar: PageView; Lead faqat «Rahmat» da, bir marta, eventID = lid ID | `src/lib/pixel-events.ts`, `src/components/pixels.tsx` | LID-3, BE-31 |
 | Ochiq bo‘lmagan sahifa: forma va Lead yo‘q | `src/components/stopped-view.tsx` | toxtatilgan-1…3 |
 
-Mock kodlar: `k7Qm2x` (oddiy), `mockVideo`, `mockBad`, `mockBepul`, `mockYoq`, `mockHavola`, `mockOlingan`.
+Mock kodlar: `k7Qm2x` (oddiy), `mockVideo`, `mockBad`, `mockBepul`, `mockYoq`, `mockHavola`, `mockOlingan`, `mockRoyxat` (viloyat ro‘yxati yuklanmaydi), `mockPiksel` (piksel ID lari bilan, e2e).
 Ism «Xato Sinov» — server xatosi, raqam `90 111 11 11` — dublikat.
+
+## Tezlik va kesh (SF-03)
+
+- **Statik sahifa (ISR).** Sotuvchi sahifasi har kod va variant uchun bir marta yasaladi va 60 soniyada yangilanadi [taklif].
+  - Middleware variantni `x-elchi-variant` sarlavhasiga yozadi, `next.config.ts` dagi rewrite `/<kod>` ni `/v/<variant>/<kod>` ga yo‘naltiradi.
+  - Middleware rewrite'i bilan Next ISR keshini ishlatmaydi, shuning uchun config rewrite qilindi.
+  - Mijoz yuborgan sarlavha olib tashlanadi.
+- **Kesh.** Sahifa query string, cookie va so‘rov sarlavhalarini o‘qimaydi. sub/utm/fbclid brauzerda o‘qiladi.
+  - Javob `Cache-Control: private, no-store`: `/<kod>` manzili ikkala variantda bir xil, CDN ularni ajrata olmaydi.
+  - Statik HTML Next serverida har variant yo‘li bo‘yicha alohida saqlanadi.
+- **CSS HTML ichida** (`experimental.inlineCss`). Shrift — faqat lotin to‘plami.
+- **Tezlik byudjeti:** `npm run test:lighthouse`.
+  - Lighthouse mobil profili (sekin 4G, 4× CPU), `devtools` usuli, har variant 3 marta, mediana.
+  - Shart: S1 va S3 da LCP ≤ 1500 ms.
+- **e2e:** `npm run test:e2e`.
+  - Tizimdagi Chrome, `npm i --no-save playwright-core@1.64.1`.
+  - Oqim: manzilli forma → «Rahmat» → Lead pikseli, S1 va S3 da.
+- Ikkalasi CI dagi `landing` job'ida.
 
 ## Hali yo‘q (keyingi kartalar)
 

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ClickTracker } from "@/components/click-tracker";
 import { DetailsS1, DetailsS3, FaqS3, NextStepsS1 } from "@/components/details";
@@ -15,7 +14,7 @@ import { StoppedView } from "@/components/stopped-view";
 import type { LandingPage, RegionGroup } from "@/lib/contract";
 import { loadLanding, loadRegions } from "@/lib/load-landing";
 import { priceView, type PriceView } from "@/lib/pricing";
-import { LANDING_URL_HEADER, landingUrl } from "@/lib/routing";
+import { landingUrl } from "@/lib/routing";
 import { BUY, FORM, NOW, PAGE_ERROR, PRODUCT } from "@/lib/texts";
 import { isVariant } from "@/lib/variant";
 
@@ -26,6 +25,17 @@ import { isVariant } from "@/lib/variant";
  * Narx, yetkazish, rasm va matnlar ikkala variantda bir xil — farq faqat sotish usulida (sinov-s1-s3.md «Tenglik»).
  */
 type Params = { params: Promise<{ variant: string; code: string }> };
+
+/**
+ * SF-03: statik sahifa (ISR). Kod va variant oldindan ma’lum emas — birinchi tashrifda yasaladi
+ * (`generateStaticParams` bo‘sh, `dynamicParams`), keyin `revalidate` soniyada yangilanadi.
+ * Query string sahifaga ta’sir qilmaydi: sub/utm/fbclid brauzerda o‘qiladi (ClickTracker, forma).
+ */
+export const revalidate = 60; // = LANDING_REVALIDATE (Next segment sozlamasi literal bo‘lishi kerak)
+export const dynamicParams = true;
+export function generateStaticParams(): Array<{ variant: string; code: string }> {
+  return [];
+}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { variant, code } = await params;
@@ -108,7 +118,7 @@ export default async function LandingRoute({ params }: Params) {
     return (
       <div className="lp" data-page="landing" data-variant={variant} data-state={page.state}>
         <SiteHeader />
-        <main className="wrap lp-main"><StoppedView page={page} openedUrl={(await headers()).get(LANDING_URL_HEADER)} /></main>
+        <main className="wrap lp-main"><StoppedView page={page} /></main>
       </div>
     );
   }

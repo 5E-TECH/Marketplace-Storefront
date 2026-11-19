@@ -3,7 +3,7 @@ import { Onest } from "next/font/google";
 import "./globals.css";
 
 /** Faqat Onest 400/500/700 (sf-tizim:11, 57). Build paytida yuklab olinadi — sahifa Google’ga so‘rov yubormaydi. */
-const onest = Onest({ subsets: ["latin", "cyrillic"], weight: ["400", "500", "700"], display: "swap", variable: "--font-onest" });
+const onest = Onest({ subsets: ["latin"], weight: ["400", "500", "700"], display: "swap", variable: "--font-onest" });
 
 /**
  * Provayderlar yo‘q (SF-01): savat, sevimlilar, toast va mijoz tokeni bu domenda ishlamaydi.

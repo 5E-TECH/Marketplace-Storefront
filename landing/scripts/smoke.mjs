@@ -98,7 +98,7 @@ check('TC3: noma’lum kod → 404, 404-1 matni va ochilgan havola', async () =>
   assert.equal(response.headers.get('x-robots-tag'), 'noindex, nofollow');
   const html = await response.text();
   assert.match(html, /Bu havola bo‘yicha sahifa topilmadi/);
-  assert.match(html, /\/nomalumKod/);
+  // «Siz ochgan havola» brauzerda chiziladi (sahifa statik, SF-03) — server HTML ida yo‘q.
   assert.match(html, /To‘g‘ri havola ochilganda/);
   assert.doesNotMatch(html, /EQ-05|\[telefon/, 'telefon sozlanmagan — blok chiqmasligi kerak');
 });
@@ -278,6 +278,25 @@ check('SF-06 TC5: tumanlar ro‘yxati yuklanmadi → xato holati, forma yuborilm
   const response = await submitWithoutJs('/mockRoyxat', 's1', { ism: 'Aziza', telefon: '901234567', rozilik: '1', ...ADDRESS });
   assert.equal(response.status, 200);
   assert.equal(arizaCookie(response), undefined);
+});
+
+// ─── SF-03: statik sahifa va kesh ──────────────────────────────────────────────
+check('SF-03 TC2: har variant statik keshdan; query string keshni buzmaydi; S1 keshi S3 ga berilmaydi; CDN keshlamaydi', async () => {
+  const cacheOf = (response) => response.headers.get('x-nextjs-cache');
+  for (const variant of ['s1', 's3']) {
+    await get(`/${CODE}`, `elchi_variant=${variant}`); // birinchi tashrif sahifani keshga yozadi
+    const again = await get(`/${CODE}`, `elchi_variant=${variant}`);
+    assert.match(cacheOf(again) ?? '', /^(HIT|STALE)$/, `${variant}: statik kesh`);
+    assert.equal(again.headers.get('cache-control'), 'private, no-store, max-age=0', `${variant}: umumiy kesh yo‘q`);
+    const withQuery = await get(`/${CODE}?sub1=abc&utm_source=fb&fbclid=xyz`, `elchi_variant=${variant}`);
+    assert.match(cacheOf(withQuery) ?? '', /^(HIT|STALE)$/, `${variant}: query string bilan ham o‘sha kesh`);
+    assert.equal(shownVariant(await withQuery.text()), variant);
+  }
+  // Soxta variant sarlavhasi: cookie dagi variant ko‘rsatiladi.
+  const forged = await fetch(`${base}/${CODE}`, { headers: { cookie: 'elchi_variant=s1', 'x-elchi-variant': 's3' } });
+  assert.equal(shownVariant(await forged.text()), 's1');
+  const health = await fetch(`${base}/healthz`, { headers: { 'x-elchi-variant': 's1' } });
+  assert.deepEqual(await health.json(), { status: 'ok', service: 'landing' });
 });
 
 check('«Ommaviy oferta» havolasi sotuvchi sahifasi kodi deb qaralmaydi', async () => {

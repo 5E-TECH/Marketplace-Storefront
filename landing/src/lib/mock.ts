@@ -49,6 +49,8 @@ export const MOCK_PAGES: Readonly<Record<string, LandingPage>> = {
   mockHavola: withProduct({}, { code: "mockHavola", state: "NOT_ACCEPTED" }),
   mockOlingan: withProduct({}, { code: "mockOlingan", state: "WITHDRAWN" }),
   mockRoyxat: withProduct({}, { code: "mockRoyxat" }),
+  // e2e (SF-03 TC3): sotuvchi piksellari bilan. ID lar namuna — skriptlar testda to‘xtatiladi.
+  mockPiksel: withProduct({}, { code: "mockPiksel", metaPixelId: "123456789012345", tiktokPixelId: "CABCDEFGH12345" }),
 };
 
 export class MockBackendFailure extends Error {}
