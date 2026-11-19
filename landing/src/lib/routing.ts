@@ -29,9 +29,13 @@ export type Route =
 /**
  * Sotuvchi sahifasi kodi bo‘la olmaydigan yo‘llar: huquqiy sahifalar (SF-07). «Ommaviy oferta» havolasi
  * rozilik matnida (SF-02) — backendga kod sifatida so‘rov ketmasin. `healthz` — konteyner tekshiruvi (SF-03 dan
- * middleware undan ham o‘tadi). SF-07 qolganlarini shu ro‘yxatga qo‘shadi.
+ * middleware undan ham o‘tadi). SF-07: huquqiy sahifalar va texnik ishlar sahifasi.
  */
-export const RESERVED_PATHS: ReadonlySet<string> = new Set(["oferta", "healthz"]);
+export const RESERVED_PATHS: ReadonlySet<string> = new Set(["oferta", "maxfiylik", "qaytarish", "yetkazish", "texnik-ishlar", "healthz"]);
+
+/** SF-07: sotuvchi sahifasi domenidagi huquqiy va tizim sahifalari (RESERVED_PATHS dagi yo‘llar). */
+export const LEGAL_PATHS = { oferta: "/oferta", maxfiylik: "/maxfiylik", qaytarish: "/qaytarish", yetkazish: "/yetkazish" } as const;
+export type LegalSlug = keyof typeof LEGAL_PATHS;
 
 export function classifyPath(pathname: string): Route {
   if (pathname === `/${VARIANT_SEGMENT}` || pathname.startsWith(`/${VARIANT_SEGMENT}/`)) return { kind: "internal" };
