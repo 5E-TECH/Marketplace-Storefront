@@ -30,6 +30,17 @@ async function call(path: string, init: RequestInit, config: ServerConfig, fetch
 }
 
 /**
+ * api-gateway har 2xx javobni qobiqqa o‘raydi: `{ statusCode, message, data }` (`TransformInterceptor`,
+ * marketplace `docs/API_CONTRACT.md` §1.3). Do‘kon sayti ham `data` ni oladi (`../src/lib/api.ts`).
+ * Qobiqsiz javob ham qabul qilinadi (`rawResponse` bilan qaytgan yo‘llar).
+ */
+export async function readData<T>(response: Response): Promise<T> {
+  const body = (await response.json()) as unknown;
+  if (body && typeof body === "object" && "data" in body && "statusCode" in body) return (body as { data: T }).data;
+  return body as T;
+}
+
+/**
  * Mijoz IP manzili o‘zgartirilmay uzatiladi (do‘kon proksisidagi kabi, `src/lib/backend-proxy.ts`).
  * Har so‘rovda kerak: api-gateway `ThrottlerGuard` limitini IP bo‘yicha hisoblaydi (`app.module.ts`,
  * `RATE_LIMIT_MAX` sukuti 300 / daqiqa). IP siz hamma tashrif landing konteynerining bitta IP siga yozilib, limitga tez yetadi.
@@ -47,7 +58,9 @@ export async function getLanding(code: string, client: ClientHeaders = {}, confi
   const response = await call(`/landing/${encodeURIComponent(code)}`, { headers: clientHeaders(client, {}) }, config, fetcher);
   if (response.status === 404) return null;
   if (!response.ok) throw new BackendError(`GET /landing → ${response.status}`, response.status);
-  return (await response.json()) as LandingPage;
+  const page = await readData<LandingPage | null>(response);
+  if (!page || typeof page !== "object" || typeof page.code !== "string") throw new BackendError("GET /landing: sahifa ma’lumoti yo‘q", response.status);
+  return page;
 }
 
 /** `POST /clicks`. */
@@ -56,7 +69,9 @@ export async function createClick(body: CreateLandingClick, client: ClientHeader
   const headers = clientHeaders(client, { "content-type": "application/json" });
   const response = await call("/clicks", { method: "POST", headers, body: JSON.stringify(body) }, config, fetcher);
   if (!response.ok) throw new BackendError(`POST /clicks → ${response.status}`, response.status);
-  return (await response.json()) as LandingClickCreated;
+  const created = await readData<LandingClickCreated | null>(response);
+  if (!created || (typeof created.clickId !== "string" && typeof created.clickId !== "number")) throw new BackendError("POST /clicks: clickId yo‘q", response.status);
+  return { clickId: String(created.clickId) };
 }
 
 /**
@@ -79,7 +94,7 @@ export async function createLead(body: CreateLead, client: ClientHeaders = {}, c
   const headers = clientHeaders(client, { "content-type": "application/json" });
   const response = await call("/leads", { method: "POST", headers, body: JSON.stringify(body) }, config, fetcher);
   if (response.ok) {
-    const created = (await response.json()) as { leadId?: unknown; duplicate?: unknown };
+    const created = (await readData<{ leadId?: unknown; duplicate?: unknown } | null>(response)) ?? {};
     if (typeof created.leadId !== "string" && typeof created.leadId !== "number") throw new BackendError("POST /leads: leadId yo‘q", response.status);
     return { kind: "created", leadId: String(created.leadId), duplicate: created.duplicate === true };
   }
@@ -94,22 +109,25 @@ export async function createLead(body: CreateLead, client: ClientHeaders = {}, c
   throw new BackendError(`POST /leads → ${response.status}`, response.status);
 }
 
+/** Ro‘yxat kam o‘zgaradi: jarayon xotirasida 1 soat [taklif]. Bo‘sh yoki xato javob keshlanmaydi. */
+export const REGION_CACHE_MS = 60 * 60 * 1000;
+let regionCache: { tree: RegionGroup[]; at: number } | null = null;
+/** Testlar uchun. */
+export const resetRegionCache = () => { regionCache = null; };
+
 /**
- * `GET /regions/tree` — formadagi viloyat va tuman ro‘yxati (SF-06). Ro‘yxat kam o‘zgaradi: Next keshida
- * 1 soat [taklif]. Yuklanmasa — BackendError: forma-20 holati, ariza yuborilmaydi (TC5).
+ * `GET /regions/tree` — formadagi viloyat va tuman ro‘yxati (SF-06), gateway qobig‘idan (`data`).
+ * Yuklanmasa yoki bo‘sh kelsa — BackendError: forma-20 holati, ariza yuborilmaydi (TC5).
  * `code` faqat mock uchun: `mockRoyxat` sahifasida ro‘yxat yuklanmaydi.
  */
 export async function getRegionTree(code = "", config: ServerConfig = readConfig(), fetcher: Fetcher = fetch): Promise<RegionGroup[]> {
   if (config.mock) return mockRegionTree(code);
-  let response: Response;
-  try {
-    response = await fetcher(`${baseUrl(config)}/regions/tree`, { headers: { accept: "application/json" }, next: { revalidate: 3600 }, signal: AbortSignal.timeout(config.apiTimeoutMs) } as RequestInit);
-  } catch (error) {
-    if (error instanceof BackendError) throw error;
-    throw new BackendError(`backend bilan aloqa yo‘q: ${(error as Error).name}`);
-  }
+  if (regionCache && Date.now() - regionCache.at < REGION_CACHE_MS) return regionCache.tree;
+  const response = await call("/regions/tree", { headers: { accept: "application/json" } }, config, fetcher);
   if (!response.ok) throw new BackendError(`GET /regions/tree → ${response.status}`, response.status);
-  const tree = (await response.json()) as unknown;
-  if (!Array.isArray(tree)) throw new BackendError("GET /regions/tree: ro‘yxat emas", response.status);
-  return tree as RegionGroup[];
+  const tree = await readData<unknown>(response);
+  const usable = Array.isArray(tree) ? (tree as RegionGroup[]).filter((region) => Array.isArray(region?.districts) && region.districts.length > 0) : [];
+  if (usable.length === 0) throw new BackendError("GET /regions/tree: ro‘yxat bo‘sh yoki noto‘g‘ri", response.status);
+  regionCache = { tree: usable, at: Date.now() };
+  return usable;
 }

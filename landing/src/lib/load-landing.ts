@@ -24,7 +24,8 @@ export const loadLanding = cache(async (code: string): Promise<Loaded> => {
 /** Formadagi viloyat va tuman ro‘yxati (SF-06). Yuklanmasa — null: forma-20 holati. */
 export async function loadRegions(code: string): Promise<RegionGroup[] | null> {
   try {
-    return sortRegions(await getRegionTree(code));
+    const regions = sortRegions(await getRegionTree(code));
+    return regions.length ? regions : null;
   } catch (error) {
     console.error(`regions ${code}:`, (error as Error).message);
     return null;

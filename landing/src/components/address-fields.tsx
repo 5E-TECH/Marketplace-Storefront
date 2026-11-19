@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import { regionOfDistrict } from "@/lib/address";
 import type { RegionGroup } from "@/lib/contract";
 import { FIELDS, type FieldKey, type FormValues } from "@/lib/lead-form";
@@ -34,11 +35,19 @@ export function AddressFields({ regions, values, errors, describedBy }: {
   describedBy: (key: FieldKey) => string | undefined;
 }) {
   const hydrated = useHydrated();
-  const [region, setRegion] = useState(values.regionSoato || (regions ? regionOfDistrict(regions, values.districtSoato) ?? "" : ""));
-  const [district, setDistrict] = useState(values.districtSoato);
+  const router = useRouter();
+  const [retrying, startRetry] = useTransition();
+  // JS yuklanishidan oldin tanlangan tuman (sekin telefon) yo‘qolmasin: gidratsiya paytida serverdagi ro‘yxatning
+  // joriy qiymati olinadi; viloyat shu tumandan topiladi.
+  const [district, setDistrict] = useState(() => {
+    const before = typeof document === "undefined" ? null : (document.getElementById("tuman") as HTMLSelectElement | null)?.value;
+    return before || values.districtSoato;
+  });
+  const [region, setRegion] = useState(() => values.regionSoato || (regions ? regionOfDistrict(regions, district) ?? "" : ""));
 
+  // `key` — JS siz va JS bilan ko‘rinishda bitta element: oldin yozilgan «Ko‘cha, uy» o‘chmaydi.
   const street = (
-    <div className="field field--wide">
+    <div className="field field--wide" key="manzil">
       <label htmlFor="manzil">{FORM.address}</label>
       <input className="input" id="manzil" name={FIELDS.address} type="text" autoComplete="street-address" maxLength={255}
         placeholder={FORM.addressPlaceholder} defaultValue={values.addressLine}
@@ -48,13 +57,14 @@ export function AddressFields({ regions, values, errors, describedBy }: {
   );
 
   if (!regions) {
+    // forma-20: JS bilan qayta urinish sahifani qayta so‘raydi, yozilganlar qoladi; JS siz — sahifani qayta ochadi.
+    const retry = (event: React.MouseEvent) => { event.preventDefault(); startRetry(() => router.refresh()); };
     return (
       <div className="fields fields--row">
-        <div className="server-error field--wide" role="alert">
+        <div className="server-error field--wide" role="alert" id="royxat" tabIndex={-1} key="royxat">
           <AlertIcon />
-          <span>{FORM.listFailed} <a className="button-light" href="">{FORM.listRetry}</a></span>
+          <span>{FORM.listFailed} <a className="button-light" href="" onClick={retry} aria-busy={retrying}>{FORM.listRetry}</a></span>
         </div>
-        <FieldError id="tuman-xato" message={errors.district ?? errors.region} />
         {street}
       </div>
     );
@@ -63,7 +73,7 @@ export function AddressFields({ regions, values, errors, describedBy }: {
   if (!hydrated) {
     return (
       <div className="fields fields--row">
-        <div className="field field--wide">
+        <div className="field field--wide" key="tuman-guruh">
           <label htmlFor="tuman">{FORM.district}</label>
           <select className="input" id="tuman" name={FIELDS.district} defaultValue={values.districtSoato}
             aria-invalid={errors.district ? true : undefined} aria-describedby={describedBy("district")}>
@@ -84,7 +94,7 @@ export function AddressFields({ regions, values, errors, describedBy }: {
   const districts = regions.find((group) => group.satoCode === region)?.districts ?? [];
   return (
     <div className="fields fields--row">
-      <div className="field">
+      <div className="field" key="viloyat">
         <label htmlFor="viloyat">{FORM.region}</label>
         <select className="input" id="viloyat" name={FIELDS.region} value={region}
           onChange={(event) => { setRegion(event.target.value); setDistrict(""); }}
@@ -94,7 +104,7 @@ export function AddressFields({ regions, values, errors, describedBy }: {
         </select>
         <FieldError id="viloyat-xato" message={errors.region} />
       </div>
-      <div className="field">
+      <div className="field" key="tuman">
         <label htmlFor="tuman">{FORM.district}</label>
         <select className="input" id="tuman" name={FIELDS.district} value={district} disabled={!region}
           onChange={(event) => setDistrict(event.target.value)}

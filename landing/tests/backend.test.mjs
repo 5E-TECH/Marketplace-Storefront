@@ -14,8 +14,11 @@ const recorder = (status, body) => {
   return { calls, fetcher };
 };
 
-test('GET /landing/:code — 200 ma’lumot qaytaradi, kod URL’ga xavfsiz yoziladi', async () => {
-  const { calls, fetcher } = recorder(200, mockLanding);
+/** api-gateway qobig‘i (TransformInterceptor): `{ statusCode, message, data }`. */
+const wrapped = (data, statusCode = 200) => ({ statusCode, message: 'OK', data });
+
+test('GET /landing/:code — 200 ma’lumot qaytaradi (gateway qobig‘idan), kod URL’ga xavfsiz yoziladi', async () => {
+  const { calls, fetcher } = recorder(200, wrapped(mockLanding));
   assert.deepEqual(await backend.getLanding('a b', {}, live, fetcher), mockLanding);
   assert.equal(calls[0].url, 'http://api.test/api/v1/landing/a%20b');
   assert.equal(calls[0].init.cache, 'no-store');
@@ -86,7 +89,7 @@ test('sozlamalar: mock faqat MOCK_API=true bilan, timeout sukuti 10 000 ms', () 
 const leadBody = { code: 'k7Qm2x', name: 'Aziza', phone: '+998901234567', regionSoato: '1726', districtSoato: '1726266', addressLine: 'Navoiy ko‘chasi, 12-uy', whereDeliver: 'CENTER', consentVersion: '2026-11-16', variant: 's3', sub1: 'abc' };
 
 test('POST /leads — 201: lid ID (piksel eventID si) va dublikat belgisi; tana, IP va user agent uzatiladi', async () => {
-  const { calls, fetcher } = recorder(201, { leadId: '7001', duplicate: true });
+  const { calls, fetcher } = recorder(201, wrapped({ leadId: '7001', duplicate: true }, 201));
   const result = await backend.createLead(leadBody, { forwardedFor: '203.0.113.7', userAgent: 'UA' }, live, fetcher);
   assert.deepEqual(result, { kind: 'created', leadId: '7001', duplicate: true });
   assert.equal(calls[0].url, 'http://api.test/api/v1/leads');
@@ -101,7 +104,7 @@ test('POST /leads — 400 maydonlar, 404, 409 LANDING_NOT_OPEN; boshqasi Backend
   assert.deepEqual(await backend.createLead(leadBody, {}, live, invalid.fetcher), { kind: 'invalid', fields: ['phone'], messages: ['phone O‘zbekiston operator kodi bilan bo‘lishi kerak'] });
   assert.deepEqual(await backend.createLead(leadBody, {}, live, recorder(404, { message: 'x' }).fetcher), { kind: 'notFound' });
   assert.deepEqual(await backend.createLead(leadBody, {}, live, recorder(409, { errorCode: 'LANDING_NOT_OPEN' }).fetcher), { kind: 'notOpen' });
-  for (const [status, body] of [[409, { errorCode: 'BOSHQA' }], [500, {}], [503, undefined], [201, {}]]) {
+  for (const [status, body] of [[409, { errorCode: 'BOSHQA' }], [500, {}], [503, undefined], [201, {}], [201, wrapped(null, 201)]]) {
     await assert.rejects(backend.createLead(leadBody, {}, live, recorder(status, body).fetcher), (error) => error instanceof backend.BackendError);
   }
 });
@@ -114,13 +117,28 @@ test('mock lid: ma’lum kod — raqamli ID, noma’lum — 404, «Xato Sinov» 
   await assert.rejects(backend.createLead({ ...leadBody, name: 'Xato Sinov' }, {}, mock));
 });
 
-test('GET /regions/tree — ro‘yxat; xato yoki ro‘yxat emas — BackendError; mock «mockRoyxat» — yuklanmaydi', async () => {
+test('GET /regions/tree — qobiqdagi ro‘yxat; xato, ro‘yxat emas yoki bo‘sh — BackendError va keshlanmaydi; mock «mockRoyxat» — yuklanmaydi', async () => {
   const tree = [{ satoCode: '1726', name: 'Toshkent shahri', districts: [{ satoCode: '1726266', name: 'Yunusobod tumani' }] }];
-  const ok = recorder(200, tree);
+  backend.resetRegionCache();
+  await assert.rejects(backend.getRegionTree('', live, recorder(500, {}).fetcher), (error) => error instanceof backend.BackendError);
+  await assert.rejects(backend.getRegionTree('', live, recorder(200, wrapped({ a: 1 })).fetcher), (error) => error instanceof backend.BackendError);
+  await assert.rejects(backend.getRegionTree('', live, recorder(200, wrapped([])).fetcher), (error) => error instanceof backend.BackendError);
+  const ok = recorder(200, wrapped(tree));
   assert.deepEqual(await backend.getRegionTree('', live, ok.fetcher), tree);
   assert.equal(ok.calls[0].url, 'http://api.test/api/v1/regions/tree');
-  await assert.rejects(backend.getRegionTree('', live, recorder(500, {}).fetcher), (error) => error instanceof backend.BackendError);
-  await assert.rejects(backend.getRegionTree('', live, recorder(200, { a: 1 }).fetcher), (error) => error instanceof backend.BackendError);
+  // Bo‘sh bo‘lmagan ro‘yxat keshlanadi: keyingi so‘rov backendga bormaydi.
+  const again = recorder(500, {});
+  assert.deepEqual(await backend.getRegionTree('', live, again.fetcher), tree);
+  assert.equal(again.calls.length, 0);
+  backend.resetRegionCache();
   assert.ok((await backend.getRegionTree('k7Qm2x', mock)).length > 0);
   await assert.rejects(backend.getRegionTree('mockRoyxat', mock));
+});
+
+test('gateway qobig‘i: GET /landing va POST /clicks `data` ni oladi; qobiqsiz javob ham; bo‘sh `data` — BackendError', async () => {
+  assert.deepEqual(await backend.getLanding('k7Qm2x', {}, live, recorder(200, mockLanding).fetcher), mockLanding);
+  await assert.rejects(backend.getLanding('k7Qm2x', {}, live, recorder(200, wrapped(null)).fetcher), (error) => error instanceof backend.BackendError);
+  assert.deepEqual(await backend.createClick({ code: 'k7Qm2x' }, {}, live, recorder(201, wrapped({ clickId: '90311' }, 201)).fetcher), { clickId: '90311' });
+  assert.deepEqual(await backend.createClick({ code: 'k7Qm2x' }, {}, live, recorder(201, { clickId: 90311 }).fetcher), { clickId: '90311' });
+  await assert.rejects(backend.createClick({ code: 'k7Qm2x' }, {}, live, recorder(201, wrapped({})).fetcher), (error) => error instanceof backend.BackendError);
 });

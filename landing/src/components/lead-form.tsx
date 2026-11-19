@@ -61,8 +61,8 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, reg
   useEffect(() => {
     // Xatodan keyin birinchi xato maydonga o‘tiladi (forma-3…6).
     const first = FIELD_ORDER.find((key) => state.errors[key]);
-    if (state.js && first) document.getElementById(FIELD_IDS[first])?.focus();
-  }, [state]);
+    if (state.js && first) document.getElementById(regions === null && (first === "region" || first === "district") ? "royxat" : FIELD_IDS[first])?.focus();
+  }, [state, regions]);
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -97,6 +97,9 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, reg
 
   const errors = state.errors;
   const errorList = FIELD_ORDER.filter((key) => errors[key]);
+  // forma-20: ro‘yxat yuklanmadi — manzil xatolari ro‘yxat blokiga olib boradi, ariza yuborilmaydi (SF-06 TC5).
+  const listFailed = regions === null;
+  const anchor = (key: FieldKey) => (listFailed && (key === "region" || key === "district") ? "royxat" : key === "region" && !state.js ? FIELD_IDS.district : FIELD_IDS[key]);
   const noJsServerError = state.status === "error" && !state.js;
   const describedBy = (key: FieldKey, extra?: string) => [errors[key] ? `${FIELD_IDS[key]}-xato` : null, extra].filter(Boolean).join(" ") || undefined;
 
@@ -114,7 +117,7 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, reg
       {state.status === "invalid" && !state.js && errorList.length ? (
         <div className="summary" role="alert">
           <p><strong>{FORM.summary(errorList.length)}</strong></p>
-          <ul>{errorList.map((key) => <li key={key}><a href={`#${key === "region" && !state.js ? FIELD_IDS.district : FIELD_IDS[key]}`}>{SHORT[errors[key] ?? ""] ?? errors[key]}</a></li>)}</ul>
+          <ul>{errorList.map((key) => <li key={key}><a href={`#${anchor(key)}`}>{SHORT[errors[key] ?? ""] ?? errors[key]}</a></li>)}</ul>
         </div>
       ) : null}
       {summary ? <div className="card">{summary.head}{choice}{summary.after}</div> : null}
@@ -156,7 +159,7 @@ export function LeadForm({ code, variant, formId, title, view, initialWhere, reg
       </div>
       {footer}
       {state.status === "error" && state.js ? <p className="server-error" role="alert"><AlertIcon />{FORM.serverError}</p> : null}
-      <button className="buy" type="submit" disabled={pending}>{pending ? FORM.sending : noJsServerError ? FORM.resend : BUY}</button>
+      <button className="buy" type="submit" disabled={pending || listFailed}>{pending ? FORM.sending : noJsServerError ? FORM.resend : BUY}</button>
       {noJsServerError ? <Link className="button-light" href={landingUrl(code)}>{FORM.backToProduct}</Link> : under}
     </form>
     </>

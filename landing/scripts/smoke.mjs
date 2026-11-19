@@ -273,6 +273,8 @@ check('SF-06 TC0/TC3: «Eshikkacha», to‘g‘ri manzil → «Rahmat», eshikka
 check('SF-06 TC5: tumanlar ro‘yxati yuklanmadi → xato holati, forma yuborilmaydi', async () => {
   const html = await page('/mockRoyxat', 's1');
   assert.match(html, /Ro‘yxatni yuklab bo‘lmadi\. Internetni tekshirib, qayta urinib ko‘ring\./);
+  assert.doesNotMatch(html, /name="districtSoato"/);
+  assert.match(html, /<button class="buy" type="submit" disabled="">/);
   const response = await submitWithoutJs('/mockRoyxat', 's1', { ism: 'Aziza', telefon: '901234567', rozilik: '1', ...ADDRESS });
   assert.equal(response.status, 200);
   assert.equal(arizaCookie(response), undefined);
