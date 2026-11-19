@@ -36,7 +36,7 @@ test('TC3: backend 404 — sahifa yo‘q (null)', async () => {
   assert.equal(await backend.getLanding('nomalum', {}, live, fetcher), null);
 });
 
-test('backend 501 (BE-11 hali yo‘q) yoki 500 — BackendError, sahifada xato-1', async () => {
+test('backend 500, 501 yoki 503 — BackendError, sahifada xato-1', async () => {
   for (const status of [500, 501, 503]) {
     const { fetcher } = recorder(status, { message: 'x' });
     await assert.rejects(backend.getLanding('k7Qm2x', {}, live, fetcher), (error) => error instanceof backend.BackendError && error.status === status);

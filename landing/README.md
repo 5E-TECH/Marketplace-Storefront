@@ -11,7 +11,7 @@ Node ≥ 22.15 (CI va Docker — Node 24).
 ```bash
 cd landing
 npm ci
-cp .env.example .env.local   # MOCK_API=true — backend BE-11 tayyor bo‘lguncha
+cp .env.example .env.local   # MOCK_API=true — backendsiz; backend bilan MOCK_API=false va API_BASE_URL
 npm run dev                   # http://localhost:3003/k7Qm2x
 ```
 

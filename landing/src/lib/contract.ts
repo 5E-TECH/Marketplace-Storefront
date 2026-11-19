@@ -1,7 +1,8 @@
 /**
- * Backend shartnomasi: `5E-TECH/marketplace` `docs/openapi.json`, `feat/be-25-lid-shartnoma`
- * (PR 98): `LandingPageDto`, `CreateLandingClickDto`, `LandingClickCreatedDto`.
- * Backend hozircha 501 qaytaradi (BE-11), shuning uchun lokal va CI da mock ishlaydi (`MOCK_API=true`).
+ * Backend shartnomasi: `5E-TECH/marketplace` `docs/openapi.json` (`dev`): `LandingPageDto`,
+ * `LandingPageCreativeDto`, `CreateLandingClickDto`, `LandingClickCreatedDto`.
+ * Haqiqiy kod — BE-11 (PR 101), 2026-11-17 dan `dev` da; production backend (`main`) da hali yo‘q.
+ * Shuning uchun lokal va CI da mock ishlaydi (`MOCK_API=true`), backend bilan — `MOCK_API=false`.
  */
 import type { Variant } from "./variant";
 
@@ -10,12 +11,16 @@ export type LandingTemplate = "STANDART" | "VIDEO";
 
 export interface LandingPageSpec { name: string; value: string }
 
+/** Sotuvchi tanlagan reklama rasmi yoki videosi (BE-11 offer kreativlari). Shablonda ishlatilishi — SF-02. */
+export interface LandingPageCreative { id: string; type: "IMAGE" | "VIDEO"; url: string }
+
 export interface LandingPageProduct {
   id: string;
   name: string;
   subtitle: string | null;
   images: string[];
   videoUrl: string | null;
+  creatives: LandingPageCreative[];
   description: string | null;
   highlights: string[];
   boxContents: string[];

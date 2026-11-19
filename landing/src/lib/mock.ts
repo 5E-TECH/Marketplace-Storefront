@@ -1,7 +1,7 @@
 import type { CreateLandingClick, LandingClickCreated, LandingPage } from "./contract";
 
 /**
- * Mock: backend BE-11 tayyor bo‘lguncha (hozir 501). Qiymatlar BE-25 shartnomasidagi
+ * Mock: backendsiz ishlash uchun (lokal va CI; BE-11 `dev` da, production backendda hali yo‘q). Qiymatlar BE-25 shartnomasidagi
  * misollardan (`LandingPageDto` example) va holat-matnlari.md «2. Sums», «Qisman (sukut)»
  * qatoridan: 262 000 / 30 000 / 50 000 so‘m (T01:98).
  */
@@ -20,6 +20,7 @@ export const mockLanding: LandingPage = {
     subtitle: "Bluetooth, quvvatlovchi g‘ilof bilan",
     images: [],
     videoUrl: null,
+    creatives: [],
     description: "Telefonga Bluetooth orqali ulanadi. Ixcham g‘ilofda saqlanadi.",
     highlights: ["Telefonga Bluetooth orqali ulanadi", "Ixcham g‘ilofda saqlanadi va quvvatlanadi"],
     boxContents: ["Quloqchinlar (juft)", "Quvvatlovchi g‘ilof", "Quvvat kabeli"],
