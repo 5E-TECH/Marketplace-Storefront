@@ -36,8 +36,42 @@ Tekshiruv (CI dagi bilan bir xil): `npm run check` — typecheck, lint, unit tes
 Matnlar faqat `holat-matnlari.md` dan (`src/lib/texts.ts`). Aloqa telefoni (EQ-05) sozlanmagan bo‘lsa,
 telefon bloki chiqmaydi — bo‘sh joy qoldirilmaydi.
 
+## Sotuvchi sahifasi (SF-02)
+
+| Qism | Fayl | Manba |
+|---|---|---|
+| S1: forma mahsulot sahifasida; S3: forma `/<kod>/buyurtma` qadamida | `src/app/v/[variant]/[code]/page.tsx`, `buyurtma/page.tsx` | holat-matnlari.md:77-91 |
+| Narx, yetkazish tanlovi, Jami — tanlov CSS `:has()` bilan, JS siz ham | `src/components/price-block.tsx`, `src/lib/pricing.ts` | narx-1…5 |
+| Forma: ism, +998 (2-3-2-2), rozilik, yashirin `website`, variant, clickId, sub/utm | `src/components/lead-form.tsx`, `src/lib/lead-form.ts` | forma-1…13, BE-12 |
+| Yuborish: Server Action → backend `POST /leads` (mijoz IP va user agenti bilan); JS siz xato yozilganlar bilan qaytadi | `src/app/actions.ts`, `src/lib/backend.ts` | forma-10, forma-11 |
+| «Rahmat»: ism va raqam HttpOnly cookie’dan (URL da emas), dublikat — rahmat-4, ish vaqtidan tashqari — rahmat-3 | `src/app/v/[variant]/[code]/rahmat/page.tsx`, `src/components/thanks-view.tsx` | rahmat-1…6 |
+| Piksellar: PageView; Lead faqat «Rahmat» da, bir marta, eventID = lid ID | `src/lib/pixel-events.ts`, `src/components/pixels.tsx` | LID-3, BE-31 |
+| Ochiq bo‘lmagan sahifa: forma va Lead yo‘q | `src/components/stopped-view.tsx` | toxtatilgan-1…3 |
+
+Mock kodlar: `k7Qm2x` (oddiy), `mockVideo`, `mockBad`, `mockBepul`, `mockYoq`, `mockHavola`, `mockOlingan`, `mockRoyxat` (viloyat ro‘yxati yuklanmaydi), `mockPiksel` (piksel ID lari bilan, e2e).
+Ism «Xato Sinov» — server xatosi, raqam `90 111 11 11` — dublikat.
+
+## Tezlik va kesh (SF-03)
+
+- **Statik sahifa (ISR).** Sotuvchi sahifasi har kod va variant uchun bir marta yasaladi va 60 soniyada yangilanadi [taklif].
+  - Middleware variantni `x-elchi-variant` sarlavhasiga yozadi, `next.config.ts` dagi rewrite `/<kod>` ni `/v/<variant>/<kod>` ga yo‘naltiradi.
+  - Middleware rewrite'i bilan Next ISR keshini ishlatmaydi, shuning uchun config rewrite qilindi.
+  - Mijoz yuborgan sarlavha olib tashlanadi.
+- **Kesh.** Sahifa query string, cookie va so‘rov sarlavhalarini o‘qimaydi. sub/utm/fbclid brauzerda o‘qiladi.
+  - Javob `Cache-Control: private, no-store`: `/<kod>` manzili ikkala variantda bir xil, CDN ularni ajrata olmaydi.
+  - Statik HTML Next serverida har variant yo‘li bo‘yicha alohida saqlanadi.
+- **CSS HTML ichida** (`experimental.inlineCss`). Shrift — faqat lotin to‘plami.
+- **Tezlik byudjeti:** `npm run test:lighthouse`.
+  - Lighthouse mobil profili (sekin 4G, 4× CPU), `devtools` usuli, har variant 3 marta, mediana.
+  - Shart: S1 va S3 da LCP ≤ 1500 ms.
+- **e2e:** `npm run test:e2e`.
+  - Tizimdagi Chrome, `npm i --no-save playwright-core@1.64.1`.
+  - Oqim: manzilli forma → «Rahmat» → Lead pikseli, S1 va S3 da.
+- Ikkalasi CI dagi `landing` job'ida.
+
 ## Hali yo‘q (keyingi kartalar)
 
-- S1 va S3 shablonlari, forma, «rahmat», piksellar — SF-02 (DZ-02 ega tasdig‘idan keyin). Hozir ikkala variant bir xil karkas: tovar nomi va narxi.
-- Manzil maydonlari — SF-06. Statik HTML, kesh, Lighthouse — SF-03. Huquqiy sahifalar va {FOOT} — SF-07.
+- Manzil maydonlari (viloyat, tuman, ko‘cha/uy) — SF-06. **Haqiqiy backend manzilsiz lidni 400 bilan rad etadi** — SF-02 SF-06 bilan birga ishga tushadi.
+- Statik HTML, kesh, Lighthouse — SF-03. Huquqiy sahifalar, {FOOT} va «Ommaviy oferta» havolasi sahifasi — SF-07.
+- S3 kompyuterdagi yuqori yopishqoq panel — [taklif] keyinroq; birinchi ekranda tugma bor.
 - Prod deploy (`docker-compose.prod.yml`, `marketplace_edge`, Cloudflare hostname) — domen (EQ-05) aniq bo‘lgach.

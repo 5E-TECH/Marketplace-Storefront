@@ -1,4 +1,4 @@
-import type { CreateLandingClick, LandingClickCreated, LandingPage } from "./contract";
+import type { CreateLandingClick, CreateLead, LandingClickCreated, LandingPage, RegionGroup } from "./contract";
 
 /**
  * Mock: backendsiz ishlash uchun (lokal va CI; BE-11 `dev` da, production backendda hali yo‘q). Qiymatlar BE-25 shartnomasidagi
@@ -18,7 +18,7 @@ export const mockLanding: LandingPage = {
     id: "501",
     name: "Simsiz quloqchinlar",
     subtitle: "Bluetooth, quvvatlovchi g‘ilof bilan",
-    images: [],
+    images: ["/namuna/quloqchin.svg"],
     videoUrl: null,
     creatives: [],
     description: "Telefonga Bluetooth orqali ulanadi. Ixcham g‘ilofda saqlanadi.",
@@ -32,13 +32,70 @@ export const mockLanding: LandingPage = {
   tiktokPixelId: null,
 };
 
+/**
+ * Boshqa holatlarni sinash uchun mock sahifalar (faqat MOCK_API=true). Summalar holat-matnlari.md
+ * «2. Sums» dan: narx-4 (bepul 294 000), narx-5 (BAD 221 000 / 30 000 / 50 000); toxtatilgan-1 180 000.
+ */
+const withProduct = (product: Partial<LandingPage["product"]>, rest: Partial<LandingPage> = {}): LandingPage => ({
+  ...mockLanding, ...rest, product: { ...mockLanding.product, ...product },
+});
+
+export const MOCK_PAGES: Readonly<Record<string, LandingPage>> = {
+  [MOCK_CODE]: mockLanding,
+  mockVideo: withProduct({ videoUrl: "/namuna/video.mp4" }, { code: "mockVideo", template: "VIDEO" }),
+  mockBad: withProduct({ name: "Vitamin kompleksi", subtitle: "Biologik faol qo‘shimcha", isBad: true }, { code: "mockBad", price: { salePrice: 221_000, centerDeliveryFee: 30_000, addressDeliveryFee: 50_000 } }),
+  mockBepul: withProduct({}, { code: "mockBepul", price: { salePrice: 294_000, centerDeliveryFee: 0, addressDeliveryFee: 0 } }),
+  mockYoq: withProduct({ name: "Bolalar termos shishasi", subtitle: "Bolalar uchun", images: ["/namuna/termos.svg"] }, { code: "mockYoq", state: "OUT_OF_STOCK", price: { salePrice: 180_000, centerDeliveryFee: 30_000, addressDeliveryFee: 50_000 } }),
+  mockHavola: withProduct({}, { code: "mockHavola", state: "NOT_ACCEPTED" }),
+  mockOlingan: withProduct({}, { code: "mockOlingan", state: "WITHDRAWN" }),
+  mockRoyxat: withProduct({}, { code: "mockRoyxat" }),
+  // e2e (SF-03 TC3): sotuvchi piksellari bilan. ID lar namuna — skriptlar testda to‘xtatiladi.
+  mockPiksel: withProduct({}, { code: "mockPiksel", metaPixelId: "123456789012345", tiktokPixelId: "CABCDEFGH12345" }),
+};
+
 export class MockBackendFailure extends Error {}
 
 export function mockGetLanding(code: string): LandingPage | null {
   if (code === MOCK_FAILING_CODE) throw new MockBackendFailure("mock: server xatosi");
-  return code === MOCK_CODE ? mockLanding : null;
+  return Object.hasOwn(MOCK_PAGES, code) ? MOCK_PAGES[code] : null;
 }
 
 export function mockCreateClick(body: CreateLandingClick): LandingClickCreated {
   return { clickId: `mock-${body.variant ?? "x"}-${crypto.randomUUID()}` };
+}
+
+/** Faqat mock: shu ism bilan yuborilgan forma server xatosini oladi (SF-02 TC2: «rahmat» va piksel yo‘q). */
+export const MOCK_FAILING_NAME = "Xato Sinov";
+
+/** Faqat mock: shu raqam bilan ariza dublikat bo‘ladi (rahmat-4). */
+export const MOCK_DUPLICATE_PHONE = "+998901111111";
+
+/**
+ * Mock lid: ochiq sahifa — yangi lid (raqamli ID, BE-25 `LeadCreatedDto` misoli kabi), ochiq bo‘lmagani — 409
+ * `LANDING_NOT_OPEN`, noma’lum kod — 404.
+ */
+export function mockCreateLead(body: CreateLead): { kind: "created"; leadId: string; duplicate: boolean } | { kind: "notFound" } | { kind: "notOpen" } {
+  if (body.name.trim() === MOCK_FAILING_NAME) throw new MockBackendFailure("mock: server xatosi");
+  const page = Object.hasOwn(MOCK_PAGES, body.code) ? MOCK_PAGES[body.code] : null;
+  if (!page) return { kind: "notFound" };
+  if (page.state !== "OPEN") return { kind: "notOpen" };
+  return { kind: "created", leadId: String(7000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000)), duplicate: body.phone === MOCK_DUPLICATE_PHONE };
+}
+
+/**
+ * Faqat mock: viloyat va tumanlar. Nomlar dizayn namunalaridan (holat-matnlari.md:383 «Farg‘ona viloyati»,
+ * «Qo‘qon shahri») va BE-25 misolidan («Toshkent shahri» 1726, «Yunusobod tumani» 1726266). Boshqa SOATO
+ * kodlari namuna — haqiqiy ro‘yxat backenddan keladi.
+ */
+export const MOCK_REGIONS: RegionGroup[] = [
+  { satoCode: "1726", name: "Toshkent shahri", districts: [{ satoCode: "1726266", name: "Yunusobod tumani" }, { satoCode: "1726264", name: "Mirzo Ulug‘bek tumani" }] },
+  { satoCode: "1730", name: "Farg‘ona viloyati", districts: [{ satoCode: "1730405", name: "Qo‘qon shahri" }, { satoCode: "1730401", name: "Farg‘ona shahri" }] },
+];
+
+/** Faqat mock: shu sahifada viloyat va tuman ro‘yxati yuklanmaydi (forma-20, SF-06 TC5). */
+export const MOCK_REGIONS_FAILING_CODE = "mockRoyxat";
+
+export function mockRegionTree(code: string): RegionGroup[] {
+  if (code === MOCK_REGIONS_FAILING_CODE) throw new MockBackendFailure("mock: ro‘yxat yuklanmadi");
+  return MOCK_REGIONS;
 }

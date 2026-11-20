@@ -1,39 +1,40 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { cache } from "react";
 import { ClickTracker } from "@/components/click-tracker";
-import { PageErrorView } from "@/components/page-error-view";
+import { DetailsS1, DetailsS3, FaqS3, NextStepsS1 } from "@/components/details";
+import { Gallery } from "@/components/gallery";
+import { CheckIcon, PhoneS3Icon } from "@/components/icons";
+import { LeadForm } from "@/components/lead-form";
+import { Pixels } from "@/components/pixels";
+import { DeliveryChoice, PayLine, PriceHead, Total } from "@/components/price-block";
 import { SiteHeader } from "@/components/site-header";
-import { LandingTemplate } from "@/components/templates/landing-template";
-import { getLanding } from "@/lib/backend";
-import type { LandingPage } from "@/lib/contract";
-import { PAGE_ERROR } from "@/lib/texts";
+import { DesktopCta, StickyPanel } from "@/components/sticky-panel";
+import { StoppedView } from "@/components/stopped-view";
+import type { LandingPage, RegionGroup } from "@/lib/contract";
+import { loadLanding, loadRegions } from "@/lib/load-landing";
+import { priceView, type PriceView } from "@/lib/pricing";
+import { landingUrl } from "@/lib/routing";
+import { BUY, FORM, NOW, PAGE_ERROR, PRODUCT } from "@/lib/texts";
 import { isVariant } from "@/lib/variant";
 
 /**
  * Ichki yo‘l: `/<kod>` → middleware → `/v/<variant>/<kod>`. Tashqaridan ochilmaydi.
  * Sahifa cookie va query string o‘qimaydi: SF-03 da har variant uchun statik HTML qilinadi.
- * Hozircha har ochilishda backendga so‘rov ketadi — mijoz IP va user agenti bilan (`backend.ts`, limit IP bo‘yicha).
+ * S1 «Tez buyurtma» — forma shu sahifada; S3 «Ishonch bilan» — forma keyingi qadamda (`/<kod>/buyurtma`).
+ * Narx, yetkazish, rasm va matnlar ikkala variantda bir xil — farq faqat sotish usulida (sinov-s1-s3.md «Tenglik»).
  */
 type Params = { params: Promise<{ variant: string; code: string }> };
 
-type Loaded = { ok: true; page: LandingPage | null } | { ok: false };
-
 /**
- * Backend xatosi sahifada serverda ko‘rsatiladi (xato-1): Next’ning `error.tsx` i faqat brauzerda
- * chiziladi va JS o‘chiq mijoz bo‘sh sahifa ko‘rardi. Javob holati 200 bo‘lib qoladi — SF-03 da
- * kesh shunday sahifani saqlamasligi kerak.
+ * SF-03: statik sahifa (ISR). Kod va variant oldindan ma’lum emas — birinchi tashrifda yasaladi
+ * (`generateStaticParams` bo‘sh, `dynamicParams`), keyin `revalidate` soniyada yangilanadi.
+ * Query string sahifaga ta’sir qilmaydi: sub/utm/fbclid brauzerda o‘qiladi (ClickTracker, forma).
  */
-const loadLanding = cache(async (code: string): Promise<Loaded> => {
-  const incoming = await headers();
-  try {
-    return { ok: true, page: await getLanding(code, { forwardedFor: incoming.get("x-forwarded-for"), userAgent: incoming.get("user-agent") }) };
-  } catch (error) {
-    console.error(`landing ${code}:`, (error as Error).message);
-    return { ok: false };
-  }
-});
+export const revalidate = 60; // = LANDING_REVALIDATE (Next segment sozlamasi literal bo‘lishi kerak)
+export const dynamicParams = true;
+export function generateStaticParams(): Array<{ variant: string; code: string }> {
+  return [];
+}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { variant, code } = await params;
@@ -43,19 +44,100 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return loaded.page ? { title: loaded.page.product.name } : {};
 }
 
+function S1Page({ page, view, regions }: { page: LandingPage; view: PriceView; regions: RegionGroup[] | null }) {
+  const bad = page.product.isBad;
+  return (
+    <>
+      <div className="lp-first">
+        <SiteHeader />
+        <div className="wrap hero">
+          <Gallery page={page} />
+          <div>
+            <LeadForm code={page.code} variant="s1" formId="lead-form" view={view} initialWhere="CENTER" regions={regions}
+              buybox={{
+                head: <PriceHead name={page.product.name} subtitle={page.product.subtitle} product={view.product} />,
+                after: (
+                  <div className="s1-first-buy">
+                    <Total view={view} variant="s1" />
+                    <PayLine bad={bad} />
+                    <a className="buy" href="#ism">{BUY}</a>
+                  </div>
+                ),
+              }}
+              footer={<><Total view={view} variant="s1" /><PayLine bad={bad} /></>}
+              under={<p className="under-buy">{FORM.arizaS1}</p>} />
+          </div>
+        </div>
+        <div className="wrap"><DetailsS1 product={page.product} view={view} /></div>
+      </div>
+      <div className="wrap lp-main"><NextStepsS1 /><DesktopCta name={page.product.name} view={view} /></div>
+      <StickyPanel view={view} variant="s1" />
+    </>
+  );
+}
+
+function S3Page({ page, view }: { page: LandingPage; view: PriceView }) {
+  return (
+    <>
+      <div className="lp-first">
+        <SiteHeader />
+        <div className="wrap hero">
+          <Gallery page={page} />
+          {/* JS siz ham: tanlangan yetkazish buyurtma qadamiga `?whereDeliver=` bilan o‘tadi (P-1). */}
+          <form id="s3-order" className="buybox" method="get" action={landingUrl(page.code, "buyurtma")}>
+            <PriceHead name={page.product.name} subtitle={page.product.subtitle} product={view.product} />
+            <DeliveryChoice view={view} variant="s3" />
+            <Total view={view} variant="s3" />
+            <PayLine bad={page.product.isBad} />
+            <button className="buy" type="submit">{BUY}</button>
+            <ul className="under-buy">
+              <li className="now"><CheckIcon />{NOW}</li>
+              <li className="muted-line"><PhoneS3Icon />{PRODUCT.s3CallLine}</li>
+            </ul>
+          </form>
+        </div>
+        <div className="wrap"><DetailsS3 product={page.product} view={view} /></div>
+      </div>
+      <div className="lp-main"><FaqS3 view={view} /></div>
+      <StickyPanel view={view} variant="s3" />
+    </>
+  );
+}
+
+/** S1 formasidagi ro‘yxat: yuklanmasa xato — forma-20 holatidagi sahifa statik keshga yozilmasin (yuqoridagi sabab). */
+async function staticRegions(code: string): Promise<RegionGroup[]> {
+  const regions = await loadRegions(code);
+  if (!regions) throw new Error(`regions ${code}: ro‘yxat yuklanmadi`);
+  return regions;
+}
+
 export default async function LandingRoute({ params }: Params) {
   const { variant, code } = await params;
   if (!isVariant(variant)) notFound();
   const loaded = await loadLanding(code);
-  // `href=""` — brauzer ochgan manzilni qayta ochadi, havola parametrlari (sub1–sub5, utm, fbclid) bilan:
-  // aks holda qayta urinishdagi klik ularsiz yozilib, lid sotuvchining sub ID sini yo‘qotardi. JS siz ham ishlaydi.
-  if (!loaded.ok) return <PageErrorView retry={<a className="button button--secondary" href="">{PAGE_ERROR.retry}</a>} />;
+  // Statik sahifa: backend xatosi keshga yozilmasin. Xato tashlansa, Next oldingi (to‘g‘ri) sahifani beraveradi va
+  // birozdan keyin qayta urinadi; sahifa hali yasalmagan bo‘lsa — xato-1 (`error.tsx`). Xato sahifasini 60 s davomida
+  // hamma tashrifga berish — bitta uzilish uchun juda qimmat.
+  if (!loaded.ok) throw new Error(`landing ${code}: backend javob bermadi`);
   if (!loaded.page) notFound();
+  const page = loaded.page;
+
+  // TC8: sahifa ochiq emas — forma, xarid tugmasi va Lead hodisasi yo‘q (toxtatilgan-1…3).
+  if (page.state !== "OPEN") {
+    return (
+      <div className="lp" data-page="landing" data-variant={variant} data-state={page.state}>
+        <SiteHeader />
+        <main className="wrap lp-main"><StoppedView page={page} /></main>
+      </div>
+    );
+  }
+
+  const view = priceView(page.price);
   return (
-    <>
-      <SiteHeader />
-      <LandingTemplate page={loaded.page} variant={variant} />
-      <ClickTracker code={loaded.page.code} variant={variant} />
-    </>
+    <div className="lp" data-page="landing" data-variant={variant} data-template={page.template} data-state={page.state}>
+      {variant === "s1" ? <S1Page page={page} view={view} regions={await staticRegions(page.code)} /> : <S3Page page={page} view={view} />}
+      <ClickTracker code={page.code} variant={variant} />
+      <Pixels metaPixelId={page.metaPixelId} tiktokPixelId={page.tiktokPixelId} />
+    </div>
   );
 }
